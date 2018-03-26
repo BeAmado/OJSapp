@@ -7,7 +7,9 @@ FUNCTIONS IN DEFINED IN THIS SCRIPT:
 01) processUsers
 02) getSectionById
 	02.1) getSectionByAbbrev
-	02.2) getAbbrevsAndTitles
+	02.2) getSectionBySetting
+	02.3) getAbbrevsAndTitles
+	02.4) sectionExists
 03) getSetting
 04) updateSections
 05) insertSections
@@ -91,7 +93,7 @@ function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$
 							$number = (int) $last2Characters;
 							$number++;
 							$str = substr($user['new_username'], 0, -2);
-							$user['new_username'] = $str . '$number';
+							$user['new_username'] = $str . "$number";
 						}
 						else {
 							// if the last character is a number increment it, otherwise put the number 2 at the final
@@ -100,10 +102,10 @@ function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$
 								$number = (int) $lastCharacter;
 								$number++;
 								$str = substr($user['new_username'], 0, -1);
-								$user['new_username'] = $str . '$number';
+								$user['new_username'] = $str . "$number";
 							}
 							else {
-								$user['new_username'] .= '$number';
+								$user['new_username'] .= "$number";
 							}
 						}
 					}
@@ -117,36 +119,36 @@ function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$
 			
 			$arr = array();
 			$arr['data'] = $user;
-			$arr['params'] = [
-				['name' => ':insertUser_username', 'attr' => 'new_username', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_password', 'attr' => 'password', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_salutation', 'attr' => 'salutation', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_firstName', 'attr' => 'first_name', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_middleName', 'attr' => 'middle_name', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_lastName', 'attr' => 'last_name', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_gender', 'attr' => 'gender', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_initials', 'attr' => 'initials', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_email', 'attr' => 'email', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_url', 'attr' => 'url', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_phone', 'attr' => 'phone', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_fax', 'attr' => 'fax', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_mailingAddress', 'attr' => 'mailing_address', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_country', 'attr' => 'country', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_locales', 'attr' => 'locales', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_dateLastEmail', 'attr' => 'date_last_email', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_dateRegistered', 'attr' => 'date_registered', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_dateValidated', 'attr' => 'date_validated', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_dateLastLogin', 'attr' => 'date_last_login', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_mustChangePassword', 'attr' => 'must_change_password', 'type' => PDO::PARAM_INT],
-				['name' => ':insertUser_authId', 'attr' => 'auth_id', 'type' => PDO::PARAM_INT],
-				['name' => ':insertUser_disabled', 'attr' => 'disabled', 'type' => PDO::PARAM_INT],
-				['name' => ':insertUser_disabledReason', 'attr' => 'disabled_reason', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_authStr', 'attr' => 'auth_str', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_suffix', 'attr' => 'suffix', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_billingAddress', 'attr' => 'billing_address', 'type' => PDO::PARAM_STR],
-				['name' => ':insertUser_inlineHelp', 'attr' => 'inline_help', 'type' => PDO::PARAM_STR]
+			$arr['params'] = array(
+				array('name' => ':insertUser_username', 'attr' => 'new_username', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_password', 'attr' => 'password', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_salutation', 'attr' => 'salutation', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_firstName', 'attr' => 'first_name', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_middleName', 'attr' => 'middle_name', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_lastName', 'attr' => 'last_name', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_gender', 'attr' => 'gender', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_initials', 'attr' => 'initials', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_email', 'attr' => 'email', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_url', 'attr' => 'url', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_phone', 'attr' => 'phone', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_fax', 'attr' => 'fax', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_mailingAddress', 'attr' => 'mailing_address', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_country', 'attr' => 'country', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_locales', 'attr' => 'locales', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_dateLastEmail', 'attr' => 'date_last_email', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_dateRegistered', 'attr' => 'date_registered', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_dateValidated', 'attr' => 'date_validated', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_dateLastLogin', 'attr' => 'date_last_login', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_mustChangePassword', 'attr' => 'must_change_password', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertUser_authId', 'attr' => 'auth_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertUser_disabled', 'attr' => 'disabled', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertUser_disabledReason', 'attr' => 'disabled_reason', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_authStr', 'attr' => 'auth_str', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_suffix', 'attr' => 'suffix', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_billingAddress', 'attr' => 'billing_address', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertUser_inlineHelp', 'attr' => 'inline_help', 'type' => PDO::PARAM_STR)
 				
-			];
+			);
 			
 			echo "\ninserting user " . $user['first_name'] . " " . $user['middle_name'] . " " . $user['last_name'] . " ............ ";
 			
@@ -238,7 +240,7 @@ function getSectionByAbbrev($conn, $journalId, $abbrev, $fetchSettings = false) 
 	
 	
 	$abbrevSTMT = $conn->prepare('SELECT * FROM section_settings WHERE 
-		setting_name='abbrev' AND setting_value=:abbrev AND section_id IN (
+		setting_name="abbrev" AND setting_value=:abbrev AND section_id IN (
 			SELECT section_id FROM sections WHERE journal_id=:journalId
 		)');
 	
@@ -246,12 +248,9 @@ function getSectionByAbbrev($conn, $journalId, $abbrev, $fetchSettings = false) 
 	$abbrevSTMT->bindParam(':journalId', $journalId, PDO::PARAM_STR);
 	
 	if ($abbrevSTMT->execute()) { // I	
-	if ($bruce = $abbrevSTMT->fetch(PDO::FETCH_ASSOC)) { // II 
-		// was listening to Bruce Dickinson at the time wrote this 
-		
-		/*echo "\nthe section fetched in abbrevSTMT: '; print_r($bruce);*/
+	if ($fetched = $abbrevSTMT->fetch(PDO::FETCH_ASSOC)) { // II 
 		   
-  		$getSection->bindParam(':sectionId', $bruce['section_id'], PDO::PARAM_INT);
+  		$getSection->bindParam(':sectionId', $fetched['section_id'], PDO::PARAM_INT);
 		if ($getSection->execute()) { // III
 		if ($section = $getSection->fetch(PDO::FETCH_ASSOC)) { // IV
 			
@@ -301,6 +300,75 @@ function getSectionByAbbrev($conn, $journalId, $abbrev, $fetchSettings = false) 
 
 // #02.2)
 /**
+description here
+*/
+function getSectionBySetting($conn, $journalId, $locale, $settingName, $settingValue, $fetchSettings = false) {
+	
+	$getSection = $conn->prepare('SELECT * FROM sections WHERE section_id = :sectionId');
+	$getSettings = $conn->prepare('SELECT * FROM section_settings WHERE section_id = :settings_sectionId');
+	
+	
+	$stmt = $conn->prepare('SELECT * FROM section_settings WHERE 
+		locale=:locale AND setting_name=:settingName AND setting_value=:settingValue AND section_id IN (
+			SELECT section_id FROM sections WHERE journal_id=:journalId
+		)');
+	
+	$stmt->bindParam(':locale', $locale, PDO::PARAM_STR);
+	$stmt->bindParam(':settingName', $settingName, PDO::PARAM_STR);
+	$stmt->bindParam(':settingValue', $settingValue, PDO::PARAM_STR);
+	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_STR);
+	
+	if ($stmt->execute()) { // I	
+	if ($fetched = $stmt->fetch(PDO::FETCH_ASSOC)) { // II 
+		   
+  		$getSection->bindParam(':sectionId', $fetched['section_id'], PDO::PARAM_INT);
+		if ($getSection->execute()) { // III
+		if ($section = $getSection->fetch(PDO::FETCH_ASSOC)) { // IV
+			
+			if ($fetchSettings) {
+				$settings = array();
+				$getSettings->bindParam(':settings_sectionId', $section['section_id'], PDO::PARAM_INT);
+				
+				if ($getSettings->execute()) { // V 
+				while ($setting = $getSettings->fetch(PDO::FETCH_ASSOC)) {
+					array_push($settings, $setting);
+				}
+				} // V - closing the if getSettings execute
+				else {
+					echo "\nDid not execute the getSettings\n";
+				}
+				
+				$section['settings'] = $settings;
+			}
+			
+			return $section;
+			
+		}// IV - closing the if getSection fetch
+		/*else {
+			echo "\ngetSection did not fetch\n";
+		}*/
+		}// III - closing the if getSection execute
+		/*else {
+			echo "\nDid not execute the getSection\n";
+			print_r($getSection->errorInfo());
+		}*/
+		
+	}// II - closing the if stmt fetch
+	/*else {
+		echo "\nstmt did not fetch\n";
+	}*/
+	}// I - closing the if stmt execute
+	/*else {
+		echo "\nDid not execute the stmt\n";
+		print_r($stmt->errorInfo());
+	}*/
+	
+	return false;
+}
+
+
+// #02.3)
+/**
 function to get the abbrevs and titles of section from the array $section
 */
 function getAbbrevsAndTitles($section) {
@@ -314,15 +382,13 @@ function getAbbrevsAndTitles($section) {
 	foreach ($section['settings'] as $setting) {
 	if ($setting['setting_name'] === 'title' || $setting['setting_name'] === 'abbrev') {
 		
-		$data = $title = array('locale' => $setting['locale'], 'value' => $setting['setting_value']);
-		
 		switch($setting['setting_name']) {
 			case 'title': 
-				array_push($titles, $data);
+				$titles[$setting['locale']] =  $setting['setting_value'];
 				break;
 			
 			case 'abbrev':  
-				array_push($abbrevs, $data);
+				$abbrevs[$setting['locale']] =  $setting['setting_value'];
 				break;
 		}//end of the switch
 		
@@ -330,6 +396,115 @@ function getAbbrevsAndTitles($section) {
 	}// end of the foreach section setting
 	
 	return array('titles' => $titles, 'abbrevs' => $abbrevs);
+}
+
+
+// #02.4) 
+/**
+test if a section already exist in the database
+
+if the section exists returns an array with the section and some messages regarding
+whether the section data is the same as the one being searched
+
+returns false if the section does not exist
+*/
+function sectionExists($conn, $journalId, $section) {
+	$abbrevsAndTitles = getAbbrevsAndTitles($section); //from this script function #02.3
+	$abbrevs = $abbrevsAndTitles['abbrevs'];
+	$titles = $abbrevsAndTitles['titles'];
+	$found = false;
+	$messages = array();
+	$fetchedSection = null;
+	
+	//search the section by abbrev
+	foreach ($abbrevs as $locale => $abbrev) {
+		$fetchedSection = getSectionBySetting($conn, $journalId, $locale, 'abbrev', $abbrev, true); // from this script function #02.2
+		
+		if ($fetchedSection) {
+			//compare the abbrevs and titles of the fetched section with the one we are trying to check if exists
+			$fetchedData = getAbbrevsAndTitles($fetchedSection); //from this script function #02.3
+			$fetchedAbbrevs = $fetchedData['abbrevs'];
+			$fetchedTitles = $fetchedData['titles'];
+			
+			if (count($abbrevs) === count($fetchedAbbrevs)) {
+				//loop through the fetched abbrev data to compare
+				foreach ($fetchedAbbrevs as $fetchedLocale => $fetchedAbbrev) {
+					if ($abbrevs[$fetchedLocale] !== $fetchedAbbrev) {
+						// as the abbrevs are not equal, the section exists but the data are not the same
+						$msg = "The section abbrev with locale '$fetchedLocale' stored in the database is '$fetchedAbbrev' while the one looking to be inserted is '" .
+						$abbrevs[$fetchedLocale] . "'" ;
+						array_push($messages, $msg);
+					}
+				}
+				
+				//loop through the fetched title data to compare
+				foreach ($fetchedTitles as $fetchedLocale => $fetchedTitle) {
+					if ($titles[$fetchedLocale] !== $fetchedTitle) {
+						// as the titles are not equal, the section exists but the data are not the same
+						$msg = "The section title with locale '$fetchedLocale' stored in the database is '$fetchedTitle' while the one looking to be inserted is '" .
+						$titles[$fetchedLocale] . "'" ;
+						array_push($messages, $msg);
+					}
+				}
+			}
+			else {
+				//the section exists but the data are not the same
+				 $msg = 'The stored section has ' . count($fetchedAbbrevs) . ' abbrevs while the one looking to be inserted has ' . count($abbrevs);
+				array_push($messages, $msg);
+			}
+			
+			$found = true;
+			
+		}//end of the if fetchedSection
+	}//end of the foreach abbrevs
+	
+	if (!$found) {
+	//search the section by title
+	foreach ($titles as $locale => $title) {
+		$fetchedSection = getSectionBySetting($conn, $journalId, $locale, 'title', $title, true); // from this script function #02.2
+		
+		if ($fetchedSection) {
+			//compare the titles and titles of the fetched section with the one we are trying to check if exists
+			$fetchedData = getAbbrevsAndTitles($fetchedSection); //from this script function #02.3
+			$fetchedAbbrevs = $fetchedData['abbrevs'];
+			$fetchedTitles = $fetchedData['titles'];
+			
+			if (count($titles) === count($fetchedTitles)) {
+				//loop through the fetched abbrev data to compare
+				foreach ($fetchedAbbrevs as $fetchedLocale => $fetchedAbbrev) {
+					if ($abbrevs[$fetchedLocale] !== $fetchedAbbrev) {
+						// as the titles are not equal, the section exists but the data are not the same
+						$msg = "The section abbrev with locale '$locale' stored in the database is '$fetchedAbbrev' while the one looking to be inserted is '" .
+						$abbrevs[$fetchedLocale] . "'" ;
+						array_push($messages, $msg);
+					}
+				}
+				
+				//loop through the fetched title data to compare
+				foreach ($fetchedTitles as $fetchedLocale => $fetchedTitle) {
+					if ($titles[$fetchedLocale] !== $fetchedTitle) {
+						// as the titles are not equal, the section exists but the data are not the same
+						$msg = "The section title with locale '$locale' stored in the database is '$fetchedTitle' while the one looking to be inserted is '" .
+						$titles[$fetchedLocale] . "'" ;
+						array_push($messages, $msg);
+					}
+				}
+			}
+			else {
+				//the section exists but the data are not the same
+				$msg = 'The stored section has ' . count($fetchedTitles) . ' titles while the one looking to be inserted has ' . count($titles);
+				array_push($messages, $msg);
+			}
+			
+		}//end of the if fetchedSection
+	}//end of the foreach titles
+	} // end of the if not found
+	
+	if ($fetchedSection === null) {
+		return false; // the section does not exist
+	}
+	
+	return array('section' => $fetchedSection, 'messages' => $messages);
 }
 
 
@@ -534,14 +709,10 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 		$sections_node = $xml->getElementsByTagName('sections')->item(0);
 	}
 	
-	$errors = [
-		'section' => ['insert' => array(), 'update' => array()],
-		'section_settings' => ['insert' => array(), 'update' => array()],
-		'review_form' => ['insert' => array(), 'update' => array()],
-		'review_form_settings' => ['insert' => array(), 'update' => array()],
-		'review_form_element' => ['insert' => array(), 'update' => array()],
-		'review_form_element_settings' => ['insert' => array(), 'update' => array()]
-	];
+	$errors = array(
+		'section' => array('insert' => array(), 'update' => array()),
+		'section_settings' => array('insert' => array(), 'update' => array()),
+	);
 	
 	$sections = xmlToArray($sections_node, true); //from helperFunctions.php
 	
@@ -549,82 +720,103 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 	
 	foreach ($sections as &$section) {
 		
+		if (array_key_exists($section['section_id'], $dataMapping['section_id'])) {
+			echo "\nsection #" . $section['section_id'] . " was already imported.\n";
+			continue; // go to the next section
+		}
+		
+		///////////////  TEST IF THE SECTION ALREADY EXISTS IN THE JOURNAL ///////////////////
+		if ($data = sectionExists($conn, $journalNewId, $section)) {
+			$messages = $data['messages'];
+			if (count($messages) > 0) {
+				echo "\nThe following messages were generated: " . print_r($messages, true) . "\n";
+				$resp = readline('Do you wish to continue the sections importation? (y/N) : ');
+				
+				if (strtolower($resp) !== 'y' && strtolower($resp) !== 'yes') {
+					return false;
+				}
+				
+			}
+			$fetchedSection = $data['section'];
+			
+			//map the section
+			$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
+			
+			continue; // go to the next section
+		}
+		///////////////////////////////////////////////////////////////////////////////////////
+		
 		$section['journal_new_id'] = $journalNewId;
 		
-		//insert the section if it's not in dataMapping already
-		if (!array_key_exists($section['section_id'], $dataMapping['section_id'])) {
+		validateData('section', $section);
+	
+		$section['review_form_new_id'] = null;
 		
-			validateData('section', $section);
+		if ($section['review_form_id'] !== null && array_key_exists($section['review_form_id'], $dataMapping['review_form_id'])) {
+			$section['review_form_new_id'] = $dataMapping['review_form_id'][$section['review_form_id']];
+		}
 		
-			$section['review_form_new_id'] = null;
-			
-			if ($section['review_form_id'] !== null && array_key_exists($section['review_form_id'], $dataMapping['review_form_id'])) {
-				$section['review_form_new_id'] = $dataMapping['review_form_id'][$section['review_form_id']];
+		$sectionOk = false;
+		
+		echo 'inserting section #'. $section['section_id'] . ' .........'; 
+		
+		$arr = array();
+		$arr['data'] = $section;
+		$arr['params'] = array(
+			array('name' => ':section_journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_seq', 'attr' => 'seq'),
+			array('name' => ':section_editorRestricted', 'attr' => 'editor_restricted', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_metaIndexed', 'attr' => 'meta_indexed', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_metaReviewed', 'attr' => 'meta_reviewed', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_abstractsNotRequired', 'attr' => 'abstracts_not_required', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_hideTitle', 'attr' => 'hide_title', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_hideAbout', 'attr' => 'hide_about', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_disableComments', 'attr' => 'disable_comments', 'type' => PDO::PARAM_INT),
+			array('name' => ':section_abstractWordCount', 'attr' => 'abstract_word_count', 'type' => PDO::PARAM_INT)
+		);
+		
+		if (myExecute('insert', 'section', $arr, $insertSectionSTMT, $errors)) { //from helperFunctions.php
+			echo "Ok\n";
+			$numInsertedSections++;
+			if (getNewId('section', $lastSectionsSTMT, $section, $dataMapping, $errors)) { //from helperFunctions.php
+				echo "    new id = " . $section['section_new_id'] . "\n\n";
+				$sectionOk = true;
 			}
+		}
+		else {
+			echo "Failed\n";
+		}
+		
+		if ($sectionOk) {
+			if (array_key_exists('settings', $section)) {
+			foreach ($section['settings'] as &$setting) {
+				validateData('section_settings', $setting); //from helperFunctions.php
 			
-			$sectionOk = false;
-			
-			echo 'inserting section #'. $section['section_id'] . ' .........'; 
-			
-			$arr = array();
-			$arr['data'] = $section;
-			$arr['params'] = [
-				['name' => ':section_journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':section_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':section_seq', 'attr' => 'seq'],
-				['name' => ':section_editorRestricted', 'attr' => 'editor_restricted', 'type' => PDO::PARAM_INT],
-				['name' => ':section_metaIndexed', 'attr' => 'meta_indexed', 'type' => PDO::PARAM_INT],
-				['name' => ':section_metaReviewed', 'attr' => 'meta_reviewed', 'type' => PDO::PARAM_INT],
-				['name' => ':section_abstractsNotRequired', 'attr' => 'abstracts_not_required', 'type' => PDO::PARAM_INT],
-				['name' => ':section_hideTitle', 'attr' => 'hide_title', 'type' => PDO::PARAM_INT],
-				['name' => ':section_hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT],
-				['name' => ':section_hideAbout', 'attr' => 'hide_about', 'type' => PDO::PARAM_INT],
-				['name' => ':section_disableComments', 'attr' => 'disable_comments', 'type' => PDO::PARAM_INT],
-				['name' => ':section_abstractWordCount', 'attr' => 'abstract_word_count', 'type' => PDO::PARAM_INT]
-			];
-			
-			if (myExecute('insert', 'section', $arr, $insertSectionSTMT, $errors)) { //from helperFunctions.php
-				echo "Ok\n";
-				$numInsertedSections++;
-				if (getNewId('section', $lastSectionsSTMT, $section, $dataMapping, $errors)) { //from helperFunctions.php
-					echo "    new id = " . $section['section_new_id'] . "\n\n";
-					$sectionOk = true;
-				}
-			}
-			else {
-				echo "Failed\n";
-			}
-			
-			if ($sectionOk) {
-				if (array_key_exists('settings', $section)) {
-				foreach ($section['settings'] as &$setting) {
-					validateData('section_settings', $setting); //from helperFunctions.php
+				$setting['section_new_id'] = $section['section_new_id'];
+				echo '    inserting '. $setting['setting_name'] . ' with locale ' . $setting['locale'] . ' .........'; 
 				
-					$setting['section_new_id'] = $section['section_new_id'];
-					echo '    inserting '. $setting['setting_name'] . ' with locale ' . $setting['locale'] . ' .........'; 
-					
-					$arr = array();
-					$arr['data'] = $setting;
-					$arr['params'] = [
-						['name' => ':sectionSettings_sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':sectionSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR],
-						['name' => ':sectionSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR],
-						['name' => ':sectionSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR],
-						['name' => ':sectionSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR]
-					];
-					
-					if (myExecute('insert', 'section_settings', $arr, $insertSectionSettingsSTMT, $errors)) { //from helperFunctions.php
-						echo "Ok\n";
-					}
-					else {
-						echo "Failed\n";
-					}
-				}//end of foreach section_setting
-				unset($setting);
-				}//closing the if section_settings exist
-			}//closing the if sectionOk
-			
-		}//closing the if section_id not in dataMapping
+				$arr = array();
+				$arr['data'] = $setting;
+				$arr['params'] = array(
+					array('name' => ':sectionSettings_sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':sectionSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+					array('name' => ':sectionSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':sectionSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+					array('name' => ':sectionSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+				);
+				
+				if (myExecute('insert', 'section_settings', $arr, $insertSectionSettingsSTMT, $errors)) { //from helperFunctions.php
+					echo "Ok\n";
+				}
+				else {
+					echo "Failed\n";
+				}
+			}//end of foreach section_setting
+			unset($setting);
+			}//closing the if section_settings exist
+		}//closing the if sectionOk
 		
 	}//end of foreach section
 	unset($section);
@@ -682,7 +874,7 @@ function insertUnpublishedArticles(&$xml, $conn, &$dataMapping, $journal, $args 
 	
 	$sectionSTMT = $conn->prepare(
 		'SELECT * FROM sections WHERE section_id IN (
-			SELECT section_id FROM section_settings WHERE setting_name = 'title' AND setting_value = :section_title AND locale = :section_locale
+			SELECT section_id FROM section_settings WHERE setting_name = "title" AND setting_value = :section_title AND locale = :section_locale
 		) AND journal_id = :section_journalId ');
 	
 	$userSTMT = $conn->prepare('SELECT * FROM users WHERE email = :user_email');
@@ -904,6 +1096,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			continue; // go to the next article
 		}
 		
+		//validateData('article', $article); //from helperFunctions.php
+		
 		$article['journal_new_id'] = $journalNewId;
 		
 		$userOk = false;
@@ -919,6 +1113,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		$error = array('article_id' => $article['article_id']);
 		
+		if ($article['user']['username'] === null || !array_key_exists('username', $article['user'])) {
+			print_r($article['user']);
+			exit();
+		}
+		
 		// get the user that owns the article to identify on the new journal  ///////////////////
 		$userOk = processUser($article['user'], array('type' => 'article', 'data' => $article), $dataMapping, $errors, $insertedUsers, $userStatements);
 		
@@ -926,7 +1125,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		// get the section new id //////////////////////////////////////
 		
 		if (array_key_exists($article['section_id'], $dataMapping['section_id'])) {
-			$article['section_new_id'] = $dataMapping['section_id'][$article['section_id']];
+			$article['section_new_id'] = (int) $dataMapping['section_id'][$article['section_id']];
 			$sectionOk = true;
 		}
 		else {
@@ -955,7 +1154,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			if ($sectionSTMT->execute()) {
 				$sectionInfo = $sectionSTMT->fetch(PDO::FETCH_ASSOC);
-				$article['section_new_id'] = $sectionInfo['section_id'];
+				$article['section_new_id'] = (int) $sectionInfo['section_id'];
 				$sectionOk = true;
 				
 				$section['new_id'] = $sectionInfo['section_id'];
@@ -1181,7 +1380,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			/////////////// insert article_supplementary_files ///////////////////////
 			if (array_key_exists('supplementary_files', $article)) {  if (!empty($article['supplementary_files']) && $article['supplementary_files'] != null) {
-			echo 'inserting article_supplementary_files:\n";
+			echo "inserting article_supplementary_files:\n";
 			foreach ($article['supplementary_files'] as &$articleSuppFile) {
 				
 				validateData('article_supplementary_file', $articleSuppFile); //from helperFunctions.php
@@ -2057,7 +2256,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					//insert the review_form_responses //////////////////////
 					if (array_key_exists('review_form_responses', $revAssign)) { if (!empty($revAssign['review_form_responses']) && $revAssign['review_form_responses'] != null) {
 						
-					echo '    inserting review_form_responses:\n";
+					echo "    inserting review_form_responses:\n";
 						
 					foreach ($revAssign['review_form_responses'] as &$revFormResponse) {
 						
@@ -2118,7 +2317,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			if (array_key_exists('review_rounds', $article)) { if (!empty($article['review_rounds']) && $article['review_rounds'] != null) {
 			
-			echo 'inserting the review_rounds:\n";
+			echo "inserting the review_rounds:\n";
 			foreach ($article['review_rounds'] as &$revRound) {
 				
 				$revRound['submission_new_id'] = $article['article_new_id'];
@@ -2808,7 +3007,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 		 VALUES (:rfElement_reviewFormId, :rfElement_seq, :rfElement_elementType, :rfElement_required, :rfElement_included)'
 	);
 	
-	$lastReviewFormElementsSTMT = $conn->prepare("SELECT * FROM review_form_elemnts ORDER BY review_form_element_id DESC LIMIT $limit");
+	$lastReviewFormElementsSTMT = $conn->prepare("SELECT * FROM review_form_elements ORDER BY review_form_element_id DESC LIMIT $limit");
 	
 	$insertReviewFormElementSettingsSTMT = $conn->prepare(
 		'INSERT INTO review_form_element_settings (review_form_element_id, locale, setting_name, setting_value, setting_type) 
@@ -2880,7 +3079,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 					validateData('review_form_settings', $setting); 
 					
 					$setting['review_form_new_id'] = $revForm['review_form_new_id'];
-					echo '    inserting '. $setting['setting_name'] . ' with locale ' . $setting['locale'] . ' .........';
+					echo '        inserting '. $setting['setting_name'] . ' with locale ' . $setting['locale'] . ' .........';
 					
 					$arr = array();
 					$arr['data'] = $setting;
@@ -2918,7 +3117,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 				validateData('review_form_element', $element); 
 				
 				$element['review_form_new_id'] = $revForm['review_form_new_id'];
-				echo '    inserting '. $element['review_form_element_id'] . ' with locale ' . $element['locale'] . ' .........';
+				echo '    inserting review form element #'. $element['review_form_element_id'] . ' .........';
 				
 				$arr = array();
 				$arr['data'] = $element;
@@ -2929,8 +3128,6 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 					array('name' => ':rfElement_included', 'attr' => 'included', 'type' => PDO::PARAM_INT),
 					array('name' => ':rfElement_elementType', 'attr' => 'element_type', 'type' => PDO::PARAM_INT)
 				);
-				
-				echo '    inserting review_form #' . $revForm['review_form_id']. '............ ';
 	
 				if (myExecute('insert', 'review_form_element', $arr, $insertReviewFormElementSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
@@ -2943,6 +3140,13 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 					echo "Failed\n";
 				}
 				
+				/*
+				$insertReviewFormElementSettingsSTMT = $conn->prepare(
+		'INSERT INTO review_form_element_settings (review_form_element_id, locale, setting_name, setting_value, setting_type) 
+		 VALUES (:rfElemSettings_reviewFormElementId, :rfElemSettings_locale, :rfElemSettings_settingName, :rfElemSettings_settingValue, :rfElemSettings_settingType)'
+	);
+				*/
+				
 				if ($reviewFormElementOk) {
 					////////// insert the review_form settings ///////////////////////////////
 					if (array_key_exists('settings', $element)) { if (!empty($element['settings']) && $element['settings'] != null) {
@@ -2951,12 +3155,12 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 						validateData('review_form_element_settings', $setting); 
 						
 						$setting['review_form_element_new_id'] = $element['review_form_element_new_id'];
-						echo '    inserting '. $setting['setting_name'] . ' with locale ' . $setting['locale'] . ' .........';
+						echo '        inserting '. $setting['setting_name'] . ' with locale ' . $setting['locale'] . ' .........';
 						
 						$arr = array();
 						$arr['data'] = $setting;
 						$arr['params'] = array(
-							array('name' => ':rfElemSettings_reviewFormId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':rfElemSettings_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
 							array('name' => ':rfElemSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
 							array('name' => ':rfElemSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
 							array('name' => ':rfElemSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),

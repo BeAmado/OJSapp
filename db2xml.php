@@ -297,6 +297,11 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 			if ($userSTMT->execute()) {
 				$user = $userSTMT->fetch(PDO::FETCH_ASSOC);
 				
+				if (!array_key_exists('user_id', $user) || $user['user_id'] === null) {
+					continue;
+					//if could not fetch the user should not fetch the article
+				}
+				
 				processCollation($user, "users", $collations);
 				
 				//fetching the user settings

@@ -134,15 +134,15 @@ function translate2utf8($str) {
 	
 	//echo "\nactual encoding is $encoding\n";
 	
-	/*if ($encoding === "UTF-8") {
+	if ($encoding === "UTF-8") {
 		$out_encoding = "Windows-1252";
 	}
 	else {
 		//$out_encoding = "UTF-8";
-	}*/
+	}
 	
-	$in_encoding = "ISO-8859-1";
-	$out_encoding = "UTF-8";
+	/*$in_encoding = "ISO-8859-1";
+	$out_encoding = "UTF-8";*/
 	
 	return iconv($in_encoding, $out_encoding."//TRANSLIT", $str);
 }
