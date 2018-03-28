@@ -11,6 +11,11 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 04) fetchEmailTemplates
 05) fetchGroups
 06) fetchReviewForms
+07) fetchCitations
+08) fetchReferrals
+09) fetchHistory
+10) fetchPluginSettings
+11) fetchSectionAndIssueOrders
 
 Yet to fetch:
 
@@ -1308,4 +1313,46 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 	echo "\nFetched " . count($reviewForms) . " reviewForms.\n";
 	
 	return array('review_forms' => $reviewForms, 'errors' => $errors);
+}
+
+
+/**
+fetch the citations of the articles passed by the argument $articleIds
+which is an array with the ids of the articles to fetch their citations
+
+returns an array with the citations
+*/
+function fetchCitations() {
+	echo "\n\n\nTHIS FUNCTION DOES NOT DO ANYTHING YET!\n\n\n";
+}
+
+/**
+fetch the article referrals
+*/
+function fetchReferrals() {
+	echo "\n\n\nTHIS FUNCTION DOES NOT DO ANYTHING YET\n\n\n";
+}
+
+
+/**
+this function fetches the article history which includes the articles event and email logs
+*/
+function fetchHistory($conn, $articlesIds) {
+	
+}
+
+
+/**
+fetch the journal plugin settings
+*/
+function fetchPluginSettings($conn, $journalId) {
+	
+}
+
+
+/**
+fetch the tables custom_issue_orders and custom_section_orders for the journal specified by journalId
+*/
+function fetchSectionAndIssueOrders($conn, $journalId) {
+	
 }
