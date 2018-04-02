@@ -941,7 +941,14 @@ function myMain() {
 	
 	$action = $actions[$index];
 	
-	$options = array('review_forms' => false, 'sections' => false, 'unpublished articles' => false, 'announcements' => false, 'groups' => false);
+	$options = array(
+		'review_forms' => false, 
+		'sections' => false, 
+		'unpublished articles' => false, 
+		'announcements' => false, 
+		'groups' => false,
+		'articles_history' => false
+	);
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
 	foreach ($options as $type => &$value) {
@@ -1015,66 +1022,69 @@ function getData($type, $conn = null, $journal = null, $collations) {
 	}
 	
 	//////// replace underlines ('_') with empty spaces (' ')/////////////
-	$printableType = str_replace("_", " ", $type);
+	$printableType = str_replace('_', ' ', $type);
 	
 	//////// replace empty spaces (' ') with underlines ('_') /////////////
-	$type = str_replace(" ", "_", $type);
+	$type = str_replace(' ', '_', $type);
 	
 	$verbose = false;
 	$getKeywords = false;
 	$returnedData = null;
 	
-	$resp = readline("Do you want the system to emit messages of each step? (y/N) : ");
-	if ($resp === "y" || $resp === "Y") {
+	$resp = readline('Do you want the system to emit messages of each step? (y/N) : ');
+	if ($resp === 'y' || $resp === 'Y') {
 		$verbose = true;
 	}
 	
-	if ($type === "unpublished_articles") {
-		$resp = readline("Do you want to export the keywords? (y/N) : ");
-		if ($resp === "y" || $resp === "Y") {
+	if ($type === 'unpublished_articles') {
+		$resp = readline('Do you want to export the keywords? (y/N) : ');
+		if ($resp === 'y' || $resp === 'Y') {
 			$getKeywords = true;
 		}
 	}
 	
 	$args = array();
-	$args["collations"] = $collations;
-	$args["getKeywords"] = $getKeywords;
-	$args["verbose"] = $verbose;
+	$args['collations'] = $collations;
+	$args['getKeywords'] = $getKeywords;
+	$args['verbose'] = $verbose;
 	
 	
 	
 	switch($type) {
 		
-		case "review_forms":
+		case 'review_forms':
 			$returnedData = fetchReviewForms($conn, $journal, $args);
 			break;
 		
-		case "sections":
+		case 'sections':
 			$returnedData = fetchSections($conn, $journal, $args);
 			break;
 			
-		case "unpublished_articles":
+		case 'unpublished_articles':
 			$returnedData = fetchUnpublishedArticles($conn, $journal, $args);
 			break;
 			
-		case "announcements":
+		case 'announcements':
 			$returnedData = fetchAnnouncements($conn, $journal, $args);
 			break;
 			
-		case "email_templates":
+		case 'email_templates':
 			$returnedData = fetchEmailTemplates($conn, $journal, $args);
 			break;
 			
-		case "groups":
+		case 'groups':
 			$returnedData = fetchGroups($conn, $journal, $args);
 			break;
+			
+		case 'articles_history':
+			$returnedData = fetchArticlesHistory($conn, $articlesIds, $dataMapping, $journal, $args);
 			
 		default:
 			echo "\nUnknown type '$type'\n";
 			return -3;
 	}
 	
-	$numErrors = countErrors($returnedData["errors"]); // from helperFunctions.php function #21
+	$numErrors = countErrors($returnedData['errors']); // from helperFunctions.php function #21
 	
 	if ($numErrors > 0) {
 		echo "\nThere were errors while fetching the $printableType:\n";
@@ -1138,17 +1148,17 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 	$saveDataMappingXml = false;
 	
 	//////// replace underlines ('_') with empty spaces (' ')/////////////
-	$printableType = str_replace("_", " ", $type);
+	$printableType = str_replace('_', ' ', $type);
 	
 	//////// replace empty spaces (' ') with underlines ('_') /////////////
-	$type = str_replace(" ", "_", $type);
+	$type = str_replace(' ', '_', $type);
 	
 	if (is_array($xmlFiles)) {
 		if (array_key_exists($type, $xmlFiles)) {
 			$dataFilename = $xmlFiles[$type];
 		}
-		if (array_key_exists("data_mappings", $xmlFiles)) {
-			$mappingsFilename = $xmlFiles["data_mappings"];
+		if (array_key_exists('data_mappings', $xmlFiles)) {
+			$mappingsFilename = $xmlFiles['data_mappings'];
 		}
 	}
 	
@@ -1162,8 +1172,8 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 		$journal = chooseJournal($conn); //from helperFunctions.php function #08
 	}
 	
-	$mappingsXml = new DOMDocument("1.0", "UTF-8");
-	$dataXml = new DOMDocument("1.0", "UTF-8");
+	$mappingsXml = new DOMDocument('1.0', 'UTF-8');
+	$dataXml = new DOMDocument('1.0', 'UTF-8');
 	
 	//if (!$dataXml->load($dataFilename)) {
 	if (@$dataXml->loadHTMLFile($dataFilename)) {
@@ -1177,9 +1187,9 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 	}
 	
 	if (!is_array($dataMapping)) {
-		$dataMapping = getDataMapping($journal["path"], $mappingsFilename); //from this script function #03
+		$dataMapping = getDataMapping($journal['path'], $mappingsFilename); //from this script function #03
 		if (!is_array($dataMapping)) {
-			if ($type === "sections") {
+			if ($type === 'sections') {
 				$dataMapping = mapJournalSections($sectionsFilename, $conn, $journal);
 			}
 			else {
@@ -1191,28 +1201,33 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 	switch($type) {
 		//the insert functions are in the script xml2db.php
 		
-		case "review_forms":
-			$returnedData = insertReviewForms($dataXml, $conn, $dataMapping, $journal["journal_id"]);
+		case 'review_forms':
+			$returnedData = insertReviewForms($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 		
-		case "sections":
-			$returnedData = insertSections($dataXml, $conn, $dataMapping, $journal["journal_id"]);
+		case 'sections':
+			$returnedData = insertSections($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
-		case "unpublished_articles":
+		case 'unpublished_articles':
 			$returnedData = insertUnpublishedArticles($dataXml, $conn, $dataMapping, $journal); // the journal path is used also
 			break;
 			
-		case "announcements":
-			$returnedData = insertAnnouncements($dataXml, $conn, $dataMapping, $journal["journal_id"]);
+		case 'announcements':
+			$returnedData = insertAnnouncements($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
-		case "email_templates":
-			$returnedData = insertEmailTemplates($dataXml, $conn, $dataMapping, $journal["journal_id"]);
+		case 'email_templates':
+			$returnedData = insertEmailTemplates($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
-		case "groups":
-			$returnedData = insertGroups($dataXml, $conn, $dataMapping, $journal["journal_id"]);
+		case 'groups':
+			$returnedData = insertGroups($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			break;
+			
+		case 'articles_history':
+			echo "\nTHE OPTION articles_history DOES NOT WORK FOR IMPORTATION YET\n";
+			//$returnedData = insertArticlesHistory($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
 		default:

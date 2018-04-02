@@ -5,6 +5,7 @@ This is a library with functions for getting data from the OJS database and stor
 
 FUNCTIONS DEFINED IN THIS SCRIPT
 
+00) fetchUser
 01) fetchSections
 02) fetchUnpublishedArticles
 03) fetchAnnouncements
@@ -49,7 +50,100 @@ plugin_settings
 Developed in 2017 by Bernardo Amado
 */
 
-include_once("helperFunctions.php");
+include_once('helperFunctions.php');
+include_once('appFunctions.php');
+
+
+// #00)
+
+function fetchUser($conn, $userId, $journal = null, $args = null) {
+	
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
+	
+	
+	$userSTMT = $conn->prepare('SELECT * FROM users WHERE user_id = :userId');
+	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
+	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
+	$rolesSTMT->bindParam(':roles_journalId', $journal['journal_id'], PDO::PARAM_INT);
+	
+	
+	/////////////  set the user info /////////////////////////////////////
+					
+	$errorOccurred = false;
+	$error = array();
+	$user = null;
+	
+	$userSTMT->bindParam(':userId', $userId, PDO::PARAM_INT);
+	if ($userSTMT->execute()) {
+		$user = $userSTMT->fetch(PDO::FETCH_ASSOC);
+		
+		processCollation($user, 'users', $collations);
+		
+		//fetching the user settings
+		$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
+		if ($userSettingsSTMT->execute()) {
+			$userSettings = array();
+			while ($setting = $userSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
+				array_push($userSettings, $setting);
+			}
+			
+			processCollation($userSettings, 'user_settings', $collations);
+			
+			$user['settings'] = $userSettings;
+		}// end of the if userSettingsSTMT executed
+		else {
+			$errorOccurred = true;
+			$error['userSettingsError'] = $userSettingsSTMT->errorInfo();
+		}
+		
+		//fetching the user roles for this journal
+		$rolesSTMT->bindParam(':roles_userId', $user['user_id'], PDO::PARAM_INT);
+		if ($rolesSTMT->execute()) {
+			$roles = array();
+			while ($role = $rolesSTMT->fetch(PDO::FETCH_ASSOC)) {
+				array_push($roles, $role);
+			}
+			
+			processCollation($roles, 'roles', $collations);
+			
+			$user['roles'] = $roles;
+		}// end of the if rolesSTMT executed
+		else {
+			$errorOccurred = true;
+			$error['rolesError'] = $rolesSTMT->errorInfo();
+		}
+		
+		
+		if ($errorOccurred) {
+			$error['user'] = $user;
+		}
+		
+		
+		
+	}// end of the if userSTMT executed
+	else {
+		$errorOccurred = true;
+		$error['userError'] = $userSTMT->errorInfo();
+	}
+	
+	return array('user' => $user, 'error' => $error, 'errorOcurred' => $errorOcurred);
+	
+}
+
 
 // #01)
 
@@ -62,17 +156,17 @@ function fetchSections($conn, $journal = null, $args = null) {
 	$verbose = null;
 	
 	if (is_array($args)) {
-		if (array_key_exists("collations", $args)) {
-			$collations = $args["collations"];
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
 		}
-		if (array_key_exists("verbose", $args)) {
-			$verbose = $args["verbose"];	
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
 		}
 	}
 	
 	$sections = array();
 	
-	$sectionsSTMT = $conn->prepare("SELECT * FROM sections WHERE journal_id = :sections_journalId");
+	$sectionsSTMT = $conn->prepare('SELECT * FROM sections WHERE journal_id = :sections_journalId');
 	$sectionSettingsSTMT = $conn->prepare("SELECT * FROM section_settings WHERE section_id = :sectionSettings_sectionId");
 	
 	$sectionsSTMT->bindParam(":sections_journalId", $journal["journal_id"], PDO::PARAM_INT);
@@ -87,16 +181,16 @@ function fetchSections($conn, $journal = null, $args = null) {
 	if ($sectionsSTMT->execute()) {
 		while ($section = $sectionsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($section, "sections", $collations);
+			processCollation($section, 'sections', $collations);
 			
 			$abbrevs = array();
 			$titles = array();
 			
 			//////////  section settings  ///////////////////////////////
 			$settings = array();
-			$sectionSettingsSTMT->bindParam(":sectionSettings_sectionId", $section["section_id"], PDO::PARAM_INT);
+			$sectionSettingsSTMT->bindParam(':sectionSettings_sectionId', $section['section_id'], PDO::PARAM_INT);
 			
-			if ($verbose) echo "\nFetching the section #" . $section["section_id"] . " settings ........ ";
+			if ($verbose) echo "\nFetching the section #" . $section['section_id'] . " settings ........ ";
 			
 			if ($sectionSettingsSTMT->execute()) {
 				while ($setting = $sectionSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -124,25 +218,25 @@ function fetchSections($conn, $journal = null, $args = null) {
 			}
 			else {
 				if ($verbose) echo "Error\n";
-				$error = array("section_id" => $section["section_id"], "error" => $sectionSettingsSTMT->errorInfo());
-				array_push($errors["section_settings"], $error);
+				$error = array('section_id' => $section['section_id'], 'error' => $sectionSettingsSTMT->errorInfo());
+				array_push($errors['section_settings'], $error);
 			}
 			
-			processCollation($settings, "section_settings", $collations);
+			processCollation($settings, 'section_settings', $collations);
 			
-			$section["settings"] = $settings;
+			$section['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
 			
 			array_push($sections, $section);
 		}
 	}
 	else {
-		array_push($errors["sections"], $sectionsSTMT->errorInfo());
+		array_push($errors['sections'], $sectionsSTMT->errorInfo());
 	}
 	
 	echo "\nFetched " . count($sections) . " sections.\n";
 	
-	return array("sections" => $sections, "errors" => $errors);
+	return array('sections' => $sections, 'errors' => $errors);
 }
 
 
@@ -154,30 +248,30 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 	
 	$getKeywords = false;
 	$verbose = false;
-	$limitDate = "2015-01-01 00:00:00";
+	$limitDate = '2015-01-01 00:00:00';
 	$numArticles = 0;
 	$numErrors = 0;
 	$collations = null;
 	
 	if (is_array($args)) {
-		if (array_key_exists("limitDate", $args)) {
-			$limitDate = $args["limitDate"];
+		if (array_key_exists('limitDate', $args)) {
+			$limitDate = $args['limitDate'];
 		}
-		if (array_key_exists("getKeywords", $args)) {
-			$getKeywords = $args["getKeywords"];
+		if (array_key_exists('getKeywords', $args)) {
+			$getKeywords = $args['getKeywords'];
 		}
-		if (array_key_exists("verbose", $args)) {
-			$verbose = $args["verbose"];	
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
 		}
-		if (array_key_exists("collations", $args)) {
-			$collations = $args["collations"];
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
 		}
 	}
 	
 	$journalId = 0;
 	
 	if (is_array($journal)) {
-		$journalId = filter_var($journal["journal_id"], FILTER_VALIDATE_INT);
+		$journalId = filter_var($journal['journal_id'], FILTER_VALIDATE_INT);
 	}
 	else {
 		return false;
@@ -186,96 +280,98 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 	$unpubArt = array();
 
 	$stmt = $conn->prepare(
-	"SELECT * FROM articles WHERE article_id IN (
+	'SELECT * FROM articles WHERE article_id IN (
 		SELECT article_id FROM articles WHERE article_id NOT IN (
 			SELECT article_id FROM published_articles
 		) AND date_submitted > :limitDate AND journal_id = :journalId
-	)");
+	)');
 	
-	$stmt->bindParam(":journalId", $journalId, PDO::PARAM_INT);
-	$stmt->bindParam(":limitDate", $limitDate, PDO::PARAM_STR);
+	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_INT);
+	$stmt->bindParam(':limitDate', $limitDate, PDO::PARAM_STR);
 	
 	//////////////////// PART 1 /////////////////////////////////////////////
 	//////// informations needed to identify the user and the section ///////
-	$userSTMT = $conn->prepare("SELECT * FROM users WHERE user_id = :userId");
-	$userSettingsSTMT = $conn->prepare("SELECT * FROM user_settings WHERE user_id = :userSettings_userId");
-	$rolesSTMT = $conn->prepare("SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId");
-	$rolesSTMT->bindParam(":roles_journalId", $journalId, PDO::PARAM_INT);
-	$sectionSTMT = $conn->prepare("SELECT section_id, setting_name, setting_value, locale FROM section_settings WHERE section_id = :sectionId AND setting_name IN ('title', 'abbrev')");
+	$userSTMT = $conn->prepare('SELECT * FROM users WHERE user_id = :userId');
+	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
+	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
+	$rolesSTMT->bindParam(':roles_journalId', $journalId, PDO::PARAM_INT);
+	$sectionSTMT = $conn->prepare('SELECT section_id, setting_name, setting_value, locale FROM section_settings WHERE section_id = :sectionId AND setting_name IN ('title', 'abbrev')');
 	/////////////////////////////////////////////////////////////////////////
 	
-	$authorSTMT = $conn->prepare("SELECT * FROM authors WHERE submission_id = :author_submissionId");
-	$authorSettingsSTMT = $conn->prepare("SELECT * FROM author_settings WHERE author_id = :authorSettings_authorId");
+	$authorSTMT = $conn->prepare('SELECT * FROM authors WHERE submission_id = :author_submissionId');
+	$authorSettingsSTMT = $conn->prepare('SELECT * FROM author_settings WHERE author_id = :authorSettings_authorId');
 	
 	/////////////////////  PART 2  //////////////////////////////////////////////////////////
 	/////////////////////  the articles informations  ///////////////////////////////////////
-	$articleSettingsSTMT = $conn->prepare("SELECT * FROM article_settings WHERE article_id = :settings_articleId");
-	$articleFilesSTMT = $conn->prepare("SELECT * FROM article_files WHERE article_id = :files_articleId");
-	$articleSuppFilesSTMT = $conn->prepare("SELECT * FROM article_supplementary_files WHERE article_id = :supp_files_articleId");
-	$articleSuppFileSettingsSTMT = $conn->prepare("SELECT * FROM article_supp_file_settings WHERE supp_id = :suppId");
-	//$articleNotesSTMT = $conn->prepare("SELECT * FROM article_notes WHERE article_id = :notes_articleId");
-	$articleCommentsSTMT = $conn->prepare("SELECT * FROM article_comments WHERE article_id = :comments_articleId");
+	$articleSettingsSTMT = $conn->prepare('SELECT * FROM article_settings WHERE article_id = :settings_articleId');
+	$articleFilesSTMT = $conn->prepare('SELECT * FROM article_files WHERE article_id = :files_articleId');
+	$articleSuppFilesSTMT = $conn->prepare('SELECT * FROM article_supplementary_files WHERE article_id = :supp_files_articleId');
+	$articleSuppFileSettingsSTMT = $conn->prepare('SELECT * FROM article_supp_file_settings WHERE supp_id = :suppId');
+	//$articleNotesSTMT = $conn->prepare('SELECT * FROM article_notes WHERE article_id = :notes_articleId');
+	$articleCommentsSTMT = $conn->prepare('SELECT * FROM article_comments WHERE article_id = :comments_articleId');
 	/////////////////////////////////////////////////////////////////////////////////////////
 	
 	//////////////////  PART 3  /////////////////////////////////////////////////////////////
 	/////////////////  the galleys informations  ////////////////////////////////////////////
-	$articleGalleysSTMT = $conn->prepare("SELECT * FROM article_galleys WHERE article_id = :art_galleys_articleId");
-	$articleGalleySettingsSTMT = $conn->prepare("SELECT * FROM article_galley_settings WHERE galley_id = :galleyId");
-	$articleXmlGalleysSTMT = $conn->prepare("SELECT * FROM article_xml_galleys WHERE galley_id = :xml_galleyId AND article_id = :xml_galley_articleId");
-	$articleHtmlGalleyImagesSTMT = $conn->prepare("SELECT * FROM article_html_galley_images WHERE galley_id = :html_image_galleyId");
+	$articleGalleysSTMT = $conn->prepare('SELECT * FROM article_galleys WHERE article_id = :art_galleys_articleId');
+	$articleGalleySettingsSTMT = $conn->prepare('SELECT * FROM article_galley_settings WHERE galley_id = :galleyId');
+	$articleXmlGalleysSTMT = $conn->prepare('SELECT * FROM article_xml_galleys WHERE galley_id = :xml_galleyId AND article_id = :xml_galley_articleId');
+	$articleHtmlGalleyImagesSTMT = $conn->prepare('SELECT * FROM article_html_galley_images WHERE galley_id = :html_image_galleyId');
 	//////////////////////////////////////////////////////////////////////////////////////
 	
 	/////////////////  PART 4  //////////////////////////////////////////////////////////////
 	/////////////////  the article search keywords  ////////////////////////////////////////
-	$articleSearchKeywordListSTMT = $conn->prepare("SELECT * FROM article_search_keyword_list WHERE keyword_id = :keywordId");
-	$articleSearchObjectKeywordsSTMT = $conn->prepare("SELECT * FROM article_search_object_keywords WHERE object_id = :objectId");
-	$articleSearchObjectsSTMT = $conn->prepare("SELECT * FROM article_search_objects WHERE article_id = :search_objects_articleId");
+	$articleSearchKeywordListSTMT = $conn->prepare('SELECT * FROM article_search_keyword_list WHERE keyword_id = :keywordId');
+	$articleSearchObjectKeywordsSTMT = $conn->prepare('SELECT * FROM article_search_object_keywords WHERE object_id = :objectId');
+	$articleSearchObjectsSTMT = $conn->prepare('SELECT * FROM article_search_objects WHERE article_id = :search_objects_articleId');
 	/////////////////////////////////////////////////////////////////////////////////////////
 	
 	////////////////  PART 5  //////////////////////////////////////////////////////////////
 	//////////////// the edit decisions and assignments  ///////////////////////////////////
-	$editDecisionsSTMT = $conn->prepare("SELECT * FROM edit_decisions WHERE article_id = :edit_decisions_articleId");
-	$editAssignmentsSTMT = $conn->prepare("SELECT * FROM edit_assignments WHERE article_id = :edit_assignments_articleId");
+	$editDecisionsSTMT = $conn->prepare('SELECT * FROM edit_decisions WHERE article_id = :edit_decisions_articleId');
+	$editAssignmentsSTMT = $conn->prepare('SELECT * FROM edit_assignments WHERE article_id = :edit_assignments_articleId');
 	////////////////////////////////////////////////////////////////////////////////////////
 	
 	////////////////  PART 6 //////////////////////////////////////////////////////////////
 	/////////////// the reviews  //////////////////////////////////////////////////////////
-	$reviewAssignmentsSTMT = $conn->prepare("SELECT * FROM review_assignments WHERE submission_id = :revAssign_submissionId");
-	$reviewRoundsSTMT = $conn->prepare("SELECT * FROM review_rounds WHERE submission_id = :revRounds_submissionId");
-	$reviewFormResponsesSTMT = $conn->prepare("SELECT * FROM review_form_responses WHERE review_id = :rfResponses_reviewId");
+	$reviewAssignmentsSTMT = $conn->prepare('SELECT * FROM review_assignments WHERE submission_id = :revAssign_submissionId');
+	$reviewRoundsSTMT = $conn->prepare('SELECT * FROM review_rounds WHERE submission_id = :revRounds_submissionId');
+	$reviewFormResponsesSTMT = $conn->prepare('SELECT * FROM review_form_responses WHERE review_id = :rfResponses_reviewId');
 	///////////////////////////////////////////////////////////////////////////////////////
 	
+	/*
 	///////////////  PART 7  //////////////////////////////////////////////////////////////
 	///////////// the logs ////////////////////////////////////////////////////////////////
-	$eventLogsSTMT = $conn->prepare("SELECT * FROM event_log WHERE assoc_id = :eventLog_assocId"); //the assoc_id is the article_id
-	$eventLogSettingsSTMT = $conn->prepare("SELECT * FROM event_log_settings WHERE log_id = :eventLogSettings_logId");
-	$emailLogsSTMT = $conn->prepare("SELECT * FROM email_log WHERE assoc_id = :emailLog_assocId"); //the assoc_id is the article_id
+	$eventLogsSTMT = $conn->prepare('SELECT * FROM event_log WHERE assoc_id = :eventLog_assocId'); //the assoc_id is the article_id
+	$eventLogSettingsSTMT = $conn->prepare('SELECT * FROM event_log_settings WHERE log_id = :eventLogSettings_logId');
+	$emailLogsSTMT = $conn->prepare('SELECT * FROM email_log WHERE assoc_id = :emailLog_assocId'); //the assoc_id is the article_id
 	$emailLogUsersSTMT;
 	///////////////////////////////////////////////////////////////////////////////////////
+	*/
 	
 	$errors = array(
-		"articles" => array(),
-		"article_settings" => array(),
-		"article_files" => array(),
-		"article_supplementary_files" => array(),
-		"article_comments" => array(),
-		"article_galleys" => array(),
-		"article_galley_settings" => array(),
-		"article_xml_galleys" => array(),
-		"article_html_galley_images" => array(),
-		"article_search_objects" => array(),
-		"article_search_object_keywords" => array(),
-		"article_search_keyword_list" => array(),
-		"edit_decisions" => array(),
-		"edit_assignments" => array(),
-		"review_assignments" => array(),
-		"review_rounds" => array(),
-		"review_form_responses" => array(),
-		"authors" => array(),
-		"users" => array(),
-		"reviewers" => array(),
-		"editors" => array(),
-		"sections" => array()
+		'articles' => array(),
+		'article_settings' => array(),
+		'article_files' => array(),
+		'article_supplementary_files' => array(),
+		'article_comments' => array(),
+		'article_galleys' => array(),
+		'article_galley_settings' => array(),
+		'article_xml_galleys' => array(),
+		'article_html_galley_images' => array(),
+		'article_search_objects' => array(),
+		'article_search_object_keywords' => array(),
+		'article_search_keyword_list' => array(),
+		'edit_decisions' => array(),
+		'edit_assignments' => array(),
+		'review_assignments' => array(),
+		'review_rounds' => array(),
+		'review_form_responses' => array(),
+		'authors' => array(),
+		'users' => array(),
+		'reviewers' => array(),
+		'editors' => array(),
+		'sections' => array()
 	);
 	
 	if ($verbose) echo "\nFetching the unpublished articles...\n"; 
@@ -285,20 +381,20 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 		
 		while ($article = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($article, "articles", $collations);
+			processCollation($article, 'articles', $collations);
 			
-			if ($verbose) echo "\nArticle #".$article["article_id"].":\n";
+			if ($verbose) echo "\nArticle #".$article['article_id'].":\n";
 			
 			
 			/////////  PART 1  /////////////////////////////////////////////////////
-			if ($verbose) echo "fetching user info... ";
+			if ($verbose) echo 'fetching user info... ';
 			
 			/////////////  set the user info /////////////////////////////////////
 					
 			$errorOccurred = false;
-			$error = array("article_id" => $article["article_id"]);
+			$error = array('article_id' => $article['article_id']);
 			
-			$userSTMT->bindParam(":userId", $article["user_id"], PDO::PARAM_INT);
+			$userSTMT->bindParam(':userId', $article['user_id'], PDO::PARAM_INT);
 			if ($userSTMT->execute()) {
 				$user = $userSTMT->fetch(PDO::FETCH_ASSOC);
 				
@@ -307,46 +403,46 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 					//if could not fetch the user should not fetch the article
 				}
 				
-				processCollation($user, "users", $collations);
+				processCollation($user, 'users', $collations);
 				
 				//fetching the user settings
-				$userSettingsSTMT->bindParam(":userSettings_userId", $user["user_id"], PDO::PARAM_INT);
+				$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
 				if ($userSettingsSTMT->execute()) {
 					$userSettings = array();
 					while ($setting = $userSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 						array_push($userSettings, $setting);
 					}
 					
-					processCollation($userSettings, "user_settings", $collations);
+					processCollation($userSettings, 'user_settings', $collations);
 					
-					$user["settings"] = $userSettings;
+					$user['settings'] = $userSettings;
 				}// end of the if userSettingsSTMT executed
 				else {
 					$errorOccurred = true;
-					$error["userSettingsError"] = $userSettingsSTMT->errorInfo();
+					$error['userSettingsError'] = $userSettingsSTMT->errorInfo();
 				}
 				
 				//fetching the user roles for this journal
-				$rolesSTMT->bindParam(":roles_userId", $user["user_id"], PDO::PARAM_INT);
+				$rolesSTMT->bindParam(':roles_userId', $user['user_id'], PDO::PARAM_INT);
 				if ($rolesSTMT->execute()) {
 					$roles = array();
 					while ($role = $rolesSTMT->fetch(PDO::FETCH_ASSOC)) {
 						array_push($roles, $role);
 					}
 					
-					processCollation($roles, "roles", $collations);
+					processCollation($roles, 'roles', $collations);
 					
-					$user["roles"] = $roles;
+					$user['roles'] = $roles;
 				}// end of the if rolesSTMT executed
 				else {
 					$errorOccurred = true;
-					$error["rolesError"] = $rolesSTMT->errorInfo();
+					$error['rolesError'] = $rolesSTMT->errorInfo();
 				}
 				
-				$article["user"] = $user;
+				$article['user'] = $user;
 				
 				if ($errorOccurred) {
-					$error["user"] = $user;
+					$error['user'] = $user;
 				}
 				else if ($verbose) {
 					echo "Ok\n";
@@ -355,176 +451,176 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 			}// end of the if userSTMT executed
 			else {
 				$errorOccurred = true;
-				$error["userError"] = $userSTMT->errorInfo();
+				$error['userError'] = $userSTMT->errorInfo();
 			}
 			
 			if ($errorOccurred) {
 				if ($verbose) echo "Error\n";
-				array_push($errors["users"], $error);
+				array_push($errors['users'], $error);
 				$numErrors++;
 			}
 			/////// end of set the user info  ////////////////////////////////
 	
 			
 			//set the section info
-			if ($verbose) echo "fetching section info... ";
-			$sectionSTMT->bindParam(":sectionId", $article["section_id"], PDO::PARAM_INT);
+			if ($verbose) echo 'fetching section info... ';
+			$sectionSTMT->bindParam(':sectionId', $article['section_id'], PDO::PARAM_INT);
 			if ($sectionSTMT->execute()) {
 				$section = array();
-				$section["original_id"] = $article["section_id"];
+				$section['original_id'] = $article['section_id'];
 				while ($sectionInfo = $sectionSTMT->fetch(PDO::FETCH_ASSOC)) {
-					$locale = $sectionInfo["locale"];
+					$locale = $sectionInfo['locale'];
 					if (array_key_exists($locale, $section)) {
-						$section[$locale][$sectionInfo["setting_name"]] = $sectionInfo["setting_value"];	
+						$section[$locale][$sectionInfo['setting_name']] = $sectionInfo['setting_value'];	
 					}
 					else {
-						$section[$locale] = array($sectionInfo["setting_name"] => $sectionInfo["setting_value"]);
+						$section[$locale] = array($sectionInfo['setting_name'] => $sectionInfo['setting_value']);
 					}
 				}
-				$article["section"] = $section;
+				$article['section'] = $section;
 				if ($verbose) echo "Ok\n";
 			}
 			else {
 				if ($verbose) echo "Error\n";
-				$error = array("article_id" => $article["article_id"], "section_id" => $article["section_id"], "error" => $sectionSTMT->errorInfo());
-				array_push($errors["sections"], $error);
+				$error = array('article_id' => $article['article_id'], 'section_id' => $article['section_id'], 'error' => $sectionSTMT->errorInfo());
+				array_push($errors['sections'], $error);
 				$numErrors++;
 			}
 			
 			//set the authors info
-			if ($verbose) echo "fetching authors... ";
+			if ($verbose) echo 'fetching authors... ';
 			$authors = array();
-			$authorSTMT->bindParam(":author_submissionId", $article["article_id"], PDO::PARAM_INT);
+			$authorSTMT->bindParam(':author_submissionId', $article['article_id'], PDO::PARAM_INT);
 			if ($authorSTMT->execute()) {
 				while ($author = $authorSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($author, "authors", $collations);
+					processCollation($author, 'authors', $collations);
 					
-					$authorSettingsSTMT->bindParam(":authorSettings_authorId", $author["author_id"], PDO::PARAM_INT);
+					$authorSettingsSTMT->bindParam(':authorSettings_authorId', $author['author_id'], PDO::PARAM_INT);
 					if ($authorSettingsSTMT->execute()) {
 						//fetching the author settings
 						$authorSettings = array();
 						while ($setting = $authorSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 							array_push($authorSettings, $setting);
 						}
-						processCollation($authorSettings, "author_settings", $collations);
-						$author["settings"] = $authorSettings;
+						processCollation($authorSettings, 'author_settings', $collations);
+						$author['settings'] = $authorSettings;
 					}
 					array_push($authors, $author);
 				}
-				$article["authors"] = $authors;
+				$article['authors'] = $authors;
 				if ($verbose) echo "Ok\n";
 			}
 			else {
 				if ($verbose) echo "Error\n";
-				$error = array("article_id" => $article["article_id"], "authors" => $authors, "error" => $authorSTMT->errorInfo());
-				array_push($errors["authors"], $error);
+				$error = array('article_id' => $article['article_id'], 'authors' => $authors, 'error' => $authorSTMT->errorInfo());
+				array_push($errors['authors'], $error);
 				$numErrors++;
 			}
 			///////////  END OF PART 1  /////////////////////////////////////////////
 			
 			
 			///////////  PART 2  ////////////////////////////////////////////////////////
-			if ($verbose) echo "fetching info (settings, files, supplementary files, notes and comments)... "; 
+			if ($verbose) echo 'fetching info (settings, files, supplementary files, notes and comments)... '; 
 			
 			$errorOccurred = false;
 			
 			//set the article_settings 
-			$articleSettingsSTMT->bindParam(":settings_articleId", $article["article_id"], PDO::PARAM_INT);
+			$articleSettingsSTMT->bindParam(':settings_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($articleSettingsSTMT->execute()) {
 				$articleSettings = array();
 				while ($setting = $articleSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					array_push($articleSettings, $setting);
 				}
 				
-				processCollation($articleSettings, "article_settings", $collations);
+				processCollation($articleSettings, 'article_settings', $collations);
 				
-				$article["settings"] = $articleSettings;
+				$article['settings'] = $articleSettings;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"],  "error" => $articleSettingsSTMT->errorInfo());
-				array_push($errors["article_settings"], $error);
+				$error = array('article_id' => $article['article_id'],  'error' => $articleSettingsSTMT->errorInfo());
+				array_push($errors['article_settings'], $error);
 				$numErrors++;
 			}
 			
 			//set the article_files 
-			$articleFilesSTMT->bindParam(":files_articleId", $article["article_id"], PDO::PARAM_INT);
+			$articleFilesSTMT->bindParam(':files_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($articleFilesSTMT->execute()) {
 				$articleFiles = array();
 				while ($artFile = $articleFilesSTMT->fetch(PDO::FETCH_ASSOC)) {
 					array_push($articleFiles, $artFile);
 				}
 				
-				processCollation($articleFiles, "article_files", $collations);
+				processCollation($articleFiles, 'article_files', $collations);
 				
-				$article["files"] = $articleFiles;
+				$article['files'] = $articleFiles;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"],  "error" => $articleFilesSTMT->errorInfo());
-				array_push($errors["article_files"], $error);
+				$error = array('article_id' => $article['article_id'],  'error' => $articleFilesSTMT->errorInfo());
+				array_push($errors['article_files'], $error);
 				$numErrors++;
 			}
 			
 			
 			//set the article_supplementary_files
-			$articleSuppFilesSTMT->bindParam(":supp_files_articleId", $article["article_id"], PDO::PARAM_INT);
+			$articleSuppFilesSTMT->bindParam(':supp_files_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($articleSuppFilesSTMT->execute()) {
 				$articleSuppFiles = array();
 				while($artSuppFile = $articleSuppFilesSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($artSuppFile, "article_supplementary_files", $collations);
+					processCollation($artSuppFile, 'article_supplementary_files', $collations);
 					
 					///// set the article_supp_file_settings //////////////
-					$articleSuppFileSettingsSTMT->bindParam(":suppId", $artSuppFile["supp_id"], PDO::PARAM_INT);
+					$articleSuppFileSettingsSTMT->bindParam(':suppId', $artSuppFile['supp_id'], PDO::PARAM_INT);
 					if ($articleSuppFileSettingsSTMT->execute()) {
 						$suppFileSettings = array();
 						while($setting = $articleSuppFileSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 							array_push($suppFileSettings, $setting);
 						}
 						
-						processCollation($suppFileSettings, "article_supp_file_settings", $collations);
+						processCollation($suppFileSettings, 'article_supp_file_settings', $collations);
 						
-						$artSuppFile["settings"] = $suppFileSettings;
+						$artSuppFile['settings'] = $suppFileSettings;
 					}
 					//////////////////////////////////////////////////////////////
 					
 					array_push($articleSuppFiles, $artSuppFile);
 				}
-				$article["supplementary_files"] = $articleSuppFiles;
+				$article['supplementary_files'] = $articleSuppFiles;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"],  "error" => $articleSuppFilesSTMT->errorInfo());
-				array_push($errors["article_supplementary_files"], $error);
+				$error = array('article_id' => $article['article_id'],  'error' => $articleSuppFilesSTMT->errorInfo());
+				array_push($errors['article_supplementary_files'], $error);
 				$numErrors++;
 			}
 			
 			//set the article_comments
-			$articleCommentsSTMT->bindParam(":comments_articleId", $article["article_id"], PDO::PARAM_INT);
+			$articleCommentsSTMT->bindParam(':comments_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($articleCommentsSTMT->execute()) {
 				$articleComments = array();
 				while($artComment = $articleCommentsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($artComment, "article_comments", $collations);
+					processCollation($artComment, 'article_comments', $collations);
 					
-					$userSTMT->bindParam(":userId", $artComment["author_id"], PDO::PARAM_INT);
+					$userSTMT->bindParam(':userId', $artComment['author_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$author = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($author, "users", $collations);
+						processCollation($author, 'users', $collations);
 						
-						$artComment["author"] = $author;
+						$artComment['author'] = $author;
 					}
 					array_push($articleComments, $artComment);
 				}
-				$article["comments"] = $articleComments;
+				$article['comments'] = $articleComments;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"],  "error" => $articleCommentsSTMT->errorInfo());
-				array_push($errors["article_comments"], $error);
+				$error = array('article_id' => $article['article_id'],  'error' => $articleCommentsSTMT->errorInfo());
+				array_push($errors['article_comments'], $error);
 				$numErrors++;
 			}
 			
@@ -533,61 +629,61 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 			
 			
 			///////////  PART 3  //////////////////////////////////////////////////////////////////
-			if ($verbose) echo "fetching galleys info (galleys, settings, xml_galleys and html_galley_images) ... ";
+			if ($verbose) echo 'fetching galleys info (galleys, settings, xml_galleys and html_galley_images) ... ';
 			
 			$errorOccurred = false;
 			
 			//set the article_galleys
-			$articleGalleysSTMT->bindParam(":art_galleys_articleId", $article["article_id"], PDO::PARAM_INT);
+			$articleGalleysSTMT->bindParam(':art_galleys_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($articleGalleysSTMT->execute()) {
 				$articleGalleys = array();
 				while ($artGalley = $articleGalleysSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($artGalley, "article_galleys", $collations);
+					processCollation($artGalley, 'article_galleys', $collations);
 					
 					////////// set the article_galley_settings   ///////////////////
-					$articleGalleySettingsSTMT->bindParam(":galleyId", $artGalley["galley_id"], PDO::PARAM_INT);
+					$articleGalleySettingsSTMT->bindParam(':galleyId', $artGalley['galley_id'], PDO::PARAM_INT);
 					if ($articleGalleySettingsSTMT->execute()) {
 						$galleySettings = array();
 						while($setting = $articleGalleySettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 							array_push($galleySettings, $setting);
 						}
 						
-						processCollation($galleySettings, "article_galley_settings", $collations);
+						processCollation($galleySettings, 'article_galley_settings', $collations);
 						
-						$artGalley["settings"] = $galleySettings;
+						$artGalley['settings'] = $galleySettings;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "galley_id" => $artGalley["galley_id"], "error" => $articleGalleySettingsSTMT->errorInfo());
-						array_push($errors["article_galley_settings"], $error);
+						$error = array('article_id' => $article['article_id'], 'galley_id' => $artGalley['galley_id'], 'error' => $articleGalleySettingsSTMT->errorInfo());
+						array_push($errors['article_galley_settings'], $error);
 						$numErrors++;
 					}
 					////////////////////////////////////////////////////////////////
 					
 					///////// set the article_xml_galleys  /////////////////////////
-					$articleXmlGalleysSTMT->bindParam(":xml_galleyId", $artGalley["galley_id"], PDO::PARAM_INT);
-					$articleXmlGalleysSTMT->bindParam(":xml_galley_articleId", $article["article_id"], PDO::PARAM_INT);
+					$articleXmlGalleysSTMT->bindParam(':xml_galleyId', $artGalley['galley_id'], PDO::PARAM_INT);
+					$articleXmlGalleysSTMT->bindParam(':xml_galley_articleId', $article['article_id'], PDO::PARAM_INT);
 					if ($articleXmlGalleysSTMT->execute()) {
 						$xmlGalleys = array();
 						while($galley = $articleXmlGalleysSTMT->fetch(PDO::FETCH_ASSOC)) {
 							array_push($xmlGalleys, $galley);
 						}
 						
-						processCollation($xmlGalleys, "article_xml_galleys", $collations);
+						processCollation($xmlGalleys, 'article_xml_galleys', $collations);
 						
-						$artGalley["xml_galleys"] = $xmlGalleys;
+						$artGalley['xml_galleys'] = $xmlGalleys;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "galley_id" => $artGalley["galley_id"], "error" => $articleXmlGalleysSTMT->errorInfo());
-						array_push($errors["article_xml_galleys"], $error);
+						$error = array('article_id' => $article['article_id'], 'galley_id' => $artGalley['galley_id'], 'error' => $articleXmlGalleysSTMT->errorInfo());
+						array_push($errors['article_xml_galleys'], $error);
 						$numErrors++;
 					}
 					////////////////////////////////////////////////////////////////
 					
 					//////// set the article_html_galley_images  ////////////////////
-					$articleHtmlGalleyImagesSTMT->bindParam(":html_image_galleyId", $artGalley["galley_id"], PDO::PARAM_INT);
+					$articleHtmlGalleyImagesSTMT->bindParam(':html_image_galleyId', $artGalley['galley_id'], PDO::PARAM_INT);
 					if ($articleHtmlGalleyImagesSTMT->execute()) {
 						$htmlGalleyImages = array();
 						while($image = $articleHtmlGalleyImagesSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -596,24 +692,24 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 						
 						//article_html_galley_images has all fields as integers
 						
-						$artGalley["html_galley_images"] = $htmlGalleyImages;
+						$artGalley['html_galley_images'] = $htmlGalleyImages;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "galley_id" => $artGalley["galley_id"], "error" => $articleHtmlGalleyImagesSTMT->errorInfo());
-						array_push($errors["article_html_galley_images"], $error);
+						$error = array('article_id' => $article['article_id'], 'galley_id' => $artGalley['galley_id'], 'error' => $articleHtmlGalleyImagesSTMT->errorInfo());
+						array_push($errors['article_html_galley_images'], $error);
 						$numErrors++;
 					}
 					///////////////////////////////////////////////////////////////
 					
 					array_push($articleGalleys, $artGalley);
 				}
-				$article["galleys"] = $articleGalleys;
+				$article['galleys'] = $articleGalleys;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"], "galley_id" => $artGalley["galley_id"], "error" => $articleGalleysSTMT->errorInfo());
-				array_push($errors["article_galleys"], $error);
+				$error = array('article_id' => $article['article_id'], 'galley_id' => $artGalley['galley_id'], 'error' => $articleGalleysSTMT->errorInfo());
+				array_push($errors['article_galleys'], $error);
 				$numErrors++;
 			}
 			
@@ -626,10 +722,10 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 				
 				$errorOccurred = false;
 				
-				if ($verbose) echo "fetching the keywords... ";
+				if ($verbose) echo 'fetching the keywords... ';
 				
 				//set the article_search_objects
-				$articleSearchObjectsSTMT->bindParam(":search_objects_articleId", $article["article_id"], PDO::PARAM_INT);
+				$articleSearchObjectsSTMT->bindParam(':search_objects_articleId', $article['article_id'], PDO::PARAM_INT);
 				if ($articleSearchObjectsSTMT->execute()) {
 					$searchObjects = array();
 					while($obj = $articleSearchObjectsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -637,7 +733,7 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 						//article_search_objects has all fields as integers
 						
 						//set the article_search_object_keywords ///////////////
-						$articleSearchObjectKeywordsSTMT->bindParam(":objectId", $obj["object_id"], PDO::PARAM_INT);
+						$articleSearchObjectKeywordsSTMT->bindParam(':objectId', $obj['object_id'], PDO::PARAM_INT);
 						if ($articleSearchObjectKeywordsSTMT->execute()) {
 							$searchObjectKeywords = array();
 							while($keyword = $articleSearchObjectKeywordsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -645,41 +741,41 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 								//article_search_object_keywords has all the fields as integers
 								
 								//set the article_search_keyword_list//////
-								$articleSearchKeywordListSTMT->bindParam(":keywordId", $keyword["keyword_id"], PDO::PARAM_INT);
+								$articleSearchKeywordListSTMT->bindParam(':keywordId', $keyword['keyword_id'], PDO::PARAM_INT);
 								if ($articleSearchKeywordListSTMT->execute()) {
 									$keywordList = $articleSearchKeywordListSTMT->fetch(PDO::FETCH_ASSOC);
 									
-									processCollation($keywordList, "article_search_keyword_list", $collations);
+									processCollation($keywordList, 'article_search_keyword_list', $collations);
 									
-									$keyword["keyword_list"] = $keywordList;
+									$keyword['keyword_list'] = $keywordList;
 								}
 								else {
 									$errorOccurred = true;
-									$error = array("article_id" => $article["article_id"], "keyword" => $keyword, "error" => $articleSearchKeywordListSTMT->errorInfo());
-									array_push($errors["article_search_keyword_list"], $error);
+									$error = array('article_id' => $article['article_id'], 'keyword' => $keyword, 'error' => $articleSearchKeywordListSTMT->errorInfo());
+									array_push($errors['article_search_keyword_list'], $error);
 									$numErrors++;
 								}
 								///////////////////////////////////////////
 								
 								array_push($searchObjectKeywords, $keyword);
 							}
-							$obj["keywords"] = $searchObjectKeywords;
+							$obj['keywords'] = $searchObjectKeywords;
 						}
 						else {
 							$errorOccurred = true;
-							$error = array("article_id" => $article["article_id"], "object" => $object, "error" => $articleSearchObjectKeywordsSTMT->errorInfo());
-							array_push($errors["article_search_object_keywords"], $error);
+							$error = array('article_id' => $article['article_id'], 'object' => $object, 'error' => $articleSearchObjectKeywordsSTMT->errorInfo());
+							array_push($errors['article_search_object_keywords'], $error);
 							$numErrors++;
 						}
 						////////////////////////////////////////////////////////
 						array_push($searchObjects, $obj);
 					}
-					$article["search_objects"] = $searchObjects;
+					$article['search_objects'] = $searchObjects;
 				}
 				else {
 					$errorOccurred = true;
-					$error = array("article_id" => $article["article_id"],  "error" => $articleSearchObjectsSTMT->errorInfo());
-					array_push($errors["article_search_objects"], $error);
+					$error = array('article_id' => $article['article_id'],  'error' => $articleSearchObjectsSTMT->errorInfo());
+					array_push($errors['article_search_objects'], $error);
 					$numErrors++;
 				}
 				
@@ -689,75 +785,75 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 			
 			
 			/////////  PART 5  //////////////////////////////////////////////////////////////////////
-			if ($verbose) echo "fetching edit decisions and assignments... ";
+			if ($verbose) echo 'fetching edit decisions and assignments... ';
 			
 			$errorOccurred = false;
 			
 			//set the edit_decisions
-			$editDecisionsSTMT->bindParam(":edit_decisions_articleId", $article["article_id"], PDO::PARAM_INT);
+			$editDecisionsSTMT->bindParam(':edit_decisions_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($editDecisionsSTMT->execute()) {
 				$editDecisions = array();
 				while($editDec = $editDecisionsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
 					//all edit_decisions fields are either integers or datetime (does not need to process collations)
 					
-					$userSTMT->bindParam(":userId", $editDec["editor_id"], PDO::PARAM_INT);
+					$userSTMT->bindParam(':userId', $editDec['editor_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$editor = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($editor, "users", $collations);
+						processCollation($editor, 'users', $collations);
 						
-						$editDec["editor"] = $editor;
+						$editDec['editor'] = $editor;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "editor_id" => $editDec["editor_id"], "error" => $userSTMT->errorInfo());
-						array_push($errors["editors"], $error);
+						$error = array('article_id' => $article['article_id'], 'editor_id' => $editDec['editor_id'], 'error' => $userSTMT->errorInfo());
+						array_push($errors['editors'], $error);
 						$numErrors++;
 					}
 					
 					array_push($editDecisions, $editDec);
 				}
-				$article["edit_decisions"] = $editDecisions;
+				$article['edit_decisions'] = $editDecisions;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"], "error" => $editDecisionsSTMT->errorInfo());
-				array_push($errors["edit_decisions"], $error);
+				$error = array('article_id' => $article['article_id'], 'error' => $editDecisionsSTMT->errorInfo());
+				array_push($errors['edit_decisions'], $error);
 				$numErrors++;
 			}
 			
 			//set the edit_assignments
-			$editAssignmentsSTMT->bindParam(":edit_assignments_articleId", $article["article_id"], PDO::PARAM_INT);
+			$editAssignmentsSTMT->bindParam(':edit_assignments_articleId', $article['article_id'], PDO::PARAM_INT);
 			if ($editAssignmentsSTMT->execute()) {
 				$editAssignments = array();
 				while($editAssign = $editAssignmentsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
 					//all edit_assignments fields are either integers or datetime (does not need to process collations)
 					
-					$userSTMT->bindParam(":userId", $editAssign["editor_id"], PDO::PARAM_INT);
+					$userSTMT->bindParam(':userId', $editAssign['editor_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$editor = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($editor, "users", $collations);
+						processCollation($editor, 'users', $collations);
 						
-						$editAssign["editor"] = $editor;
+						$editAssign['editor'] = $editor;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "editor_id" => $editAssign["editor_id"], "error" => $userSTMT->errorInfo());
-						array_push($errors["editors"], $error);
+						$error = array('article_id' => $article['article_id'], 'editor_id' => $editAssign['editor_id'], 'error' => $userSTMT->errorInfo());
+						array_push($errors['editors'], $error);
 						$numErrors++;
 					}
 					
 					array_push($editAssignments, $editAssign);
 				}
-				$article["edit_assignments"] = $editAssignments;
+				$article['edit_assignments'] = $editAssignments;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"], "error" => $editAssignmentsSTMT->errorInfo());
-				array_push($errors["edit_decisions"], $error);
+				$error = array('article_id' => $article['article_id'], 'error' => $editAssignmentsSTMT->errorInfo());
+				array_push($errors['edit_decisions'], $error);
 				$numErrors++;
 			}
 			
@@ -868,40 +964,40 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 	$verbose = null;
 	
 	if (is_array($args)) {
-		if (array_key_exists("collations", $args)) {
-			$collations = $args["collations"];
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
 		}
-		if (array_key_exists("verbose", $args)) {
-			$verbose = $args["verbose"];	
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
 		}
 	}
 	
 	$announcements = array();
 	
 	$errors = array(
-		"announcements" => array(),
-		"announcement_settings" => array()
+		'announcements' => array(),
+		'announcement_settings' => array()
 	);
 	
-	$announcementsSTMT = $conn->prepare("SELECT * FROM announcements WHERE assoc_id = :journalId");
-	$announcementSettingsSTMT = $conn->prepare("SELECT * FROM announcement_settings WHERE announcement_id = :announcementId");
+	$announcementsSTMT = $conn->prepare('SELECT * FROM announcements WHERE assoc_id = :journalId');
+	$announcementSettingsSTMT = $conn->prepare('SELECT * FROM announcement_settings WHERE announcement_id = :announcementId');
 	
 	//do not get the announcements types because it is quite funky 
 	
-	$announcementsSTMT->bindParam(":journalId", $journal["journal_id"], PDO::PARAM_INT);
+	$announcementsSTMT->bindParam(':journalId', $journal['journal_id'], PDO::PARAM_INT);
 	
 	if ($verbose) echo "\n\nFetching the announcements ...... ";
 	
 	if ($announcementsSTMT->execute()) {
 		while ($announcement = $announcementsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($announcement, "announcements", $collations);
+			processCollation($announcement, 'announcements', $collations);
 			
 			//////////  announcement settings  ///////////////////////////////
 			$settings = array();
-			$announcementSettingsSTMT->bindParam(":announcementId", $announcement["announcement_id"], PDO::PARAM_INT);
+			$announcementSettingsSTMT->bindParam(':announcementId', $announcement['announcement_id'], PDO::PARAM_INT);
 			
-			if ($verbose) echo "\n    fetching announcement #" . $announcement["announcement_id"] . " settings ....... ";
+			if ($verbose) echo "\n    fetching announcement #" . $announcement['announcement_id'] . " settings ....... ";
 			
 			if ($announcementSettingsSTMT->execute()) {
 				while ($setting = $announcementSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -911,13 +1007,13 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 			}
 			else {
 				if ($verbose) echo "Error\n";
-				$error = array("announcement_id" => $announcement["announcement_id"], "error" => $announcementSettingsSTMT->errorInfo());
-				array_push($errors["announcement_settings"], $error);
+				$error = array('announcement_id' => $announcement['announcement_id'], 'error' => $announcementSettingsSTMT->errorInfo());
+				array_push($errors['announcement_settings'], $error);
 			}
 			
-			processCollation($settings, "announcement_settings", $collations);
+			processCollation($settings, 'announcement_settings', $collations);
 			
-			$announcement["settings"] = $settings;
+			$announcement['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
 			
 			array_push($announcements, $announcement);
@@ -927,12 +1023,12 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 	}
 	else {
 		if ($verbose) echo "Error\n";
-		array_push($errors["announcements"], $announcementsSTMT->errorInfo());
+		array_push($errors['announcements'], $announcementsSTMT->errorInfo());
 	}
 	
 	echo "\nFetched " . count($announcements) . " announcements.\n";
 	
-	return array("announcements" => $announcements, "errors" => $errors);
+	return array('announcements' => $announcements, 'errors' => $errors);
 }
 ///////// end of fetchAnnouncements  ///////////////////////////////
 
@@ -1013,37 +1109,37 @@ function fetchGroups($conn, $journal = null, $args = null) {
 	$verbose = null;
 	
 	if (is_array($args)) {
-		if (array_key_exists("collations", $args)) {
-			$collations = $args["collations"];
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
 		}
-		if (array_key_exists("verbose", $args)) {
-			$verbose = $args["verbose"];	
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
 		}
 	}
 	
 	$groups = array();
 	
 	$errors = array(
-		"users" => array(),
-		"groups" => array(),
-		"group_settings" => array(),
-		"group_memberships" => array()
+		'users' => array(),
+		'groups' => array(),
+		'group_settings' => array(),
+		'group_memberships' => array()
 	);
 	
 	//////////// STATEMENTS ///////////////////////////////////////////
 	
 	/////////////// group statements  ////////////////////////////////////////
-	$groupsSTMT = $conn->prepare("SELECT * FROM groups WHERE assoc_id = :journalId");
-	$groupsSTMT->bindParam(":journalId", $journal["journal_id"], PDO::PARAM_INT);
-	$groupSettingsSTMT = $conn->prepare("SELECT * FROM group_settings WHERE group_id = :settings_groupId");
-	$groupMembershipsSTMT = $conn->prepare("SELECT * FROM group_memberships WHERE group_id = :memberships_groupId");
+	$groupsSTMT = $conn->prepare('SELECT * FROM groups WHERE assoc_id = :journalId');
+	$groupsSTMT->bindParam(':journalId', $journal['journal_id'], PDO::PARAM_INT);
+	$groupSettingsSTMT = $conn->prepare('SELECT * FROM group_settings WHERE group_id = :settings_groupId');
+	$groupMembershipsSTMT = $conn->prepare('SELECT * FROM group_memberships WHERE group_id = :memberships_groupId');
 	/////////////////////////////////////////////////////////////////////////////
 	
 	////////////////////// statements to get information to identify the user ///////////////////////////////////
-	$userSTMT = $conn->prepare("SELECT * FROM users WHERE user_id = :userId");
-	$userSettingsSTMT = $conn->prepare("SELECT * FROM user_settings WHERE user_id = :userSettings_userId");
-	$rolesSTMT = $conn->prepare("SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId");
-	$rolesSTMT->bindParam(":roles_journalId", $journalId, PDO::PARAM_INT);
+	$userSTMT = $conn->prepare('SELECT * FROM users WHERE user_id = :userId');
+	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
+	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
+	$rolesSTMT->bindParam(':roles_journalId', $journalId, PDO::PARAM_INT);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	
@@ -1052,13 +1148,13 @@ function fetchGroups($conn, $journal = null, $args = null) {
 	if ($groupsSTMT->execute()) {
 		while ($group = $groupsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($group, "groups", $collations);
+			processCollation($group, 'groups', $collations);
 			
 			//////////  group settings  ///////////////////////////////
 			$settings = array();
-			$groupSettingsSTMT->bindParam(":settings_groupId", $group["group_id"], PDO::PARAM_INT);
+			$groupSettingsSTMT->bindParam(':settings_groupId', $group['group_id'], PDO::PARAM_INT);
 			
-			if ($verbose) echo "\n    fetching the group #" . $group["group_id"] . " settings ............ ";
+			if ($verbose) echo "\n    fetching the group #" . $group['group_id'] . " settings ............ ";
 			
 			if ($groupSettingsSTMT->execute()) {
 				while ($setting = $groupSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -1068,86 +1164,86 @@ function fetchGroups($conn, $journal = null, $args = null) {
 			}
 			else {
 				if ($verbose) echo "Error\n";
-				$error = array("group_id" => $group["group_id"], "error" => $groupSettingsSTMT->errorInfo());
-				array_push($errors["group_settings"], $error);
+				$error = array('group_id' => $group['group_id'], 'error' => $groupSettingsSTMT->errorInfo());
+				array_push($errors['group_settings'], $error);
 			}
 			
-			processCollation($settings, "group_settings", $collations);
+			processCollation($settings, 'group_settings', $collations);
 			
-			$group["settings"] = $settings;
+			$group['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
 			
 			/////////  group memberships  ///////////////////////////////
 			$memberships = array();
-			$groupMembershipsSTMT->bindParam(":memberships_groupId", $group["group_id"], PDO::PARAM_INT);
+			$groupMembershipsSTMT->bindParam(':memberships_groupId', $group['group_id'], PDO::PARAM_INT);
 			
-			if ($verbose) echo "\n    fetching the group #" . $group["group_id"] . " memberships .......... ";
+			if ($verbose) echo "\n    fetching the group #" . $group['group_id'] . " memberships .......... ";
 			
 			if ($groupMembershipsSTMT->execute()) {
 				while ($membership = $groupMembershipsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					if ($verbose) echo "        fetching user #" . $membership["user_id"] . " info ....... ";
+					if ($verbose) echo "        fetching user #" . $membership['user_id'] . " info ....... ";
 					
 					/////////////  set the user info /////////////////////////////////////
 					
 					$errorOccurred = false;
-					$error = array("group_id" => $membership["group_id"]);
+					$error = array('group_id' => $membership['group_id']);
 					
-					$userSTMT->bindParam(":userId", $membership["user_id"], PDO::PARAM_INT);
+					$userSTMT->bindParam(':userId', $membership['user_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$user = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($user, "users", $collations);
+						processCollation($user, 'users', $collations);
 						
 						//fetching the user settings
-						$userSettingsSTMT->bindParam(":userSettings_userId", $user["user_id"], PDO::PARAM_INT);
+						$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
 						if ($userSettingsSTMT->execute()) {
 							$userSettings = array();
 							while ($setting = $userSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 								array_push($userSettings, $setting);
 							}
 							
-							processCollation($userSettings, "user_settings", $collations);
+							processCollation($userSettings, 'user_settings', $collations);
 							
-							$user["settings"] = $userSettings;
+							$user['settings'] = $userSettings;
 						}// end of the if userSettingsSTMT executed
 						else {
 							$errorOccurred = true;
-							$error["userSettingsError"] = $userSettingsSTMT->errorInfo();
+							$error['userSettingsError'] = $userSettingsSTMT->errorInfo();
 						}
 						
 						//fetching the user roles for this journal
-						$rolesSTMT->bindParam(":roles_userId", $user["user_id"], PDO::PARAM_INT);
+						$rolesSTMT->bindParam(':roles_userId', $user['user_id'], PDO::PARAM_INT);
 						if ($rolesSTMT->execute()) {
 							$roles = array();
 							while ($role = $rolesSTMT->fetch(PDO::FETCH_ASSOC)) {
 								array_push($roles, $role);
 							}
 							
-							processCollation($roles, "roles", $collations);
+							processCollation($roles, 'roles', $collations);
 							
-							$user["roles"] = $roles;
+							$user['roles'] = $roles;
 						}// end of the if rolesSTMT executed
 						else {
 							$errorOccurred = true;
-							$error["rolesError"] = $rolesSTMT->errorInfo();
+							$error['rolesError'] = $rolesSTMT->errorInfo();
 						}
 						
-						$membership["user"] = $user;
+						$membership['user'] = $user;
 						
 						if ($errorOccurred) {
-							$error["user"] = $user;
+							$error['user'] = $user;
 						}
 						
 					}// end of the if userSTMT executed
 					else {
 						$errorOccurred = true;
-						$error["userError"] = $userSTMT->errorInfo();
+						$error['userError'] = $userSTMT->errorInfo();
 					}
 					
 					if ($errorOccurred) {
 						if ($verbose) echo "Error\n";
-						array_push($errors["users"], $error);
+						array_push($errors['users'], $error);
 						$numErrors++;
 					}
 					else if ($verbose) {
@@ -1159,13 +1255,13 @@ function fetchGroups($conn, $journal = null, $args = null) {
 				}
 			}
 			else {
-				$error = array("group_id" => $grp["group_id"], "error" => $groupMembershipsSTMT->errorInfo());
-				array_push($errors["group_memberships"], $error);
+				$error = array('group_id' => $grp['group_id'], 'error' => $groupMembershipsSTMT->errorInfo());
+				array_push($errors['group_memberships'], $error);
 			}
 			
-			processCollation($memberships, "group_memberships", $collations);
+			processCollation($memberships, 'group_memberships', $collations);
 			
-			$group["memberships"] = $memberships;
+			$group['memberships'] = $memberships;
 			
 			/////////////////////////////////////////////////////////////
 			
@@ -1175,12 +1271,12 @@ function fetchGroups($conn, $journal = null, $args = null) {
 	}// end of the if groupsSTMT executed
 	else {
 		if ($verbose) echo "Error\n";
-		array_push($errors["groups"], $groupsSTMT->errorInfo());
+		array_push($errors['groups'], $groupsSTMT->errorInfo());
 	}
 	
 	echo "\nFetched " . count($groups) . " groups.\n";
 	
-	return array("groups" => $groups, "errors" => $errors);
+	return array('groups' => $groups, 'errors' => $errors);
 }
 //////////////// end of fetchGroups  ///////////////////////////////
 
@@ -1197,11 +1293,11 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 	$verbose = null;
 	
 	if (is_array($args)) {
-		if (array_key_exists("collations", $args)) {
-			$collations = $args["collations"];
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
 		}
-		if (array_key_exists("verbose", $args)) {
-			$verbose = $args["verbose"];	
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
 		}
 	}
 	
@@ -1334,11 +1430,327 @@ function fetchReferrals() {
 }
 
 
+function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $args = null) {
+	if (!is_string($articleIdsSTR)) {
+		return false;
+	}
+	
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
+	
+	$ids = filter_var($articleIdsSTR, FILTER_SANITIZE_STRING);
+	
+	if ($ids === false) {
+		echo "\n\nInvalid ids passed to fetchEventLogs: '$articleIdsSTR'\n\n";
+		return false;
+	}
+	
+	$eventLogSTMT = $conn->prepare('SELECT * FROM event_log WHERE assoc_id IN ' . $ids);
+	$eventLogSettingsSTMT = $conn->prepare('SELECT * FROM event_log_settings WHERE log_id = :settings_logId');
+	
+	$errors = array(
+		'event_log' => array(),
+		'event_log_settings' => array()
+	);
+	
+	$eventLogs = array();
+	
+	///////////// fetching the event_logs ////////////////////////////////////////////////
+	if ($verbose) echo "\n\nFetching the event logs .......";
+	if ($eventLogSTMT->execute()) {
+		echo "\n\n";
+		while ($eventLog = $eventLogSTMT->fetch(PDO::FETCH_ASSOC)) {
+			
+			processCollation($eventLog, 'event_log', $collations);
+			
+			/////// checking if it needs to fetch the user data //////////////
+			$fetchUserData = false;
+			if (is_array($dataMapping)) {
+				if (!array_key_exists('user_id', $dataMapping)) {
+					$fetchUserData = true;
+				}
+				else if (!array_key_exists($eventLog['user_id'], $dataMapping['user_id'])) {
+					// the sender id is not in the dataMapping
+					// which means the user was not yet imported
+					$fetchUserData = true;
+				}
+			}
+			else {
+				$fetchUserData = true;
+			}
+			/////////////////////////////////////////////////////////////////////
+			
+			if ($fetchUserData) {
+				
+				if ($verbose) echo "\n    fetching the user #" . $eventLog['user_id'] . " data ..........";
+				
+				$data = fetchUser($conn, $eventLog['user_id'], $journal, $args);
+				if ($data['errorOccurred'])) {
+					if ($verbose) {
+						echo "Error\n";
+						$errors['event_log'] = array('event_log' => $eventLog, 'error' => $data['error']);
+					}
+				}
+				else {
+					if ($verbose) echo "Ok\n";
+				}
+				$eventLog['user'] = $data['user'];
+			}
+			/////////////// end of fetching the user data  ////////////////////////
+			
+			///// fetch the event_log_settings
+			$eventLogSettingsSTMT->bindParam(':settings_logId', $eventLog['log_id'], PDO::PARAM_INT);
+			
+			if ($verbose) echo '    fetching the event_log #' . $eventLog['log_id'] . ' settings .....';
+			
+			if ($eventLogSettingsSTMT->execute()) {
+				
+				$settings = array();
+				
+				while ($setting = $eventLogSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
+					processCollation($setting, 'event_log_settings', $collations);
+					array_push($settings, $setting);
+				}
+				
+				$eventLog['settings'] = $settings;
+				if ($verbose) echo "OK\n";
+				
+			}
+			else {
+				if ($verbose) echo "Error\n";
+				$error = array('event_log' => $eventLog, 'error' => $eventLogSettingsSTMT->errorInfo());
+				array_push($errors['event_log_settings'], $error);
+			}
+			
+			array_push($eventLogs, $eventLog);
+			
+		}//end of the while to fetch the event_log
+		
+	}
+	else {
+		if ($verbose) echo "Error\n\n";
+		$error = array('error' => $eventLogSTMT->errorInfo());
+		array_push($errors['event_log'], $error);
+	}
+	////////// end of fetching the event_logs //////////////////////////////////////////////
+	
+	echo "\nFetched " . count($eventLogs) . " event logs.\n";
+	
+	return array('event_logs' => $eventLogs, 'errors' => $errors);
+	
+}
+
+
+function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, $args = null) {
+	
+	if (!is_string($articleIdsSTR)) {
+		return false;
+	}
+	
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
+	
+	$ids = filter_var($articleIdsSTR, FILTER_SANITIZE_STRING);
+	
+	if ($ids === false) {
+		echo "\n\nInvalid ids passed to fetchEventLogs: '$articleIdsSTR'\n\n";
+		return false;
+	}
+	
+	$emailLogSTMT = $conn->prepare('SELECT * FROM email_log WHERE assoc_id IN ' . $ids);
+	$emailLogUsersSTMT = $conn->prepare('SELECT * FROM email_log_users WHERE log_id = :emailLog_logId');
+	
+	$errors = array(
+		'email_log' => array(),
+		'email_log_users' => array()
+	);
+	
+	///////// fetching the email_logs  /////////////////////////////////////////////////////
+	
+	if ($verbose) echo "\nFetching the email_logs:\n";
+	if ($emailLogSTMT->execute()) {
+		
+		//fetchUser($conn, $userId, $journal = null, $args = null)
+		
+		while ($emailLog = $emailLogSTMT->fetch(PDO::FETCH_ASSOC)) {
+			
+			processCollation($emailLog, 'email_log', $collations);
+			
+			/////////// fetching the sender data if it was not yet imported ////////
+			
+			/////// checking if it needs to fetch the sender data //////////////
+			$fetchUserData = false;
+			if (is_array($dataMapping)) {
+				if (!array_key_exists('user_id', $dataMapping)) {
+					$fetchUserData = true;
+				}
+				else if (!array_key_exists($senderId, $dataMapping['user_id'])) {
+					// the sender id is not in the dataMapping
+					// which means the user was not yet imported
+					$fetchUserData = true;
+				}
+			}
+			else {
+				$fetchUserData = true;
+			}
+			/////////////////////////////////////////////////////////////////////
+			
+			if ($fetchUserData) {
+				
+				if ($verbose) echo "\n    fetching the email log_id #" . $emailLog['log_id'] . " sender data ..........";
+				
+				$data = fetchUser($conn, $senderId, $journal, $args);
+				if ($data['errorOccurred'])) {
+					if ($verbose) {
+						echo "Error\n";
+						$errors['email_log'] = array('emailLog' => $emailLog, 'error' => $data['error']);
+					}
+				}
+				else {
+					if ($verbose) echo "Ok\n";
+				}
+				$emailLog['sender'] = $data['user'];
+			}
+			
+			/////////////// end of fetching the sender data  ////////////////////////
+			
+			$emailLogUsersSTMT->bindParam(':emailLog_logId', $emailLog['log_id'], PDO::PARAM_INT);
+			
+			if ($verbose) echo '    fetching the email_log_users for the email log_id #' . $emailLog['log_id'] . ' ............';
+			if ($emailLogUsersSTMT->execute()){
+				$emailLogUsers = array();
+				while ($emailLogUser = $emailLogUsersSTMT->fetch(PDO::FETCH_ASSOC)) {
+					/////// checking if it needs to fetch the user data //////////////
+					$fetchUserData = false;
+					if (is_array($dataMapping)) {
+						if (!array_key_exists('user_id', $dataMapping)) {
+							$fetchUserData = true;
+						}
+						else if (!array_key_exists($senderId, $dataMapping['user_id'])) {
+							// the sender id is not in the dataMapping
+							// which means the user was not yet imported
+							$fetchUserData = true;
+						}
+					}
+					else {
+						$fetchUserData = true;
+					}
+					/////////////////////////////////////////////////////////////////////
+					
+					if ($fetchUserData) {
+						
+						if ($verbose) echo "\n    fetching the user #" . $emailLogUsers['user_id'] . " data ..........";
+						
+						$data = fetchUser($conn, $senderId, $journal, $args);
+						if ($data['errorOccurred'])) {
+							if ($verbose) {
+								echo "Error\n";
+								$errors['email_log_users'] = array('emailLogUsers' => $emailLogUsers, 'error' => $data['error']);
+							}
+						}
+						else {
+							if ($verbose) echo "Ok\n";
+						}
+						$emailLogUser['user'] = $data['user'];
+					}
+					/////////////// end of fetching the user data  ////////////////////////
+					
+					array_push($emailLogUsers, $emailLogUser);
+				}
+				// end of the while to fetch each email_log_users record
+				
+				$emailLog['email_log_users'] = $emailLogUsers;
+				
+			}//end of the if email_log_users executed
+			else {
+				echo "Error\n";
+				$error = array('email_log' => $emailLog, 'error' => $emailLogUsersSTMT->errorInfo());
+				array_push($errors['email_log_users'], $error);
+			}
+		}
+		//end of the while to fetch the email_logs
+	}
+	else {
+		if ($verbose) echo "Error\n\n";
+		$error = array('error' => $emailLogSTMT->errorInfo());
+		array_push($errors['email_log'], $error);
+	}
+	///////// end of fetching the email_logs  //////////////////////////////////////////////
+	
+	echo "\nFetched " . count($emailLogs) . " email logs.\n";
+	
+	return array('email_logs' => $emailLogs, 'errors' => $errors);
+}
+
+
 /**
 this function fetches the article history which includes the articles event and email logs
 */
-function fetchHistory($conn, $articlesIds) {
+function fetchArticlesHistory($conn, $articlesIds, &$dataMapping, $journal = null, $args = null) {
 	
+	if (!is_array($articleIds)) {
+		exit("\nArticles ids are not in an array\n\n");
+	}
+	
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
+	
+	$totalArticles = count($articleIds);
+	
+	$articleIdsSTR = '(';
+	for ($i = 0; $i < $totalArticles - 1; $i++) {
+		$articleIdsSTR .= $articleIds[$i] . ', ';
+	}
+	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';
+	
+	$eventLogsData = fetchEventLogs($conn, $articleIdsSTR, $dataMapping, $journal, $args);
+	
+	$emailLogsData = fetchEmailLogs($conn, $articlesIdsSTR, $dataMapping, $journal, $args);
+	
+	$errors = array('email_log_errors' => $emailLogData['errors'], 'event_log_errors' => $eventLogData['errors']);
+	
+	$history = array('email_log' => $emailLogData['email_logs'], 'event_log' => $eventLogData['event_logs']);
+	
+	return array('history' => $history, 'errors' => $errors);
 }
 
 

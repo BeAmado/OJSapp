@@ -18,8 +18,9 @@ FUNCTIONS IN DEFINED IN THIS SCRIPT:
 08) insertEmailTemplates (better not use yet)
 09) insertGroups
 10) insertReviewForms
+11) insertArticlesHistory
 
-Developed in 2017 by Bernardo Amado
+Developed in 2017/2018 by Bernardo Amado
 
 */
 
@@ -1181,25 +1182,25 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			 
 			$arr = array();
 			$arr['data'] = $article;
-			$arr['params'] = [
-				['name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':language', 'attr' => 'language', 'type' => PDO::PARAM_STR],
-				['name' => ':commentsToEd', 'attr' => 'comments_to_ed', 'type' => PDO::PARAM_STR],
-				['name' => ':dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR],
-				['name' => ':lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_STR],
-				['name' => ':dateStatusModified', 'attr' => 'date_status_modified', 'type' => PDO::PARAM_STR],
-				['name' => ':status', 'attr' => 'status', 'type' => PDO::PARAM_INT],
-				['name' => ':submissionProgress', 'attr' => 'submission_progress', 'type' => PDO::PARAM_INT],
-				['name' => ':currentRound', 'attr' => 'current_round', 'type' => PDO::PARAM_INT],
-				['name' => ':pages', 'attr' => 'pages', 'type' => PDO::PARAM_STR],
-				['name' => ':fastTracked', 'attr' => 'fast_tracked', 'type' => PDO::PARAM_INT],
-				['name' => ':hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT],
-				['name' => ':commentsStatus', 'attr' => 'comments_status', 'type' => PDO::PARAM_INT],
-				['name' => ':locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR],
-				['name' => ':citations', 'attr' => 'citations', 'type' => PDO::PARAM_STR]
-			];
+			$arr['params'] = array(
+				array('name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':language', 'attr' => 'language', 'type' => PDO::PARAM_STR),
+				array('name' => ':commentsToEd', 'attr' => 'comments_to_ed', 'type' => PDO::PARAM_STR),
+				array('name' => ':dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR),
+				array('name' => ':lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_STR),
+				array('name' => ':dateStatusModified', 'attr' => 'date_status_modified', 'type' => PDO::PARAM_STR),
+				array('name' => ':status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
+				array('name' => ':submissionProgress', 'attr' => 'submission_progress', 'type' => PDO::PARAM_INT),
+				array('name' => ':currentRound', 'attr' => 'current_round', 'type' => PDO::PARAM_INT),
+				array('name' => ':pages', 'attr' => 'pages', 'type' => PDO::PARAM_STR),
+				array('name' => ':fastTracked', 'attr' => 'fast_tracked', 'type' => PDO::PARAM_INT),
+				array('name' => ':hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT),
+				array('name' => ':commentsStatus', 'attr' => 'comments_status', 'type' => PDO::PARAM_INT),
+				array('name' => ':locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+				array('name' => ':citations', 'attr' => 'citations', 'type' => PDO::PARAM_STR)
+			);
 			
 			
 			echo "\ninserting article #" . $article['article_id'] . " ......... "; 
@@ -3203,3 +3204,191 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 }
 
 /////////////////////  end of insertReviewForms  ////////////////////////////////////
+
+
+// #11)
+/**
+insert the articles history, which is comprised of event_logs and email_logs
+*/
+function insertArticlesHistory(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
+	
+	echo "\n\nNOT FUNCTIONAL\n\n";
+	return false;
+	
+	
+	$limit = 10;
+	
+	if (is_array($args)) {
+		if (array_key_exists('limit', $args)) {
+			$limit = $args['limit'];
+		}
+	}
+	
+	if (!array_key_exists('event_log_id', $dataMapping)) {
+		$dataMapping['event_log_id'] = array();
+	}
+	
+	if (!array_key_exists('email_log_id', $dataMapping)) {
+		$dataMapping['email_log_id'] = array();
+	}
+	
+	
+	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
+	
+	// user statements //////////////////////
+	
+	$userSTMT = $conn->prepare('SELECT * FROM users WHERE email = :user_email');
+	
+	$checkUsernameSTMT = $conn->prepare('SELECT COUNT(*) as count FROM users WHERE username = :checkUsername');
+	
+	$insertUserSTMT = $conn->prepare('INSERT INTO users (username, password, salutation, first_name, middle_name, last_name, gender, initials, email, url, phone, fax, mailing_address,
+country, locales, date_last_email, date_registered, date_validated, date_last_login, must_change_password, auth_id, disabled, disabled_reason, auth_str, suffix, billing_address, 
+inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_salutation, :insertUser_firstName, :insertUser_middleName, :insertUser_lastName, :insertUser_gender, 
+:insertUser_initials, :insertUser_email, :insertUser_url, :insertUser_phone, :insertUser_fax, :insertUser_mailingAddress, :insertUser_country, :insertUser_locales, 
+:insertUser_dateLastEmail, :insertUser_dateRegistered, :insertUser_dateValidated, :insertUser_dateLastLogin, :insertUser_mustChangePassword, :insertUser_authId, :insertUser_disabled, 
+:insertUser_disabledReason, :insertUser_authStr, :insertUser_suffix, :insertUser_billingAddress, :insertUser_inlineHelp)');
+	
+	$lastUsersSTMT = $conn->prepare("SELECT * FROM users ORDER BY user_id DESC LIMIT $limit");
+	
+	$userStatements = array('userSTMT' => &$userSTMT, 'checkUsernameSTMT' => &$checkUsernameSTMT, 'insertUserSTMT' => &$insertUserSTMT, 'lastUsersSTMT' => &$lastUsersSTMT);
+	
+	/////////////////////////////////////////
+	
+	// event_log ///////////
+	$insertEventLogSTMT = $conn->prepare(
+		'INSERT INTO event_log (assoc_type, assoc_id, user_id, date_logged, ip_address, event_type, message, is_translated) 
+		 VALUES (:eventLog_assocType, :eventLog_assocId, :userId, :dateLogged, :eventLog_ipAddress, :eventLog_eventType, :message, :isTranslated)'
+	);
+	
+	$lastEventLogsSTMT = $conn->prepare("SELECT * FROM event_log ORDER BY log_id DESC LIMIT $limit");
+	
+	$insertEventLogSettingsSTMT = $conn->prepare(
+		'INSERT INTO review_form_settings (log_id, setting_name, setting_value, setting_type) 
+		 VALUES (:eventLogId, :settingName, :settingValue, :settingType)'
+	);
+	//////////////////////////
+
+	// email_logs ///////////
+	$insertEmailLogSTMT = $conn->prepare(
+		'INSERT INTO email_log (assoc_type, assoc_id, sender_id, date_sent, ip_address, event_type, from_address, 
+		 recipients, cc_recipients, bcc_recipients, subject, body)
+		 VALUES (:emailLog_assocType, :emailLog_assocId, :senderId, :dateSent, :emailLog_ipAddress, :eventLog_eventType, :fromAddress,
+		 :recipients, :ccRecipients, :bccRecipients, :subject, :body)'
+	);
+	
+	$lastEmailLogsSTMT = $conn->prepare("SELECT * FROM email_log ORDER BY log_id DESC LIMIT $limit");
+
+	
+	$insertEmailLogUsersSTMT = $conn->prepare(
+		'INSERT INTO email_log_users (email_log_id, user_id) 
+		 VALUES (:emailLogId, :emailLogUsers_userId)'
+	);
+	
+	//////////////////////////////////////////////////////////////////////////////////////
+	
+	$email_logs_node = $xml->getElementsByTagName('email_logs')->item(0);
+	$event_logs_node = $xml->getElementsByTagName('event_logs')->item(0);
+	
+	$errors = array(
+		'event_log' => array('insert' => array(), 'update' => array()),
+		'event_log_settings' => array('insert' => array(), 'update' => array()),
+		'email_log' => array('insert' => array(), 'update' => array()),
+		'email_log_users' => array('insert' => array(), 'update' => array() )
+	);
+	
+	//////// INSERTING THE EMAIL LOGS  /////////////////////////////////////
+	
+	$emailLogs = xmlToArray($email_logs_node, true); //from helperFunctions.php
+	
+	$numInsertedEmailLogs = 0;
+	
+	//////// END OF INSERTING THE EMAIL LOGS  //////////////////////////////
+	
+	foreach ($emailLogs as &$emailLog) {
+		if (array_key_exists($emailLog['log_id'], $dataMapping['email_log_id'])) {
+			echo "\nemail_log #" . $emailLog['log_id'] . " was already imported.\n";
+			continue; // go to the next review_form
+		}
+		
+		$emailLogOk = false;
+		$assocIdOk = false;
+		$senderIdOk = false;
+		
+		//processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$stmts)
+	
+	/*
+	$userOk = false;
+					
+	//////////////////// process user data ///////////////////////
+
+	// check if the user is registered in the new journal
+	if (array_key_exists($membership['user_id'], $dataMapping['user_id'])) {
+		$membership['user_new_id'] = $dataMapping['user_id'][$membership['user_id']];
+	}
+	else {
+		$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
+	}
+	//////////////////////////////////////////////////////////////
+	*/
+		
+		
+		if (array_key_exists($emailLog['assoc_id'], $dataMapping['article_id'])) {
+			$emailLog['assoc_new_id'] = $dataMapping['article_id'][$email_log['assoc_id']];
+			$assocIdOk = true;
+		}
+		
+		if (array_key_exists($emailLog['sender_id'], $dataMapping['user_id'])) {
+			$emailLog['sender_new_id'] = $dataMapping['user_id'][$emailLog['sender_id']];
+			$senderIdOk = true;
+		}
+		
+		if ($assocIdOk && $senderIdOk) {
+			validateData('email_log', $emailLog); //from helperFunctions.php
+			
+			$arr = array();
+			$arr['data'] = $emailLog;
+			$arr['params'] = array(
+				array('name' => ':emailLog_assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT),
+				array('name' => ':emailLog_assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':senderId', 'attr' => 'sender_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':dateSent', 'attr' => 'date_sent', 'type' => PDO::PARAM_STR),
+				array('name' => ':emailLog_ipAddress', 'attr' => 'ip_address', 'type' => PDO::PARAM_STR),
+				array('name' => ':eventLog_eventType', 'attr' => 'event_type', 'type' => PDO::PARAM_INT),
+				array('name' => ':fromAddress', 'attr' => 'from_address', 'type' => PDO::PARAM_STR),
+				array('name' => ':recipients', 'attr' => 'recipients', 'type' => PDO::PARAM_STR	),
+				array('name' => ':ccRecipients', 'attr' => 'cc_recipients', 'type' => PDO::PARAM_STR),
+				array('name' => ':bccRecipients', 'attr' => 'bcc_recipients', 'type' => PDO::PARAM_STR),
+				array('name' => ':subject', 'attr' => 'subject', 'type' => PDO::PARAM_STR),
+				array('name' => ':body', 'attr' => 'body', 'type' => PDO::PARAM_STR)
+			);
+			
+			echo '    inserting email_log #' . $emailLog['log_id']. '............ ';
+			
+			if (myExecute('insert', 'email_log', $arr, $insertEmailLogSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n";
+				if (getNewId('review_form', $lastEmailLogsSTMT, $emailLog, $dataMapping, $errors)) { //from helperFunctions.php
+					echo "    new id = " . $emailLog['log_new_id'] . "\n\n";
+					$EmailLogOk = true;
+					$numInsertedEmailLogs++;
+				}
+			}
+			else {
+				echo "Failed\n";
+			}
+		}// end of the if assocIdOk and senderIdOk
+		else {
+			
+		}
+		
+	}
+	
+
+
+	
+	
+	////////  INSERTING THE EVENT LOGS  ////////////////////////////////////
+	
+	///////  END OF INSERTING THE EVENT LOGS  //////////////////////////////
+	
+	
+}
