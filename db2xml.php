@@ -140,7 +140,7 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 		$error['userError'] = $userSTMT->errorInfo();
 	}
 	
-	return array('user' => $user, 'error' => $error, 'errorOcurred' => $errorOcurred);
+	return array('user' => $user, 'error' => $error, 'errorOccurred' => $errorOccurred);
 	
 }
 
@@ -295,7 +295,7 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
 	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
 	$rolesSTMT->bindParam(':roles_journalId', $journalId, PDO::PARAM_INT);
-	$sectionSTMT = $conn->prepare('SELECT section_id, setting_name, setting_value, locale FROM section_settings WHERE section_id = :sectionId AND setting_name IN ('title', 'abbrev')');
+	$sectionSTMT = $conn->prepare('SELECT section_id, setting_name, setting_value, locale FROM section_settings WHERE section_id = :sectionId AND setting_name IN ("title", "abbrev")');
 	/////////////////////////////////////////////////////////////////////////
 	
 	$authorSTMT = $conn->prepare('SELECT * FROM authors WHERE submission_id = :author_submissionId');
@@ -1498,7 +1498,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 				if ($verbose) echo "\n    fetching the user #" . $eventLog['user_id'] . " data ..........";
 				
 				$data = fetchUser($conn, $eventLog['user_id'], $journal, $args);
-				if ($data['errorOccurred'])) {
+				if ($data['errorOccurred']) {
 					if ($verbose) {
 						echo "Error\n";
 						$errors['event_log'] = array('event_log' => $eventLog, 'error' => $data['error']);
@@ -1554,7 +1554,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 }
 
 
-function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, $args = null) {
+function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $args = null) {
 	
 	if (!is_string($articleIdsSTR)) {
 		return false;
@@ -1584,12 +1584,15 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 	}
 	
 	$emailLogSTMT = $conn->prepare('SELECT * FROM email_log WHERE assoc_id IN ' . $ids);
-	$emailLogUsersSTMT = $conn->prepare('SELECT * FROM email_log_users WHERE log_id = :emailLog_logId');
+	$emailLogUsersSTMT = $conn->prepare('SELECT * FROM email_log_users WHERE email_log_id = :emailLog_logId');
 	
 	$errors = array(
 		'email_log' => array(),
 		'email_log_users' => array()
 	);
+	
+	$emailLogs = array();
+	$showErrors = false;
 	
 	///////// fetching the email_logs  /////////////////////////////////////////////////////
 	
@@ -1603,6 +1606,8 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 			processCollation($emailLog, 'email_log', $collations);
 			
 			/////////// fetching the sender data if it was not yet imported ////////
+			
+			$senderId = $emailLog['sender_id'];
 			
 			/////// checking if it needs to fetch the sender data //////////////
 			$fetchUserData = false;
@@ -1626,10 +1631,11 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 				if ($verbose) echo "\n    fetching the email log_id #" . $emailLog['log_id'] . " sender data ..........";
 				
 				$data = fetchUser($conn, $senderId, $journal, $args);
-				if ($data['errorOccurred'])) {
+				if ($data['errorOccurred']) {
 					if ($verbose) {
 						echo "Error\n";
 						$errors['email_log'] = array('emailLog' => $emailLog, 'error' => $data['error']);
+						$showErrors = true;
 					}
 				}
 				else {
@@ -1645,6 +1651,9 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 			if ($verbose) echo '    fetching the email_log_users for the email log_id #' . $emailLog['log_id'] . ' ............';
 			if ($emailLogUsersSTMT->execute()){
 				$emailLogUsers = array();
+				
+				if ($verbose) echo "Ok\n";
+				
 				while ($emailLogUser = $emailLogUsersSTMT->fetch(PDO::FETCH_ASSOC)) {
 					/////// checking if it needs to fetch the user data //////////////
 					$fetchUserData = false;
@@ -1668,10 +1677,11 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 						if ($verbose) echo "\n    fetching the user #" . $emailLogUsers['user_id'] . " data ..........";
 						
 						$data = fetchUser($conn, $senderId, $journal, $args);
-						if ($data['errorOccurred'])) {
+						if ($data['errorOccurred']) {
 							if ($verbose) {
 								echo "Error\n";
 								$errors['email_log_users'] = array('emailLogUsers' => $emailLogUsers, 'error' => $data['error']);
+								$showErrors = true;
 							}
 						}
 						else {
@@ -1680,6 +1690,8 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 						$emailLogUser['user'] = $data['user'];
 					}
 					/////////////// end of fetching the user data  ////////////////////////
+					
+					echo "        fetched email_log_id #" . $emailLogUser['email_log_id'] . " with user_id #" . $emailLogUsers['user_id'] . "\n";
 					
 					array_push($emailLogUsers, $emailLogUser);
 				}
@@ -1692,7 +1704,11 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 				echo "Error\n";
 				$error = array('email_log' => $emailLog, 'error' => $emailLogUsersSTMT->errorInfo());
 				array_push($errors['email_log_users'], $error);
+				$showErrors = true;
 			}
+			
+			array_push($emailLogs, $emailLog);
+			
 		}
 		//end of the while to fetch the email_logs
 	}
@@ -1700,10 +1716,15 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 		if ($verbose) echo "Error\n\n";
 		$error = array('error' => $emailLogSTMT->errorInfo());
 		array_push($errors['email_log'], $error);
+		$showErrors = true;
 	}
 	///////// end of fetching the email_logs  //////////////////////////////////////////////
 	
 	echo "\nFetched " . count($emailLogs) . " email logs.\n";
+	
+	if ($showErrors) {
+		echo "\nThe errors were:\n" . print_r($errors, true) . "\n";
+	}
 	
 	return array('email_logs' => $emailLogs, 'errors' => $errors);
 }
@@ -1712,14 +1733,27 @@ function fetchEmailLogs($conn, $articlesIdsSTR, &$dataMapping, $journal = null, 
 /**
 this function fetches the article history which includes the articles event and email logs
 */
-function fetchArticlesHistory($conn, $articlesIds, &$dataMapping, $journal = null, $args = null) {
+function fetchArticlesHistory($conn, $articlesIds, $journal = null, $args = null) {
 	
-	if (!is_array($articleIds)) {
+	/*if (!is_array($articleIds)) {
 		exit("\nArticles ids are not in an array\n\n");
-	}
+	}*/
 	
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	
+	if (!array_key_exists('article_id', $dataMapping)) {
+		echo "\n\nThere is not any article data mapped yet\n\n";
+		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
+		return false;
+	}
+	
+	$articleIds = array();
+	foreach ($dataMapping['article_id'] as $oldId => $newId) {
+		array_push($articleIds, $oldId);
 	}
 	
 	$collations = null;
@@ -1742,15 +1776,15 @@ function fetchArticlesHistory($conn, $articlesIds, &$dataMapping, $journal = nul
 	}
 	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';
 	
-	$eventLogsData = fetchEventLogs($conn, $articleIdsSTR, $dataMapping, $journal, $args);
+	$eventLogData = fetchEventLogs($conn, $articleIdsSTR, $dataMapping, $journal, $args);
 	
-	$emailLogsData = fetchEmailLogs($conn, $articlesIdsSTR, $dataMapping, $journal, $args);
+	$emailLogData = fetchEmailLogs($conn, $articleIdsSTR, $dataMapping, $journal, $args);
 	
 	$errors = array('email_log_errors' => $emailLogData['errors'], 'event_log_errors' => $eventLogData['errors']);
 	
 	$history = array('email_log' => $emailLogData['email_logs'], 'event_log' => $eventLogData['event_logs']);
 	
-	return array('history' => $history, 'errors' => $errors);
+	return array('articles_history' => $history, 'errors' => $errors);
 }
 
 

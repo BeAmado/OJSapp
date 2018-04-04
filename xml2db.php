@@ -3212,8 +3212,7 @@ insert the articles history, which is comprised of event_logs and email_logs
 */
 function insertArticlesHistory(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
 	
-	echo "\n\nNOT FUNCTIONAL\n\n";
-	return false;
+	exit("\n\nNOT FUNCTIONAL\n\n");
 	
 	
 	$limit = 10;

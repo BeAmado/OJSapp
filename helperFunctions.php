@@ -768,16 +768,27 @@ function backupXml($filename) {
 /**
 Returns the number of error entries in the array $errors
 */
-function countErrors($errors) {
+function countErrors($errors, $type = 'importation') {
 	$count = 0;
-	foreach ($errors as $field) {
-		if (array_key_exists("insert", $field)) {
-			$count += count($field["insert"]);
-		}
-		if (array_key_exists("update", $field)) {
-			$count += count($field["update"]);
-		}
+	switch ($type) {
+		case 'exportation': {
+			foreach ($errors as $item => $arr) {
+				$count += count($arr);
+			}
+		} break;
+		
+		case 'importation': {
+			foreach ($errors as $field) {
+				if (array_key_exists("insert", $field)) {
+					$count += count($field["insert"]);
+				}
+				if (array_key_exists("update", $field)) {
+					$count += count($field["update"]);
+				}
+			}
+		} break;
 	}
+	
 	
 	return $count;
 }
