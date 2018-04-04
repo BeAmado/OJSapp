@@ -1782,7 +1782,7 @@ function fetchArticlesHistory($conn, $articlesIds, $journal = null, $args = null
 	
 	$errors = array('email_log_errors' => $emailLogData['errors'], 'event_log_errors' => $eventLogData['errors']);
 	
-	$history = array('email_log' => $emailLogData['email_logs'], 'event_log' => $eventLogData['event_logs']);
+	$history = array('email_logs' => $emailLogData['email_logs'], 'event_logs' => $eventLogData['event_logs']);
 	
 	return array('articles_history' => $history, 'errors' => $errors);
 }

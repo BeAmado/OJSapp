@@ -1140,11 +1140,15 @@ return value:
 	-3 -> Imported everything but did not save the data mapping NOT USED
 	-4 -> The user decided to stop the importation
 	-5 -> Unknown type
+	-6 -> did not save the xml file registering the new users
 */
-function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping) {
+function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping, &$newUsers) {
+	
+	$returnValue = null;
 	
 	$dataFilename = null;
 	$mappingsFilename = null;
+	$newUsersFilename = null;
 	$returnedData = null;
 	$saveDataMappingXml = false;
 	
@@ -1160,6 +1164,9 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 		}
 		if (array_key_exists('data_mappings', $xmlFiles)) {
 			$mappingsFilename = $xmlFiles['data_mappings'];
+		}
+		if (array_key_exists('new_users', $xmlFiles)) {
+			$newUsersFilename = $xmlFiles['new_users'];
 		}
 	}
 	
@@ -1255,7 +1262,6 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 		
 		if (strtolower($resp) !== "y" &&  strtolower($resp) !== "yes") {
 			return -4;
-			//exit("\n\n----------- Haulting the application ----------\n\n");
 		}
 	}
 	else {
@@ -1270,20 +1276,44 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 			echo "\nImported " . count($insertedUsers) . " new users.\n";
 			$saveDataMappingXml = true;
 			
-			$newUsersXml = new DOMDocument("1.0", "UTF-8");
+			if ($newUsersFilename !== null) {
+				//if the new_users .xml file already exists append it
+				
+				$importedUsersXML = new DOMDocument('1.0', 'UTF-8');
+				if (@$importedUsersXML->loadHTMLFile($newUsersFilename)) {
+					//use the loadHTMLFile to be able to decode the htmlentities
+					//the @ in before the variable name is to suppress the warnings
+					//everything ok
+				}
+				else {
+					echo "\nCould not load the xml file '$newUsersFilename'.\n";
+				}
+				$importedUsers = xmlToArray($importedUsersXML, true); //from helperFunctions.php
+				
+				$insertedUsers = array_merge($insertedUsers, $importedUsers);
+			}
+			
+			
+			$newUsersXml = new DOMDocument('1.0", "UTF-8');
 			
 			$extraArgs = array();
-			$extraArgs["addRootNode"] = true;
-			$extraArgs["rootNode"] = "new_users";
-			$extraArgs["journal"] = $journal;
-			$extraArgs["type"] = "user";
+			/*$extraArgs['addRootNode'] = true;
+			$extraArgs['rootNode'] = 'new_users';*/
+			$extraArgs['journal'] = $journal;
+			$extraArgs['type'] = 'user';
 			
 			arrayToXml($newUsersXml, $newUsersXml, $insertedUsers, $extraArgs); // from helperFunctions function #13
 			
 			$usersFilename = $journal["path"] . "_newUsers.xml";
 			
 			echo "\nSaving the newly imported users in a .xml file:\n";
-			saveMyXml($newUsersXml, $usersFilename, false); // from helperFunctions function #04 
+			if (saveMyXml($newUsersXml, $usersFilename, false)) { // from helperFunctions function #04 
+				$xmlFiles['new_users'] = $usersFilename;
+			}
+			else {
+				echo "\nCould not save the new users in a .xml file\n";
+				$returnValue = -6;
+			}
 		}
 		else {
 			echo "\nDid not import any new user.\n";
@@ -1314,10 +1344,10 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping)
 	}
 	
 	if ($saveDataMappingXml) {
-		return 1;
+		return ($returnValue !== null) ? $returnValue : 1;
 	}
 	
-	return 0;
+	return ($returnValue !== null) ? $returnValue : 0;
 	
 }
 

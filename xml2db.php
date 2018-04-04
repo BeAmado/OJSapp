@@ -3295,6 +3295,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		'email_log_users' => array('insert' => array(), 'update' => array() )
 	);
 	
+	$insertedUsers = array();
+	
 	//////// INSERTING THE EMAIL LOGS  /////////////////////////////////////
 	
 	$emailLogs = xmlToArray($email_logs_node, true); //from helperFunctions.php
@@ -3339,6 +3341,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		if (array_key_exists($emailLog['sender_id'], $dataMapping['user_id'])) {
 			$emailLog['sender_new_id'] = $dataMapping['user_id'][$emailLog['sender_id']];
 			$senderIdOk = true;
+		}
+		else {
+			$userIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
 		}
 		
 		if ($assocIdOk && $senderIdOk) {
