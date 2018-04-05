@@ -455,6 +455,7 @@ function sectionExists($conn, $journalId, $section) {
 			}
 			
 			$found = true;
+			break;
 			
 		}//end of the if fetchedSection
 	}//end of the foreach abbrevs
@@ -497,11 +498,13 @@ function sectionExists($conn, $journalId, $section) {
 				array_push($messages, $msg);
 			}
 			
+			break;
+			
 		}//end of the if fetchedSection
 	}//end of the foreach titles
 	} // end of the if not found
 	
-	if ($fetchedSection === null) {
+	if ($fetchedSection === null || $fetchedSection === false) {
 		return false; // the section does not exist
 	}
 	
@@ -722,8 +725,17 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 	foreach ($sections as &$section) {
 		
 		if (array_key_exists($section['section_id'], $dataMapping['section_id'])) {
-			echo "\nsection #" . $section['section_id'] . " was already imported.\n";
-			continue; // go to the next section
+			$sectionId = $section['section_id'];
+			$mappedId = $dataMapping['section_id'][$sectionId];
+			
+			if ($mappedId === null || $mappedId === 0 || $mappedId == '') {
+				//the section was not imported
+			}
+			else {
+				echo "\nsection #" . $section['section_id'] . " was already imported.\n";
+				echo "Its new id is '" . $mappedId . "'\n";
+				continue; // go to the next section
+			}
 		}
 		
 		///////////////  TEST IF THE SECTION ALREADY EXISTS IN THE JOURNAL ///////////////////
@@ -738,14 +750,21 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 				}
 				
 			}
-			$fetchedSection = $data['section'];
 			
-			//map the section
-			$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
+			if (array_key_exists('section', $data)) {
+				$fetchedSection = $data['section'];
 			
-			continue; // go to the next section
+				if ($fetchedSection) {
+					//map the section
+					$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
+					continue; // go to the next section
+					
+				}//end of the if fetchedSection
+			}//end of the if key exists section
+			
 		}
 		///////////////////////////////////////////////////////////////////////////////////////
+		
 		
 		$section['journal_new_id'] = $journalNewId;
 		
@@ -3332,10 +3351,14 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	//////////////////////////////////////////////////////////////
 	*/
 		
+		$error = array();
 		
 		if (array_key_exists($emailLog['assoc_id'], $dataMapping['article_id'])) {
 			$emailLog['assoc_new_id'] = $dataMapping['article_id'][$email_log['assoc_id']];
 			$assocIdOk = true;
+		}
+		else {
+			$error['assocIdError'] = 'The email log assoc_id #' . $emailLog['assoc_id'] . ' , which is an article_id, is not in the dataMapping.'; 
 		}
 		
 		if (array_key_exists($emailLog['sender_id'], $dataMapping['user_id'])) {
@@ -3343,7 +3366,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			$senderIdOk = true;
 		}
 		else {
-			$userIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
+			$senderIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
 		}
 		
 		if ($assocIdOk && $senderIdOk) {
@@ -3381,12 +3404,81 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			}
 		}// end of the if assocIdOk and senderIdOk
 		else {
+			if (!$senderIdOk) {
+				$error['senderIdError'] = 'The sender_id #' . $emailLog['sender_id'] . ' , which is a user_id, is not in the dataMappings.';
+			}
 			
+			$error['email_log_id'] = $emailLog['log_id'];
+			
+			array_push($errors['email_log']['insert'], $error);
+		}
+		
+		
+		
+		
+		if ($emailLogOk) {
+			// insert the email_log_users
+			if (array_key_exists('email_log_users', $emailLog)) { if (!empty($emailLog['email_log_users'])) {
+				
+			echo "\nInserting email_log_users for the email_log_id #" . $emailLog['log_id'] . " :\n";
+				
+			foreach ($emailLog['email_log_users'] as &$emailLogUser) {
+				
+				$emailLogIdOk = false;
+				$userIdOk = false;
+				$error = array();
+				
+				//////////////////////////////////////////////////////////////////////////////////
+				if (array_key_exists($emailLogUser['email_log_id'], $dataMapping['email_log_id'])) {
+					$emailLogUser['email_log_new_id'] = $dataMapping['email_log_id'][$emailLogUser['email_log_id']];
+					$emailLogIdOk = true;
+				}
+				else {
+					$error['emailLogIdError'] = 'The email_log_id #' . $emailLogUser['email_log_id'] . ' is not in the dataMapping.';
+				}
+				
+				if (array_key_exists($emailLogUser['user_id'], $dataMapping['user_id'])) {
+					$emailLogUser['user_new_id'] = $dataMapping['user_id'][$emailLogUser['user_id']];
+					$userIdOk = true;
+				}
+				else {
+					$userIdOk = processUser($emailLogUser['user'], array('type' => 'email_log_users', 'data' => $emailLogUser), $dataMapping, $errors, $insertedUsers, $userStatements);
+				}
+				/////////////////////////////////////////////////////////////////////////////////////
+				
+				if ($userIdOk && $emailLogIdOk) {
+					
+					echo '        inserting email_log_user with user_id #' . $emailLogUser['user_id'] . ' .........';
+					
+					$arr = array();
+					$arr['data'] = $emailLogUser;
+					$arr['params'] = array(
+						array('name' => ':emailLogId', 'attr' => 'email_log_new_id', 'type' => PDO::PARAM_STR),
+						array('name' => ':emailLogUsers_userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_STR)
+					);
+					
+					if (myExecute('insert', 'email_log_users', $arr, $insertEmailLogUsersSTMT, $errors)) { //from helperFunctions.php
+						echo "Ok\n";
+					}
+					else {
+						echo "Failed\n";
+					}
+					
+				}
+				else {
+					$error['email_log_user'] = $emailLogUser;
+					array_push($errors['email_log_users']['insert'], $error);
+				}
+				
+			}//end of the foreach email_log_user
+			unset($emailLogUser);
+			}//end of the if email_log_users is not empty
+			}//end of the if email_log_users exists
 		}
 		
 	}
 	
-
+	//////// END OF INSERTING THE EMAIL LOGS ///////////////////////////////
 
 	
 	
