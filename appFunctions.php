@@ -947,7 +947,8 @@ function myMain() {
 		'unpublished articles' => false, 
 		'announcements' => false, 
 		'groups' => false,
-		'articles_history' => false
+		'articles_history' => false,
+		'plugin_settings' => false
 	);
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
@@ -1078,6 +1079,10 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			
 		case 'articles_history':
 			$returnedData = fetchArticlesHistory($conn, $journal, $args);
+			break;
+			
+		case 'plugin_settings':
+			$returnedData = fetchPluginSettings($conn, $journal['journal_id'], $args);
 			break;
 			
 		default:

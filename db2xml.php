@@ -1782,7 +1782,19 @@ function fetchArticlesHistory($conn, $journal = null, $args = null) {
 /**
 fetch the journal plugin settings
 */
-function fetchPluginSettings($conn, $journalId) {
+function fetchPluginSettings($conn, $journalId, $args) {
+	
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
 	
 	$errors = array();
 	$pluginSettings = null;
@@ -1792,7 +1804,11 @@ function fetchPluginSettings($conn, $journalId) {
 	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_INT);
 	
 	if ($stmt->execute()) {
-		$pluginSettings = $stmt->fetchAll(PDO::FETCH_ASSOC));
+		$pluginSettings = array();
+		while ($setting = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			processCollation($setting, 'plugin_settings', $collations);
+			array_push($pluginSettings, $setting);
+		}
 	}
 	else {
 		$errors['error'] = array('journal_id' => $journalId, 'error' => $stmt->errorInfo()); 
