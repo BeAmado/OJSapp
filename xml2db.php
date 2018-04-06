@@ -3334,25 +3334,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		$assocIdOk = false;
 		$senderIdOk = false;
 		
-		//processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$stmts)
-	
-	/*
-	$userOk = false;
-					
-	//////////////////// process user data ///////////////////////
-
-	// check if the user is registered in the new journal
-	if (array_key_exists($membership['user_id'], $dataMapping['user_id'])) {
-		$membership['user_new_id'] = $dataMapping['user_id'][$membership['user_id']];
-	}
-	else {
-		$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
-	}
-	//////////////////////////////////////////////////////////////
-	*/
-		
 		$error = array();
 		
+		/////////////// checking data integrity ///////////////////////////////////////////
 		if (array_key_exists($emailLog['assoc_id'], $dataMapping['article_id'])) {
 			$emailLog['assoc_new_id'] = $dataMapping['article_id'][$email_log['assoc_id']];
 			$assocIdOk = true;
@@ -3368,8 +3352,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		else {
 			$senderIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
 		}
+		/////////////////////////////////////////////////////////////////////////////////////
 		
-		if ($assocIdOk && $senderIdOk) {
+		if ($assocIdOk && $senderIdOk) { //if data integrity is ok
 			validateData('email_log', $emailLog); //from helperFunctions.php
 			
 			$arr = array();
@@ -3393,9 +3378,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			if (myExecute('insert', 'email_log', $arr, $insertEmailLogSTMT, $errors)) { //from helperFunctions.php
 				echo "Ok\n";
-				if (getNewId('review_form', $lastEmailLogsSTMT, $emailLog, $dataMapping, $errors)) { //from helperFunctions.php
+				if (getNewId('email_log', $lastEmailLogsSTMT, $emailLog, $dataMapping, $errors)) { //from helperFunctions.php
 					echo "    new id = " . $emailLog['log_new_id'] . "\n\n";
-					$EmailLogOk = true;
+					$emailLogOk = true;
 					$numInsertedEmailLogs++;
 				}
 			}
@@ -3403,7 +3388,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				echo "Failed\n";
 			}
 		}// end of the if assocIdOk and senderIdOk
-		else {
+		else { // the data integrity is not ok
 			if (!$senderIdOk) {
 				$error['senderIdError'] = 'The sender_id #' . $emailLog['sender_id'] . ' , which is a user_id, is not in the dataMappings.';
 			}
@@ -3412,8 +3397,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			array_push($errors['email_log']['insert'], $error);
 		}
-		
-		
 		
 		
 		if ($emailLogOk) {
@@ -3428,7 +3411,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				$userIdOk = false;
 				$error = array();
 				
-				//////////////////////////////////////////////////////////////////////////////////
+				//////////////////// checking data integrity //////////////////////////////////////
 				if (array_key_exists($emailLogUser['email_log_id'], $dataMapping['email_log_id'])) {
 					$emailLogUser['email_log_new_id'] = $dataMapping['email_log_id'][$emailLogUser['email_log_id']];
 					$emailLogIdOk = true;
@@ -3446,7 +3429,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				}
 				/////////////////////////////////////////////////////////////////////////////////////
 				
-				if ($userIdOk && $emailLogIdOk) {
+				if ($userIdOk && $emailLogIdOk) { 
 					
 					echo '        inserting email_log_user with user_id #' . $emailLogUser['user_id'] . ' .........';
 					
@@ -3474,9 +3457,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			unset($emailLogUser);
 			}//end of the if email_log_users is not empty
 			}//end of the if email_log_users exists
-		}
+		}// end of the if emailLogOk
 		
-	}
+	}// end of the foreach emailLog
+	unset($emailLog);
 	
 	//////// END OF INSERTING THE EMAIL LOGS ///////////////////////////////
 
@@ -3484,7 +3468,122 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	////////  INSERTING THE EVENT LOGS  ////////////////////////////////////
 	
+	$eventLogs = xmlToArray($event_logs_node, true); //from helperFunctions.php
+	$numInsertedEventLogs = 0;
+	
+	foreach ($eventLogs as &$eventLog) {
+		if (array_key_exists($eventLog['log_id'], $dataMapping['event_log_id'])) {
+			echo "\nevent_log #" . $eventLog['log_id'] . " was already imported.\n";
+			continue; // go to the next review_form
+		}
+		
+		$eventLogOk = false;
+		$assocIdOk = false;
+		$userIdOk = false;
+		
+		$error = array();
+		
+		//////////////////// checking data integrity /////////////////////////////////////////
+		if (array_key_exists($eventLog['assoc_id'], $dataMapping['article_id'])) {
+			$eventLog['assoc_new_id'] = $dataMapping['article_id'][$email_log['assoc_id']];
+			$assocIdOk = true;
+		}
+		else {
+			$error['assocIdError'] = 'The event log assoc_id #' . $eventLog['assoc_id'] . ' , which is an article_id, is not in the dataMapping.'; 
+		}
+		
+		if (array_key_exists($eventLog['user_id'], $dataMapping['user_id'])) {
+			$eventLog['user_new_id'] = $dataMapping['user_id'][$eventLog['user_id']];
+			$senderIdOk = true;
+		}
+		else {
+			$userIdOk = processUser($eventLog['user'], array('type' => 'event_log', 'data' => $eventLog), $dataMapping, $errors, $insertedUsers, $userStatements);
+		}
+		////////////////////////////////////////////////////////////////////////////////////////
+		
+		if ($assocIdOk && $userIdOk) { //if the data integrity is ok
+			validateData('event_log', $eventLog); //from helperFunctions.php
+			
+			$arr = array();
+			$arr['data'] = $eventLog;
+			$arr['params'] = array(
+				array('name' => ':eventLog_assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT),
+				array('name' => ':eventLog_assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':dateLogged', 'attr' => 'date_logged', 'type' => PDO::PARAM_STR),
+				array('name' => ':eventLog_ipAddress', 'attr' => 'ip_address', 'type' => PDO::PARAM_STR),
+				array('name' => ':eventLog_eventType', 'attr' => 'event_type', 'type' => PDO::PARAM_INT),
+				array('name' => ':message', 'attr' => 'message', 'type' => PDO::PARAM_STR),
+				array('name' => ':isTranslated', 'attr' => 'is_translated', 'type' => PDO::PARAM_INT)
+			);
+			
+			echo '    inserting event_log #' . $eventLog['log_id']. '............ ';
+			
+			if (myExecute('insert', 'event_log', $arr, $insertEventLogSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n";
+				if (getNewId('event_log', $lastEventLogsSTMT, $eventLog, $dataMapping, $errors)) { //from helperFunctions.php
+					echo "    new id = " . $eventLog['log_new_id'] . "\n\n";
+					$eventLogOk = true;
+					$numInsertedEventLogs++;
+				}
+			}
+			else {
+				echo "Failed\n";
+			}
+		}//end of the if assocIdOk and userIdOk
+		else { //the data had no integrity
+			if (!$userIdOk) {
+				$error['userIdError'] = 'The user_id #' . $eventLog['user_id'] . ' is not in the dataMappings.';
+			}
+			
+			$error['event_log_id'] = $eventLog['log_id'];
+			
+			array_push($errors['event_log']['insert'], $error);
+		}
+		
+		if ($eventLogOk) {
+			if (array_key_exists('settings', $eventLog)) { if (!empty($eventLog['settings'])) {
+			foreach ($eventLog['settings'] as &$setting) {
+				
+				validateData('event_log_settings', $setting); 
+						
+				$setting['log_new_id'] = $eventLog['log_new_id'];
+				echo '        inserting '. $setting['setting_name']  . ' .........';
+				
+				$arr = array();
+				$arr['data'] = $setting;
+				$arr['params'] = array(
+					array('name' => ':eventLogId', 'attr' => 'log_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+					array('name' => ':settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+				);
+				
+				if (myExecute('insert', 'event_log_settings', $arr, $insertEventLogSettingsSTMT, $errors)) { //from helperFunctions.php
+					echo "Ok\n";
+				}
+				else {
+					echo "Failed\n";
+				}
+				
+			}//end of the foreach setting
+			unset($setting);	
+				
+			}//end of the if eventLog settings is not empty
+			}//end of the if settings exist
+		}// end of the if eventLogOk
+		
+	}//end of the foreach eventLog
+	unset($eventLog);
+	
 	///////  END OF INSERTING THE EVENT LOGS  //////////////////////////////
 	
+	$returnData = array();
+	$returnData['errors'] = $errors;
+	$returnData['insertedUsers'] = $insertedUsers;
+	$returnData['numInsertedRecords'] = array('event_logs' => $numInsertedEventLogs, 'email_logs' => $numInsertedEmailLogs);
+	
+	return $returnData;
 	
 }
+//end of insertArticleHistory

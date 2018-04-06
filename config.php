@@ -101,7 +101,10 @@ $tables = array(
 	'citation' => array(),
 	'citation_settings' => array(),
 	'referral' => array(),
-	'referral_settings' => array()
+	'referral_settings' => array(),
+	'plugin_settings' => array(),
+	'custom_issue_order' => array(),
+	'custom_section_order' => array()
 );
 
 
@@ -713,9 +716,42 @@ $tables['referral_settings']['foreign_keys'] = array();
 $tables['referral_settings']['properties'] = array();
 $tables['referral_settings']['properties']['referral_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
 $tables['referral_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['referral_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
+$tables['referral_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => 'defaultSettingName', 'extra' => '');
 $tables['referral_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['referral_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
+$tables['referral_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => 'def', 'extra' => '');
+
+
+$tables['plugin_settings']['attributes'] = array('plugin_name', 'locale', 'journal_id', 'setting_name', 'setting_value', 'setting_type');
+$tables['plugin_settings']['primary_keys'] = array('plugin_name', 'locale', 'journal_id', 'setting_name');
+$tables['plugin_settings']['foreign_keys'] = array();
+$tables['plugin_settings']['properties'] = array(
+	'plugin_name' => array('type' => 'varchar(80)', 'null' => 'no', 'key' => 'pri', 'default' => 'defaultPluginName', 'extra' => ''),
+	'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+	'journal_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'setting_name' => array('type' => 'varchar(80)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+	'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => 'def', 'extra' => '')
+);
+
+
+$tables['custom_issue_order']['attributes'] = array('issue_id', 'journal_id', 'seq');
+$tables['custom_issue_order']['primary_keys'] = array('issue_id');
+$tables['custom_issue_order']['foreign_keys'] = array('journal_id');
+$tables['custom_issue_order']['properties'] = array(
+	'issue_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'journal_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'seq' => array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+);
+
+
+$tables['custom_section_order']['attributes'] = array('issue_id', 'section_id', 'seq');
+$tables['custom_section_order']['primary_keys'] = array('issue_id');
+$tables['custom_section_order']['foreign_keys'] = array('section_id');
+$tables['custom_section_order']['properties'] = array(
+	'issue_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'section_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'seq' => array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+);
 
 
 $idFields = array();

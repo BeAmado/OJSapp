@@ -15,6 +15,8 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 07) fetchCitations
 08) fetchReferrals
 09) fetchHistory
+	09.1) fetchEventLogs
+	09.2) fetchEmailLogs
 10) fetchPluginSettings
 11) fetchSectionAndIssueOrders
 
@@ -1412,6 +1414,7 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 }
 
 
+// #07)
 /**
 fetch the citations of the articles passed by the argument $articleIds
 which is an array with the ids of the articles to fetch their citations
@@ -1422,6 +1425,8 @@ function fetchCitations() {
 	echo "\n\n\nTHIS FUNCTION DOES NOT DO ANYTHING YET!\n\n\n";
 }
 
+
+// #08)
 /**
 fetch the article referrals
 */
@@ -1430,6 +1435,7 @@ function fetchReferrals() {
 }
 
 
+// #09.1
 function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $args = null) {
 	if (!is_string($articleIdsSTR)) {
 		return false;
@@ -1553,7 +1559,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 	
 }
 
-
+// #09.2)
 function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $args = null) {
 	
 	if (!is_string($articleIdsSTR)) {
@@ -1733,11 +1739,7 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 /**
 this function fetches the article history which includes the articles event and email logs
 */
-function fetchArticlesHistory($conn, $articlesIds, $journal = null, $args = null) {
-	
-	/*if (!is_array($articleIds)) {
-		exit("\nArticles ids are not in an array\n\n");
-	}*/
+function fetchArticlesHistory($conn, $journal = null, $args = null) {
 	
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
@@ -1754,18 +1756,6 @@ function fetchArticlesHistory($conn, $articlesIds, $journal = null, $args = null
 	$articleIds = array();
 	foreach ($dataMapping['article_id'] as $oldId => $newId) {
 		array_push($articleIds, $oldId);
-	}
-	
-	$collations = null;
-	$verbose = null;
-	
-	if (is_array($args)) {
-		if (array_key_exists('collations', $args)) {
-			$collations = $args['collations'];
-		}
-		if (array_key_exists('verbose', $args)) {
-			$verbose = $args['verbose'];	
-		}
 	}
 	
 	$totalArticles = count($articleIds);
@@ -1788,17 +1778,41 @@ function fetchArticlesHistory($conn, $articlesIds, $journal = null, $args = null
 }
 
 
+// #11)
 /**
 fetch the journal plugin settings
 */
 function fetchPluginSettings($conn, $journalId) {
 	
+	$errors = array();
+	$pluginSettings = null;
+	
+	$stmt = $conn->prepare('SELECT * FROM plugin_settings WHERE journal_id = :journalId');
+	
+	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_INT);
+	
+	if ($stmt->execute()) {
+		$pluginSettings = $stmt->fetchAll(PDO::FETCH_ASSOC));
+	}
+	else {
+		$errors['error'] = array('journal_id' => $journalId, 'error' => $stmt->errorInfo()); 
+	}
+	
+	return array('plugin_settings' => $pluginSettings, 'errors' => $errors);
 }
 
 
+// #12) 
 /**
 fetch the tables custom_issue_orders and custom_section_orders for the journal specified by journalId
 */
 function fetchSectionAndIssueOrders($conn, $journalId) {
 	
+	$errors = array();
+	
+	$issuesSTMT = $conn->prepare('SELECT * FROM issues WHERE journal_id = :issues_journalId');
+	
+	$issueOrdersSTMT = $conn->prepare('SELECT * FROM custom_issue_orders WHERE journal_id = :issueOrders_journalId AND issue_id = :issueOrders_issueId');
+	
+	$sectionOrdersSTMT = $conn->prepare('SELECT * FROM custom_section_orders WHERE issue_id = :sectionOrders_issueId');
 }

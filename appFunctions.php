@@ -1077,7 +1077,7 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			break;
 			
 		case 'articles_history':
-			$returnedData = fetchArticlesHistory($conn, $articlesIds, $journal, $args);
+			$returnedData = fetchArticlesHistory($conn, $journal, $args);
 			break;
 			
 		default:
