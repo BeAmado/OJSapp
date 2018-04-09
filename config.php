@@ -104,7 +104,8 @@ $tables = array(
 	'referral_settings' => array(),
 	'plugin_settings' => array(),
 	'custom_issue_order' => array(),
-	'custom_section_order' => array()
+	'custom_section_order' => array(),
+	'issue' => array()
 );
 
 
@@ -751,6 +752,32 @@ $tables['custom_section_order']['properties'] = array(
 	'issue_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
 	'section_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
 	'seq' => array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+);
+
+
+$tables['issue']['attributes'] = array('issue_id', 'journal_id', 'volume', 'number', 'year', 'published', 'current', 'date_published', 'date_notified', 'access_status', 
+	'open_access_date', 'show_volume', 'show_number', 'show_year', 'show_title', 'style_file_name', 'original_style_file_name', 'last_modified');
+$tables['issue']['primary_keys'] = array('issue_id');
+$tables['issue']['foreign_keys'] = array('journal_id');
+$tables['issue']['properties'] = array(
+	'issue_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+	'journal_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+	'volume' => array('type' => 'smallint(6)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'number' => array('type' => 'varchar(10)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'year' => array('type' => 'smallint(6)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'published' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'current' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'date_published' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'date_notified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'access_status' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+	'open_access_date' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'show_volume' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'show_number' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'show_year' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'show_title' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'style_file_name' => array('type' => 'varchar(90)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'original_style_file_name' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'last_modified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
 );
 
 
