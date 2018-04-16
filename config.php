@@ -10,7 +10,7 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 
 THIS SCRIPT DEFINES THE VARIABLE $tables FOR USE IN THE ENTIRE APP
 
-Developed in 2017 by Bernardo Amado
+Developed in 2017-2018 by Bernardo Amado
 
 */
 
@@ -105,7 +105,8 @@ $tables = array(
 	'plugin_settings' => array(),
 	'custom_issue_order' => array(),
 	'custom_section_order' => array(),
-	'issue' => array()
+	'issue' => array(),
+	'issue_settings' => array()
 );
 
 
@@ -779,6 +780,18 @@ $tables['issue']['properties'] = array(
 	'original_style_file_name' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
 	'last_modified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
 );
+
+$tables['issue_settings']['attributes'] = array('locale', 'issue_id', 'setting_name', 'setting_value', 'setting_type');
+$tables['issue_settings']['primary_keys'] = array('locale', 'issue_id', 'setting_name');
+$tables['issue_settings']['foreign_keys'] = array();
+$tables['issue_settings']['properties'] = array(
+	'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+	'issue_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'setting_name' => array('type' => 'varchar(80)', 'null' => 'no', 'key' => 'pri', 'default' => 'defaultSettingName', 'extra' => ''),
+	'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => 'def', 'extra' => '')
+);
+
 
 
 $idFields = array();

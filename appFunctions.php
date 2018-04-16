@@ -474,7 +474,7 @@ function treatExportErrors($result, $type = null) {
 	
 	if (!$stop) {
 		$resp = readline("\n\nContinue the execution even with the errors? (y/N): ");
-		$responseYes = strtolower($resp) === "y" && strtolower($resp) === "yes";
+		$responseYes = strtolower($resp) === "y" || strtolower($resp) === "yes";
 	}
 	
 	if (!$responseYes || $stop) {
@@ -947,8 +947,10 @@ function myMain() {
 		'unpublished articles' => false, 
 		'announcements' => false, 
 		'groups' => false,
-		'articles_history' => false,
-		'plugin_settings' => false
+		'articles history' => false,
+		'plugin settings' => false,
+		'issue orders' => false,
+		'citations and referrals' => false
 	);
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
@@ -1085,12 +1087,20 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			$returnedData = fetchPluginSettings($conn, $journal['journal_id'], $args);
 			break;
 			
+		case 'issue_orders':
+			$returnedData = fetchIssueOrders($conn, $journal['journal_id'], $args);
+			break;
+			
+		case 'citations_and_referrals':
+			$returnedData = fetchCitationsAndReferrals($conn, $journal, $args);
+			break;
+			
 		default:
 			echo "\nUnknown type '$type'\n";
 			return -3;
 	}
 	
-	$numErrors = countErrors($returnedData['errors']); // from helperFunctions.php function #21
+	$numErrors = countErrors($returnedData['errors'], 'exportation'); // from helperFunctions.php function #21
 	
 	if ($numErrors > 0) {
 		echo "\nThere were errors while fetching the $printableType:\n";
@@ -1239,8 +1249,18 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			break;
 			
 		case 'articles_history':
-			echo "\nTHE OPTION articles_history DOES NOT WORK FOR IMPORTATION YET\n";
-			//$returnedData = insertArticlesHistory($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			//echo "\nTHE OPTION articles_history DOES NOT WORK FOR IMPORTATION YET\n";
+			$returnedData = insertArticlesHistory($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			break;
+			
+		case 'plugin_settings':
+			echo "\nTHE OPTION plugin_settings DOES NOT WORK FOR IMPORTATION YET\n";
+			//$returnedData = insertPluginSettings($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			break;
+			
+		case 'issue_orders':
+			echo "\nTHE OPTION issue_orders DOES NOT WORK FOR IMPORTATION YET\n";
+			//$returnedData = insertIssueOrders($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
 		default:

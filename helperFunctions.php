@@ -29,9 +29,13 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 22) translate2utf8 // out of use
 23) translateArray2utf8
 24) processCollation
+25) OJSappRootDir
+26) getTablesInfo
+27) getArticleIds
+28) getArticleIdsSTR
 
 
-Developed in 2017 by Bernardo Amado
+Developed in 2017-2018 by Bernardo Amado
 
 */
 
@@ -904,4 +908,60 @@ function getTablesInfo($conn = null, $dbName = null) {
 		return false;
 	}
 	
+}
+
+// #27)
+/**
+returns an array with the article ids of the selected journal
+*/
+function getArticleIds($conn, $journal) {
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	include_once('appFunctions.php');
+	
+	$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	
+	if (!is_array($dataMapping)) {
+		return null;
+	}
+	
+	if (!array_key_exists('article_id', $dataMapping)) {
+		echo "\n\nThere is not any article data mapped yet\n\n";
+		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
+		return false;
+	}
+	
+	$articleIds = array();
+	foreach ($dataMapping['article_id'] as $oldId => $newId) {
+		array_push($articleIds, $oldId);
+	}
+	
+	return $articleIds;
+}
+
+
+// #28)
+/**
+returns a string representing the set of article ids 
+*/
+function getArticleIdsSTR($articleIds = null) {
+	
+	if (!is_array($articleIds)) {
+		echo "\nERROR when executing the function 'getArticleIdsSTR'. The argument must be an array. \nInstead it was: \n";
+		var_dump($articleIds);
+		return false;
+	}
+	
+	$totalArticles = count($articleIds);
+	
+	$articleIdsSTR = '(';
+	for ($i = 0; $i < $totalArticles - 1; $i++) {
+		$articleIdsSTR .= $articleIds[$i] . ', ';
+	}
+	
+	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';
+	
+	return $articleIdsSTR;
 }

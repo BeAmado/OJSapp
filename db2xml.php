@@ -12,44 +12,19 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 04) fetchEmailTemplates
 05) fetchGroups
 06) fetchReviewForms
-07) fetchCitations
-08) fetchReferrals
-09) fetchHistory
+07) fetchCitationsAndReferrals
+	07.1) fetchCitations
+	07.2) fetchReferrals
+	
+09) fetchArticlesHistory
 	09.1) fetchEventLogs
 	09.2) fetchEmailLogs
+	
 10) fetchPluginSettings
-11) fetchSectionAndIssueOrders
+11) fetchIssueOrders
 
-Yet to fetch:
 
-////////  User related ///////////
-user_interests
-controlled_vocab_entries
-controlled_vocab_entry_settings
-controlled_vocabs
-//////////////////////////////////
-
-///////  Article related /////////
-event_log
-event_log_settings
-email_log
-email_log_users
-
-citations
-citation_settings
-
-referrals
-referral_settings
-//////////////////////////////////
-
-//////// Journal related /////////
-custom_issue_orders
-custom_section_orders
-
-plugin_settings
-//////////////////////////////////
-
-Developed in 2017 by Bernardo Amado
+Developed in 2017-2018 by Bernardo Amado
 */
 
 include_once('helperFunctions.php');
@@ -1414,26 +1389,266 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 }
 
 
-// #07)
+// #07.1)
 /**
 fetch the citations of the articles passed by the argument $articleIds
 which is an array with the ids of the articles to fetch their citations
 
 returns an array with the citations
 */
-function fetchCitations() {
-	echo "\n\n\nTHIS FUNCTION DOES NOT DO ANYTHING YET!\n\n\n";
+function fetchCitations($conn, $journal, $args = null) {
+	
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	$articleIdsSTR = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('articleIdsSTR', $args)) {
+			$articleIdsSTR = filter_var($args['articleIdsSTR'], FILTER_SANITIZE_STRING);
+		}
+	}
+	
+	$errors = array(
+		'citations' => array(),
+		'citation_settings' => array()
+	);
+	
+	/*$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	
+	if (!array_key_exists('article_id', $dataMapping)) {
+		echo "\n\nThere is not any article data mapped yet\n\n";
+		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
+		return false;
+	}
+	
+	$articleIds = array();
+	foreach ($dataMapping['article_id'] as $oldId => $newId) {
+		array_push($articleIds, $oldId);
+	}
+	
+	$totalArticles = count($articleIds);
+	
+	$articleIdsSTR = '(';
+	for ($i = 0; $i < $totalArticles - 1; $i++) {
+		$articleIdsSTR .= $articleIds[$i] . ', ';
+	}
+	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';*/
+	
+	if ($articleIdsSTR === null || $articleIdsSTR === false) {
+		$articleIds = getArticleIds($conn, $journal); //from helperFunctions function #27
+		
+		if ($articleIds === null){
+			return array('referrals' => null, 'errors' => array('There is not any article id in the dataMapping.'));
+		}
+		
+		$articleIdsSTR = getArticleIdsSTR($articleIds); // from helperFunctions function #28
+	}
+	
+	$query = 'SELECT * FROM citations WHERE assoc_id IN ' . $articleIdsSTR;
+	
+	$citationsSTMT = $conn->prepare($query);
+	$citationSettingsSTMT = $conn->prepare('SELECT * FROM citation_settings WHERE citation_id = :citationId');
+	
+	$citations = array();
+	
+	if ($citationsSTMT->execute()) {
+		while ($citation = $citationsSTMT->fetch(PDO::FETCH_ASSOC))	{
+			processCollation($citation, 'citations', $collations);
+			
+			//////////// fetch the citation_settings ///////////////////
+			$citationSettingsSTMT->bindParam(':citationId', $citation['citation_id'], PDO::PARAM_INT);
+			
+			if ($citationsSettingsSTMT->execute()) {
+				$citationSettings = array();
+				
+				while ($setting = $citationSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
+					processCollation($setting, 'citation_settings', $collations);
+					array_push($citationSettings, $setting);
+				}
+				
+				$citation['settings'] = $citationSettings;
+			}
+			else {
+				$error = array('citation' => $citation, 'error' => $citationSettingsSTMT->errorInfo());
+				array_push($errors['citation_settings'], $error);
+			}
+			////////////////////////////////////////////////////////////
+			
+			array_push($citations, $citation);
+			
+		}// end of the while to fetch the citations
+	}
+	else {
+		$error = array('query' => $query, 'error' => $citationsSTMT->errorInfo());
+		array_push($errors['citations'], $error);
+	}
+	
+	return array('citations' => $citations, 'errors' => $errors);
+	
 }
+//end of the function fetchCitations
 
-
-// #08)
+// #07.2)
 /**
 fetch the article referrals
 */
-function fetchReferrals() {
-	echo "\n\n\nTHIS FUNCTION DOES NOT DO ANYTHING YET\n\n\n";
+function fetchReferrals($conn, $journal, $args = null) {
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	$articleIdsSTR = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('articleIdsSTR', $args)) {
+			$articleIdsSTR = filter_var($args['articleIdsSTR'], FILTER_SANITIZE_STRING);
+		}
+	}
+	
+	$errors = array(
+		'referrals' => array(),
+		'referral_settings' => array()
+	);
+	
+	if ($articleIdsSTR === null || $articleIdsSTR === false) {
+		$articleIds = getArticleIds($conn, $journal); //from helperFunctions function #27
+		
+		if ($articleIds === null){
+			return array('referrals' => null, 'errors' => array('There is not any article id in the dataMapping.'));
+		}
+		
+		$articleIdsSTR = getArticleIdsSTR($articleIds); // from helperFunctions function #28
+	}
+	
+	/*$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	
+	if (!array_key_exists('article_id', $dataMapping)) {
+		echo "\n\nThere is not any article data mapped yet\n\n";
+		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
+		return false;
+	}
+	
+	$articleIds = array();
+	foreach ($dataMapping['article_id'] as $oldId => $newId) {
+		array_push($articleIds, $oldId);
+	}
+	
+	$totalArticles = count($articleIds);
+	
+	$articleIdsSTR = '(';
+	for ($i = 0; $i < $totalArticles - 1; $i++) {
+		$articleIdsSTR .= $articleIds[$i] . ', ';
+	}
+	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';*/
+	
+	$query = 'SELECT * FROM referrals WHERE article_id IN ' . $articleIdsSTR;
+	
+	$referralsSTMT = $conn->prepare($query);
+	$referralSettingsSTMT = $conn->prepare('SELECT * FROM referral_settings WHERE referral_id = :referralId');
+	
+	$referrals = array();
+	
+	if ($verbose) echo "\nFetching the articles referrals:";
+	
+	if ($referralsSTMT->execute()) {
+		while ($referral = $referralsSTMT->fetch(PDO::FETCH_ASSOC))	{
+			processCollation($referral, 'referrals', $collations);
+			
+			//////////// fetch the referral_settings ///////////////////
+			$referralSettingsSTMT->bindParam(':referralId', $referral['referral_id'], PDO::PARAM_INT);
+			
+			if ($referralsSettingsSTMT->execute()) {
+				$referralSettings = array();
+				
+				while ($setting = $referralSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
+					processCollation($setting, 'referral_settings', $collations);
+					array_push($referralSettings, $setting);
+				}
+				
+				$referral['settings'] = $referralSettings;
+			}
+			else {
+				$error = array('referral' => $referral, 'error' => $referralSettingsSTMT->errorInfo());
+				array_push($errors['referral_settings'], $error);
+			}
+			////////////////////////////////////////////////////////////
+			
+			array_push($referrals, $referral);
+			
+		}// end of the while to fetch the referrals
+	}
+	else {
+		$error = array('query' => $query, 'error' => $referralsSTMT->errorInfo());
+		array_push($errors['referrals'], $error);
+		if ($verbose) echo "Error\n";
+	}
+	
+	return array('referrals' => $referrals, 'errors' => $errors);
 }
+//end of fetchCitations
 
+// #07)
+/**
+fetch the articles citations and referrals
+*/
+function fetchCitationsAndReferrals($conn, $journal, $args = null) {
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
+	
+	$articleIds = getArticleIds($conn, $journal);
+
+	if ($articleIds) {
+		$articleIdsSTR = getArticleIdsSTR($articleIds);
+		if ($articleIdsSTR) {
+			$args['articleIdsSTR'] = $articleIdsSTR;
+		}
+	}
+	else if ($articleIds === null){
+		return array('citations_and_referrals' => null, 'errors' => array('There is not any article id in the dataMapping.'));
+	}
+	
+	$citationsData = fetchCitations($conn, $journal, $args);
+	$referralsData = fetchReferrals($conn, $journal, $args);
+	
+	$errors = array('citations_errors' => $citationsData['errors'], 'referrals_errors' => $referralsData['errors']);
+	
+	$citationsAndReferrals = array('citations' => $citationsData['citations'], 'referrals' => $referralsData['referrals']);
+	
+	return array('citations_and_referrals' => $citationsAndReferrals, 'errors' => $errors);
+	
+	
+}
 
 // #09.1
 function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $args = null) {
@@ -1736,6 +1951,7 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 }
 
 
+// #09)
 /**
 this function fetches the article history which includes the articles event and email logs
 */
@@ -1745,7 +1961,7 @@ function fetchArticlesHistory($conn, $journal = null, $args = null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
 	}
 	
-	$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	/*$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
 	
 	if (!array_key_exists('article_id', $dataMapping)) {
 		echo "\n\nThere is not any article data mapped yet\n\n";
@@ -1764,7 +1980,19 @@ function fetchArticlesHistory($conn, $journal = null, $args = null) {
 	for ($i = 0; $i < $totalArticles - 1; $i++) {
 		$articleIdsSTR .= $articleIds[$i] . ', ';
 	}
-	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';
+	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';*/
+	
+	$articleIds = getArticleIds($conn, $journal);
+	
+	if ($articleIds){
+		$articleIdsSTR = getArticleIdsSTR($articleIds);
+	}
+	else if ($articleIds === null) {
+		return array('articles_history' => null, 'errors' => array('There is not any article yet mapped'));
+	}
+	else {
+		return array('articles_history' => null, 'errors' => array('There is not any article yet mapped'));
+	}
 	
 	$eventLogData = fetchEventLogs($conn, $articleIdsSTR, $dataMapping, $journal, $args);
 	
@@ -1778,7 +2006,7 @@ function fetchArticlesHistory($conn, $journal = null, $args = null) {
 }
 
 
-// #11)
+// #10)
 /**
 fetch the journal plugin settings
 */
@@ -1818,17 +2046,100 @@ function fetchPluginSettings($conn, $journalId, $args) {
 }
 
 
-// #12) 
+// #11) 
 /**
 fetch the tables custom_issue_orders and custom_section_orders for the journal specified by journalId
 */
-function fetchSectionAndIssueOrders($conn, $journalId) {
+function fetchIssueOrders($conn, $journalId, $args) {
 	
-	$errors = array();
+	$collations = null;
+	$verbose = null;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+	}
+	
+	$errors = array(
+		'issues' => array(),
+		'issue_settings' => array(),
+		'custom_issue_orders' => array(),
+		'custom_section_orders' => array()
+	);
 	
 	$issuesSTMT = $conn->prepare('SELECT * FROM issues WHERE journal_id = :issues_journalId');
+	
+	$issueSettingsSTMT = $conn->prepare('SELECT * FROM issue_settings WHERE issue_id = :settings_issueId');
 	
 	$issueOrdersSTMT = $conn->prepare('SELECT * FROM custom_issue_orders WHERE journal_id = :issueOrders_journalId AND issue_id = :issueOrders_issueId');
 	
 	$sectionOrdersSTMT = $conn->prepare('SELECT * FROM custom_section_orders WHERE issue_id = :sectionOrders_issueId');
+	
+	$issues = array();
+	
+	$issuesSTMT->bindParam(':issues_journalId', $journalId, PDO::PARAM_INT);
+	
+	if ($issuesSTMT->execute()) {
+		while ($issue = $issuesSTMT->fetch(PDO::FETCH_ASSOC)) {
+			processCollation($issue, 'issues', $collations);
+			
+			///// fetch the issue_settings ////////////////////////////////////////////////////////
+			$issueSettingsSTMT->bindParam(':settings_issueId', $issue['issue_id'], PDO::PARAM_INT);
+			
+			if ($issueSettingsSTMT->execute()) {
+				$issueSettings = array();
+				while ($setting = $issueSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
+					processCollation($setting, 'issue_settings', $collations);
+					array_push($issueSettings, $setting);
+				}
+				
+				$issue['settings'] = $issueSettings;
+			}
+			else {
+				$error = array('issue' => $issue, 'error' => $issueSettingsSTMT->errorInfo());
+				array_push($errors['issues'], $error);
+			}
+			///////////////////////////////////////////////////////////////////////////////////////
+			
+			//////  fetch the custom_issue_order for this issue ///////////////////////////////////
+			$issueOrdersSTMT->bindParam(':issueOrders_journalId', $journalId, PDO::PARAM_INT);
+			$issueOrdersSTMT->bindParam(':issueOrders_issueId', $issue['issue_id'], PDO::PARAM_INT);
+			
+			if ($issueOrdersSTMT->execute()) {
+				if ($customIssueOrders = $issueOrdersSTMT->fetchAll(PDO::FETCH_ASSOC)) {
+					$issue['custom_issue_orders'] = $customIssueOrders;
+				}
+			}
+			else {
+				$error = array('issue_id' => $issue['issue_id'], 'journal_id' => $journalId, 'error' => $issueOrdersSTMT->errorInfo());
+				array_push($errors['custom_issue_orders'], $error);
+			}
+			///////////////////////////////////////////////////////////////////////////////////////
+			
+			/////// fetch the custom_section_orders for the sections of this issue ////////////////
+			$sectionOrdersSTMT->bindParam(':sectionOrders_issueId', $issue['issue_id'], PDO::PARAM_INT);
+			
+			if ($sectionOrdersSTMT->execute()) {
+				if ($customSectionOrders = $sectionOrdersSTMT->fetchAll(PDO::FETCH_ASSOC)) {
+					$issue['custom_section_orders'] = $customSectionOrders;
+				}
+			}
+			else {
+				$error = array('issue_id', 'error' => $sectionOrdersSTMT->errorInfo());
+				array_push($errors['custom_section_orders'], $error);
+			}
+			///////////////////////////////////////////////////////////////////////////////////////
+		}
+	}
+	else {
+		$error = array('journal_id' => $journalId, 'error' => $issuesSTMT->errorInfo());
+		array_push($errors['issue'], $error);
+	}
+	
+	return array('issue_orders' => $issues, 'errors' => $errors);
 }
+//end of fetchIssueOrders

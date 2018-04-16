@@ -19,8 +19,11 @@ FUNCTIONS IN DEFINED IN THIS SCRIPT:
 09) insertGroups
 10) insertReviewForms
 11) insertArticlesHistory
+12) insertPluginSettings
+13) insertIssueOrders
+14) insertCitationsAndReferrals
 
-Developed in 2017/2018 by Bernardo Amado
+Developed in 2017-2018 by Bernardo Amado
 
 */
 
@@ -2810,6 +2813,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		 VALUES (:memberships_groupId, :userId, :memberships_aboutDisplayed, :memberships_seq)'
 	);
 	
+	$checkMembershipSTMT = $conn->prepare('SELECT * FROM group_memberships WHERE user_id = :check_userId AND group_id = :check_groupId');
+	
 	//////////////////////////////////////////////////////////////////////////////////////
 	
 	$groups_node = null;
@@ -2847,9 +2852,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	foreach ($groups as &$grp) {
 		
+		$groupExists = false;
+		
 		if (array_key_exists($grp['group_id'], $dataMapping['group_id'])) {
-			echo "\ngroup #" . $grp['group_id'] . " was already imported.\n";
-			continue; // go to the next group
+			//echo "\ngroup #" . $grp['group_id'] . " was already imported.\n";
+			//continue; // go to the next group
+			$groupExists = true;
 		}
 		
 		$groupOk = false;
@@ -2857,39 +2865,40 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		validateData('group', $grp); //from helperFunctions.php
 		
-		
-		
-		$arr = array();
-		$arr['data'] = $grp;
-		$arr['params'] = array(
-			array('name' => ':context', 'attr' => 'context', 'type' => PDO::PARAM_INT),
-			array('name' => ':assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
-			array('name' => ':assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT),
-			array('name' => ':groups_aboutDisplayed', 'attr' => 'about_displayed', 'type' => PDO::PARAM_INT),
-			array('name' => ':groups_seq', 'attr' => 'seq'),
-			array('name' => ':publishEmail', 'attr' => 'publish_email', 'type' => PDO::PARAM_INT),
+		if (!$groupExists) {
+			$arr = array();
+			$arr['data'] = $grp;
+			$arr['params'] = array(
+				array('name' => ':context', 'attr' => 'context', 'type' => PDO::PARAM_INT),
+				array('name' => ':assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT),
+				array('name' => ':groups_aboutDisplayed', 'attr' => 'about_displayed', 'type' => PDO::PARAM_INT),
+				array('name' => ':groups_seq', 'attr' => 'seq'),
+				array('name' => ':publishEmail', 'attr' => 'publish_email', 'type' => PDO::PARAM_INT),
+				
+			);
 			
-		);
-		
-		echo '    inserting group #' . $grp['group_id']. '............ ';
-		
-		if (myExecute('insert', 'group', $arr, $insertGroupSTMT, $errors)) { //from helperFunctions.php
-			echo "Ok\n";
-			if (getNewId('group', $lastGroupsSTMT, $grp, $dataMapping, $errors)) { //from helperFunctions.php
-				echo "    new id = " . $grp['group_new_id'] . "\n\n";
-				$groupOk = true;
-				$numInsertedGroups++;
+			echo '    inserting group #' . $grp['group_id']. '............ ';
+			
+			if (myExecute('insert', 'group', $arr, $insertGroupSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n";
+				if (getNewId('group', $lastGroupsSTMT, $grp, $dataMapping, $errors)) { //from helperFunctions.php
+					echo "    new id = " . $grp['group_new_id'] . "\n\n";
+					$groupOk = true;
+					$numInsertedGroups++;
+				}
 			}
-		}
-		else {
-			echo "Failed\n";
-		}
+			else {
+				echo "Failed\n";
+			}
+		}// end of the if !$groupExists
+		
 		
 		if ($groupOk) {
 			
 			////// insert the group settings //////////////////////////////////
 			
-			if (array_key_exists('settings', $grp)) { if (!empty($grp['settings']) && $grp['settings'] != null) {
+			if (array_key_exists('settings', $grp) && !$groupExists) { if (!empty($grp['settings']) && $grp['settings'] != null) {
 			
 				foreach ($grp['settings'] as $setting) {
 					validateData('group_settings', $setting); 
@@ -2933,6 +2942,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					// check if the user is registered in the new journal
 					if (array_key_exists($membership['user_id'], $dataMapping['user_id'])) {
 						$membership['user_new_id'] = $dataMapping['user_id'][$membership['user_id']];
+						$userOk = true;
 					}
 					else {
 						$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
@@ -2946,21 +2956,43 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$membership['user_new_id'] = $membership['user']['user_new_id'];
 						//echo '    inserting '. $membership['membership_name'] . ' with locale ' . $membership['locale'] . ' .........';
 						
-						$arr = array();
-						$arr['data'] = $membership;
-						$arr['params'] = array(
-							array('name' => ':memberships_groupId', 'attr' => 'group_new_id', 'type' => PDO::PARAM_INT),
-							array('name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT),
-							array('name' => ':memberships_aboutDisplayed', 'attr' => 'about_displayed', 'type' => PDO::PARAM_STR),
-							array('name' => ':memberships_seq', 'attr' => 'seq')
-						);
+						$membershipExists = false;
 						
-						if (myExecute('insert', 'group_membership', $arr, $insertGroupMembershipSTMT, $errors)) { //from helperFunctions.php
-							echo "Ok\n";
+						//////////// check the membership  /////////////////////
+						
+						$checkMembershipSTMT->bindParam(':check_userId', $membership['user_new_id'], PDO::PARAM_INT);
+						$checkMembershipSTMT->bindParam(':check_groupId', $membership['group_new_id'], PDO::PARAM_INT);
+						
+						if ($checkMembershipSTMT->execute()) {
+							if ($checkedMembership = $checkMembershipSTMT->fetch(PDO::FETCH_ASSOC)) {
+								$membershipExists = true;
+							}
 						}
 						else {
-							echo "Failed\n";
+							$error = array('membership' => $membership, 'error' => $checkMembershipSTMT->errorInfo());
+							array_push($errors['group_membership']['insert'], $error);
 						}
+						
+						////////////////////////////////////////////////////////
+						
+						if (!$membershipExists) {
+						
+							$arr = array();
+							$arr['data'] = $membership;
+							$arr['params'] = array(
+								array('name' => ':memberships_groupId', 'attr' => 'group_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':memberships_aboutDisplayed', 'attr' => 'about_displayed', 'type' => PDO::PARAM_STR),
+								array('name' => ':memberships_seq', 'attr' => 'seq')
+							);
+							
+							if (myExecute('insert', 'group_membership', $arr, $insertGroupMembershipSTMT, $errors)) { //from helperFunctions.php
+								echo "Ok\n";
+							}
+							else {
+								echo "Failed\n";
+							}
+						}// end of the if !$membershipExists
 					}// end of the if userOk
 					else {
 						$error = array('group_id' => $grp['group_id'], 'user' => $membership['user'], 'error' => 'error while processing the user');
@@ -3587,3 +3619,24 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 }
 //end of insertArticleHistory
+
+
+// #12) 
+function insertPluginSettings() {
+	echo "\n\nTHE FUNCTION insertPluginSettings DOES NOT DO ANYTHING YET\n\n";
+}
+//end of insertPluginSettings
+
+
+// #13)
+function insertIssueOrders() {
+	echo "\n\nTHE FUNCTION insertIssueOrders DOES NOT DO ANYTHING YET\n\n";
+}
+//end of insertIssueOrders
+
+
+// #14)
+function insertCitationsAndReferrals() {
+	echo "\n\nTHE FUNCTION insertCitationsAndReferrals DOES NOT DO ANYTHING YET\n\n";
+}
+// end of insertCitationsAndReferrals
