@@ -365,10 +365,13 @@ function arrayToXml(&$xml, &$currentNode, $dataFrame, $args = null) {
 	}
 	///////////////////////--------------------------------------------/////////////////////////////////////////
 	
+	
+	
 	if ($isAssociative) {
 		$data = $dataFrame;
-		//$dataNode = $xml->createElement($type);
+		
 		foreach($fields as $field) {
+			
 			$fieldNode = $xml->createElement($field);
 			if (is_array($data[$field])) {
 				$arguments = array();
@@ -402,6 +405,7 @@ function arrayToXml(&$xml, &$currentNode, $dataFrame, $args = null) {
 			$dataNode = $xml->createElement($type);
 			
 			foreach($fields as $field) {
+				
 				$fieldNode = $xml->createElement($field);
 				if (is_array($data[$field])) {
 					$arguments = array();

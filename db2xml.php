@@ -1461,12 +1461,17 @@ function fetchCitations($conn, $journal, $args = null) {
 	
 	$citations = array();
 	
+	if ($verbose) echo "\nFetching the articles citations: ";
+	
 	if ($citationsSTMT->execute()) {
+		if ($verbose) echo "\n"; 
 		while ($citation = $citationsSTMT->fetch(PDO::FETCH_ASSOC))	{
 			processCollation($citation, 'citations', $collations);
 			
 			//////////// fetch the citation_settings ///////////////////
 			$citationSettingsSTMT->bindParam(':citationId', $citation['citation_id'], PDO::PARAM_INT);
+			
+			if ($verbose) echo "    fetching citation #" . $citation['citation_id'] . " settings ......... ";
 			
 			if ($citationsSettingsSTMT->execute()) {
 				$citationSettings = array();
@@ -1477,10 +1482,13 @@ function fetchCitations($conn, $journal, $args = null) {
 				}
 				
 				$citation['settings'] = $citationSettings;
+				
+				if ($verbose) echo "Ok\n";
 			}
 			else {
 				$error = array('citation' => $citation, 'error' => $citationSettingsSTMT->errorInfo());
 				array_push($errors['citation_settings'], $error);
+				if ($verbose) echo "Error\n";
 			}
 			////////////////////////////////////////////////////////////
 			
@@ -1491,6 +1499,7 @@ function fetchCitations($conn, $journal, $args = null) {
 	else {
 		$error = array('query' => $query, 'error' => $citationsSTMT->errorInfo());
 		array_push($errors['citations'], $error);
+		if ($verbose) echo "Error\n\n";
 	}
 	
 	return array('citations' => $citations, 'errors' => $errors);
@@ -1569,11 +1578,14 @@ function fetchReferrals($conn, $journal, $args = null) {
 	if ($verbose) echo "\nFetching the articles referrals:";
 	
 	if ($referralsSTMT->execute()) {
+		if ($verbose) echo "\n";
 		while ($referral = $referralsSTMT->fetch(PDO::FETCH_ASSOC))	{
 			processCollation($referral, 'referrals', $collations);
 			
 			//////////// fetch the referral_settings ///////////////////
 			$referralSettingsSTMT->bindParam(':referralId', $referral['referral_id'], PDO::PARAM_INT);
+			
+			if ($verbose) echo "    fetching referral #" . $referral['referral_id'] . " settings .......... ";
 			
 			if ($referralsSettingsSTMT->execute()) {
 				$referralSettings = array();
@@ -1588,6 +1600,7 @@ function fetchReferrals($conn, $journal, $args = null) {
 			else {
 				$error = array('referral' => $referral, 'error' => $referralSettingsSTMT->errorInfo());
 				array_push($errors['referral_settings'], $error);
+				if ($verbose) echo "Error\n";
 			}
 			////////////////////////////////////////////////////////////
 			
@@ -1598,7 +1611,7 @@ function fetchReferrals($conn, $journal, $args = null) {
 	else {
 		$error = array('query' => $query, 'error' => $referralsSTMT->errorInfo());
 		array_push($errors['referrals'], $error);
-		if ($verbose) echo "Error\n";
+		if ($verbose) echo "Error\n\n";
 	}
 	
 	return array('referrals' => $referrals, 'errors' => $errors);
@@ -2031,15 +2044,19 @@ function fetchPluginSettings($conn, $journalId, $args) {
 	
 	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_INT);
 	
+	if ($verbose) echo "fetching plugin_settings: ";
+	
 	if ($stmt->execute()) {
 		$pluginSettings = array();
 		while ($setting = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			processCollation($setting, 'plugin_settings', $collations);
 			array_push($pluginSettings, $setting);
 		}
+		if ($verbose) echo "Ok\n";
 	}
 	else {
 		$errors['error'] = array('journal_id' => $journalId, 'error' => $stmt->errorInfo()); 
+		if ($verbose) echo "Error\n";
 	}
 	
 	return array('plugin_settings' => $pluginSettings, 'errors' => $errors);
@@ -2083,12 +2100,16 @@ function fetchIssueOrders($conn, $journalId, $args) {
 	
 	$issuesSTMT->bindParam(':issues_journalId', $journalId, PDO::PARAM_INT);
 	
+	if ($verbose) echo "\nFetching the issues: ";
+	
 	if ($issuesSTMT->execute()) {
 		while ($issue = $issuesSTMT->fetch(PDO::FETCH_ASSOC)) {
 			processCollation($issue, 'issues', $collations);
 			
 			///// fetch the issue_settings ////////////////////////////////////////////////////////
 			$issueSettingsSTMT->bindParam(':settings_issueId', $issue['issue_id'], PDO::PARAM_INT);
+			
+			if ($verbose) echo "\n      fetching issue #" . $issue['issue_id'] . " settings: ";
 			
 			if ($issueSettingsSTMT->execute()) {
 				$issueSettings = array();
@@ -2101,7 +2122,8 @@ function fetchIssueOrders($conn, $journalId, $args) {
 			}
 			else {
 				$error = array('issue' => $issue, 'error' => $issueSettingsSTMT->errorInfo());
-				array_push($errors['issues'], $error);
+				array_push($errors['issue_settings'], $error);
+				if ($verbose) echo "Error\n";
 			}
 			///////////////////////////////////////////////////////////////////////////////////////
 			
@@ -2109,35 +2131,61 @@ function fetchIssueOrders($conn, $journalId, $args) {
 			$issueOrdersSTMT->bindParam(':issueOrders_journalId', $journalId, PDO::PARAM_INT);
 			$issueOrdersSTMT->bindParam(':issueOrders_issueId', $issue['issue_id'], PDO::PARAM_INT);
 			
+			if ($verbose) echo "\n    fetching issue custom issue orders ...... ";
+			
 			if ($issueOrdersSTMT->execute()) {
 				if ($customIssueOrders = $issueOrdersSTMT->fetchAll(PDO::FETCH_ASSOC)) {
 					$issue['custom_issue_orders'] = $customIssueOrders;
+					if ($verbose) echo "Ok\n"; 
+				}
+				else {
+					if ($verbose) echo "there is none\n";
 				}
 			}
 			else {
 				$error = array('issue_id' => $issue['issue_id'], 'journal_id' => $journalId, 'error' => $issueOrdersSTMT->errorInfo());
 				array_push($errors['custom_issue_orders'], $error);
+				if ($verbose) echo "Error\n";
 			}
 			///////////////////////////////////////////////////////////////////////////////////////
 			
 			/////// fetch the custom_section_orders for the sections of this issue ////////////////
 			$sectionOrdersSTMT->bindParam(':sectionOrders_issueId', $issue['issue_id'], PDO::PARAM_INT);
 			
+			if ($verbose) echo "\n    fetching custom section orders ........ ";
+			
 			if ($sectionOrdersSTMT->execute()) {
-				if ($customSectionOrders = $sectionOrdersSTMT->fetchAll(PDO::FETCH_ASSOC)) {
-					$issue['custom_section_orders'] = $customSectionOrders;
+				
+				$customSectionOrders = array();
+				$num = 0;
+				
+				while ($sectionOrder = $sectionOrdersSTMT->fetch(PDO::FETCH_ASSOC)) {
+					array_push($customSectionOrders, $sectionOrder);
+					$num++;
+				}
+				
+				$issue['custom_section_orders'] = $customSectionOrders;
+				
+				if ($verbose) {
+					if ($num > 0) echo "Ok\n";
+					else echo "there is none\n";
 				}
 			}
 			else {
 				$error = array('issue_id', 'error' => $sectionOrdersSTMT->errorInfo());
 				array_push($errors['custom_section_orders'], $error);
+				if ($verbose) echo "Error\n";
 			}
 			///////////////////////////////////////////////////////////////////////////////////////
-		}
+			
+			array_push($issues, $issue);
+			
+		}// end of the while to fetch each issue
 	}
 	else {
 		$error = array('journal_id' => $journalId, 'error' => $issuesSTMT->errorInfo());
 		array_push($errors['issue'], $error);
+		if ($verbose) echo "Error\n";
 	}
 	
 	return array('issue_orders' => $issues, 'errors' => $errors);

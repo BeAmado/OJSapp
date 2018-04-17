@@ -448,6 +448,7 @@ function to treat the error genereating in the EXPORTATION process
 function treatExportErrors($result, $type = null) {
 	
 	$stop = false;
+	$responseYes = true;
 	
 	switch($result) {
 		case -2:{
