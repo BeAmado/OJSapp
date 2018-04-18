@@ -33,6 +33,7 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 26) getTablesInfo
 27) getArticleIds
 28) getArticleIdsSTR
+29) mapIssueIds
 
 
 Developed in 2017-2018 by Bernardo Amado
@@ -793,6 +794,12 @@ function countErrors($errors, $type = 'importation') {
 				if (array_key_exists("update", $field)) {
 					$count += count($field["update"]);
 				}
+				if (array_key_exists("check", $field)) {
+					$count += count($field["check"]);
+				}
+				if (array_key_exists("fetch", $field)) {
+					$count += count($field["fetch"]);
+				}
 			}
 		} break;
 	}
@@ -968,4 +975,53 @@ function getArticleIdsSTR($articleIds = null) {
 	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';
 	
 	return $articleIdsSTR;
+}
+
+
+// #29)
+/**
+this functions receives an array with the issues data including their settings, and tries to map their ids
+*/
+function mapIssueIds($conn, &$dataMapping, &$issues, $journal) {
+	
+	echo "\nTHIS FUNCTION DOES NOT DO ANYTHING YET\n";
+	return false;
+	
+	if (!is_array($dataMapping)) {
+		include_once('appFunctions.php');
+		$dataMapping = getDataMapping($journal['path']); // from appFunctions.php function #03
+	}
+	
+	if (!array_key_exists('issue_id', $dataMapping)) {
+		$dataMapping['issue_id'] = array();
+	}
+	
+	
+	
+}
+
+// #30)
+/**
+this function tries to fetch an issue searching by the setting selected by the user
+*/
+function fetchIssue($conn, $settingName, $settingValue, $journalId) {
+	
+	echo "\nTHIS FUNCTION DOES NOT DO ANYTHING YET\n";
+	return false;
+	
+	$errors = array();
+	
+	////// THE PREPARED STATEMENT  ////////////
+	$fetchIssuesSTMT = $conn->prepare('SELECT * FROM issues WHERE journal_id = :journalId');
+	$fetchIssuesSTMT->bindParam(':journalId', $journalId, PDO::PARAM_INT);
+	
+	$fetchIssueSettingsTMT = $conn->prepare('SELECT * FROM issue_settings WHERE issue_id = :issueId');
+	
+	if ($fetchIssuesSTMT->execute()) {
+		$issues;
+	}
+	else {
+		// the fetchIssues did not execute
+	}
+	
 }

@@ -2770,6 +2770,10 @@ function insertGroups(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) 
 		$dataMapping['group_id'] = array();
 	}
 	
+	if (!array_key_exists('user_id', $dataMapping)) {
+		$dataMapping['user_id'] = array();
+	}
+	
 	
 	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
 	
@@ -2900,7 +2904,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			if (array_key_exists('settings', $grp) && !$groupExists) { if (!empty($grp['settings']) && $grp['settings'] != null) {
 			
-				foreach ($grp['settings'] as $setting) {
+				foreach ($grp['settings'] as &$setting) {
 					validateData('group_settings', $setting); 
 					
 					$setting['group_new_id'] = $grp['group_new_id'];
@@ -2923,7 +2927,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						echo "Failed\n";
 					}
 				}//end of the foreach setting
-				
+				unset($setting);
 			}}// end of the 2 ifs to see if group_settings exist
 			
 			///////////// end of insert group settings  //////////////////////
@@ -2933,9 +2937,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			if (array_key_exists('memberships', $grp)) { if (!empty($grp['memberships']) && $grp['memberships'] != null) {
 			
-				foreach ($grp['memberships'] as $membership) {
+				foreach ($grp['memberships'] as &$membership) {
 					
 					$userOk = false;
+					$user = null;
 					
 					//////////////////// process user data ///////////////////////
 				
@@ -2945,7 +2950,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$userOk = true;
 					}
 					else {
-						$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
+						$user = $membership['user'];
+						$userOk = processUser($user, array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
+						$membership['user_new_id'] = $user['user_new_id'];
 					}
 					//////////////////////////////////////////////////////////////
 					
@@ -2953,8 +2960,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						validateData('group_membership', $membership); 
 					
 						$membership['group_new_id'] = $grp['group_new_id'];
-						$membership['user_new_id'] = $membership['user']['user_new_id'];
-						//echo '    inserting '. $membership['membership_name'] . ' with locale ' . $membership['locale'] . ' .........';
+						
+						//echo "\nThe user new id in the membership is : " . $user['user_new_id'] . "\n\n";
+						
+						
+						//$membership['user_new_id'] = $user['user_new_id'];
 						
 						$membershipExists = false;
 						
@@ -3000,7 +3010,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					}
 					
 				}//end of the foreach membership
-				
+				unset($membership);
 			}}// end of the 2 ifs to see if group_memberships exist
 			
 			///////////// end of insert group memberships  //////////////////////
@@ -3263,7 +3273,7 @@ insert the articles history, which is comprised of event_logs and email_logs
 */
 function insertArticlesHistory(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
 	
-	exit("\n\nNOT FUNCTIONAL\n\n");
+	//exit("\n\nNOT FUNCTIONAL\n\n");
 	
 	
 	$limit = 10;
@@ -3353,8 +3363,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$emailLogs = xmlToArray($email_logs_node, true); //from helperFunctions.php
 	
 	$numInsertedEmailLogs = 0;
-	
-	//////// END OF INSERTING THE EMAIL LOGS  //////////////////////////////
 	
 	foreach ($emailLogs as &$emailLog) {
 		if (array_key_exists($emailLog['log_id'], $dataMapping['email_log_id'])) {
@@ -3622,21 +3630,432 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 
 
 // #12) 
-function insertPluginSettings() {
-	echo "\n\nTHE FUNCTION insertPluginSettings DOES NOT DO ANYTHING YET\n\n";
+function insertPluginSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
+	//echo "\n\nTHE FUNCTION insertPluginSettings DOES NOT DO ANYTHING YET\n\n";
+	$limit = 10;
+	
+	if (is_array($args)) {
+		if (array_key_exists('limit', $args)) {
+			$limit = $args['limit'];
+		}
+	}
+	
+	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
+	$checkPluginSTMT = $conn->prepare(
+		'SELECT * FROM plugin_settings WHERE 
+		 plugin_name = :check_pluginName AND locale = :check_locale AND
+		 journal_id = :check_journalId AND setting_name = :check_settingName'
+	);
+	
+	$insertPluginSettingsSTMT = $conn->prepare('INSERT INTO plugin_settings (plugin_name, locale, journal_id, setting_name, setting_value, setting_type)
+		VALUES (:insert_pluginName, :insert_locale, :insert_journalId, :insert_settingName, :insert_settingValue, :insert_settingType)');
+	
+	$updatePluginSettingsSTMT = $conn->prepare(
+		'UPDATE plugin_settings 
+		 SET setting_value = :update_settingValue, setting_type = :update_settingType 
+		 WHERE plugin_name = :update_pluginName AND locale = :update_locale AND
+		 journal_id = :update_journalId AND setting_name = :update_settingName'
+	);
+	
+	$checkPluginSTMT->bindParam(':check_journalId', $journalNewId, PDO::PARAM_INT);
+	$insertPluginSettingsSTMT->bindParam(':insert_journalId', $journalNewId, PDO::PARAM_INT);
+	$updatePluginSettingsSTMT->bindParam(':update_journalId', $journalNewId, PDO::PARAM_INT);
+	
+	/////////////////////////////////////////////////////////////////////////////////////
+	
+	$errors = array(
+		'plugin_settings' => array('insert' => array(), 'update' => array(), 'check' => array())
+	);
+	
+	$plugin_settings_node = $xml->getElementsByTagName('plugin_settings')->item(0);
+	
+	$pluginSettings = xmlToArray($plugin_settings_node, true); //from helperFunctions.php
+	
+	$numUpdates = 0;
+	$numInsertions = 0;
+	
+	foreach ($pluginSettings as &$plugin) {
+		
+		$plugin['journal_new_id'] = $journalNewId;
+		
+		validateData('plugin_settings', $plugin); //from helperFunctions.php
+		
+	/*$checkPluginSTMT = $conn->prepare(
+		'SELECT * FROM plugin_settings WHERE 
+		 plugin_name = :check_pluginName AND locale = :check_locale AND
+		 journal_id = :check_journalId AND setting_name = :check_settingName'
+	);
+	
+	$insertPluginSettingsSTMT = $conn->prepare('INSERT INTO plugin_settings (plugin_name, locale, journal_id, setting_name, setting_value, setting_type)
+		VALUES (:insert_pluginName, :insert_locale, :insert_journalId, :insert_settingName, :insert_settingValue, :insert_settingType)');
+	
+	$updatePluginSettingsSTMT = $conn->prepare(
+		'UPDATE plugin_settings 
+		 SET setting_value = :update_settingValue, setting_type = :update_settingType 
+		 WHERE plugin_name = :update_pluginName AND locale = :update_locale AND
+		 journal_id = :update_journalId AND setting_name = :update_settingName'
+	);*/
+		
+		$pluginSettingExists = false;
+		/////////// check if the plugin setting exists //////////////////////////
+		$checkPluginSTMT->bindParam(':check_pluginName', $plugin['plugin_name'], PDO::PARAM_STR);
+		$checkPluginSTMT->bindParam(':check_locale', $plugin['locale'], PDO::PARAM_STR);
+		$checkPluginSTMT->bindParam(':check_settingName', $plugin['setting_name'], PDO::PARAM_STR);
+		
+		echo "\nChecking if the plugin '" . $plugin['plugin_name'] . 
+		"' setting '" . $plugin['setting_name'] .
+		"' with locale '" . $plugin['locale'] .  "' exists: ";
+		
+		if ($checkPluginSTMT->execute()) {
+			if ($checkedPlugin = $checkPluginSTMT->fetch(PDO::FETCH_ASSOC)) {
+				$pluginSettingExists = true;
+				echo "Yes\n";
+				/////////////// update the plugin setting if necessary //////////////////////
+				
+				if ($checkPlugin['setting_value'] != $plugin['setting_value']) {
+					//update the plugin setting value
+					/*$updatePluginSettingsSTMT->bindParam(':update_settingValue', $plugin['setting_value'], PDO::PARAM_STR);
+					$updatePluginSettingsSTMT->bindParam(':update_settingType', $plugin['setting_type'], PDO::PARAM_STR);
+					$updatePluginSettingsSTMT->bindParam(':update_pluginName', $checkedPlugin['plugin_name'], PDO::PARAM_STR);
+					$updatePluginSettingsSTMT->bindParam(':update_locale', $checkedPlugin['locale'], PDO::PARAM_STR);
+					$updatePluginSettingsSTMT->bindParam(':update_settingName', $checkedPlugin['setting_name'], PDO::PARAM_STR);*/
+					
+					$arr = array();
+					$arr['data'] = $plugin;
+					$arr['params'] = array(
+						array('name' => ':update_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_pluginName', 'attr' => 'plugin_name', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR)
+					);
+					
+					echo '    updating plugin setting ............ ';
+					
+					if (myExecute('update', 'plugin_settings', $arr, $updatePluginSettingsSTMT, $errors)) { //from helperFunctions.php
+						echo "Ok\n\n";
+						$numUpdates++;
+					}
+					else {
+						echo "Failed\n\n";
+					}
+				}
+				else {
+					echo "    this plugin setting is already up to date\n\n";
+				}
+				
+				/////////////////////////////////////////////////////////////////////////////
+				
+			}// end of the if to fetch the plugin setting
+			else {
+				echo "No\n"; // the plugin setting does not exist yet
+			}
+		}//end of the if checkPluginSTMT executed
+		else {
+			$error = array('plugin_setting' => $plugin, 'error' => $checkPluginSTMT->errorInfo());
+			array_push($errors['plugin_settings']['check'], $error);
+			echo "Error\n";
+		}
+		
+		///////////// end of the check if the plugin exists ///////////////////////////
+		
+		if (!$pluginSettingExists) {
+			/////////////// insert the plugin setting //////////////////////////
+			$arr = array();
+			$arr['data'] = $plugin;
+			$arr['params'] = array(
+				array('name' => ':insert_pluginName', 'attr' => 'plugin_name', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR),
+			);
+			
+			echo '    inserting the plugin setting ............ ';
+			
+			if (myExecute('insert', 'plugin_settings', $arr, $insertPluginSettingsSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n\n";
+				$numInsertions++;
+			}
+			else {
+				echo "Failed\n\n";
+			}
+			///////////// end of insert the plugin setting /////////////////////
+		}
+		
+	}//end of the foreach pluginSettings
+	unset($plugin);
+	
+	$returnData = array();
+	$returnData['errors'] = $errors;
+	$returnData['numInsertedRecords'] = array('plugin_settings' => $numInsertions);
+	$returnData['numUpdatedRecords'] = array('plugin_settings' => $numUpdates);
+	
+	return $returnData;
+	
 }
 //end of insertPluginSettings
 
 
 // #13)
-function insertIssueOrders() {
-	echo "\n\nTHE FUNCTION insertIssueOrders DOES NOT DO ANYTHING YET\n\n";
+function insertIssueOrders(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
+	//echo "\n\nTHE FUNCTION insertIssueOrders DOES NOT DO ANYTHING YET\n\n";
+	$limit = 10;
+	
+	if (is_array($args)) {
+		if (array_key_exists('limit', $args)) {
+			$limit = $args['limit'];
+		}
+	}
+	
+	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
+	////// custom_issue_orders /////////////////////////////////////////
+	$checkIssueOrderSTMT = $conn->prepare(
+		'SELECT * FROM custom_issue_orders 
+		 WHERE issue_id = :checkIssue_issueId'
+	);
+	
+	$insertCustomIssueOrderSTMT = $conn->prepare(
+		'INSERT INTO custom_issue_orders (issue_id, journal_id, seq) VALUES (:insertIssue_issueId, :insertIssue_journalId, :insertIssue_seq)'
+	);
+	
+	$updateCustomIssueOrderSTMT = $conn->prepare(
+		'UPDATE custom_issue_orders 
+		 SET seq = :updateIssue_seq 
+		 WHERE issue_id = :updateIssue_issueId'
+	);
+	
+	$insertCustomIssueOrderSTMT->bindParam(':insertIssue_journalId', $journalNewId, PDO::PARAM_INT);
+	
+	/////////// custom_section_orders //////////////////////////////////////////
+	$checkSectionOrderSTMT = $conn->prepare(
+		'SELECT * FROM custom_section_orders 
+		 WHERE issue_id = :checkSection_issueId AND section_id = :checkSection_sectionId'
+	);
+	
+	$insertCustomSectionOrderSTMT = $conn->prepare(
+		'INSERT INTO custom_section_orders (issue_id, section_id, seq) VALUES (:insertSection_issueId, :insertSection_sectionId, :insertSection_seq)'
+	);
+	
+	$updateCustomSectionOrderSTMT = $conn->prepare(
+		'UPDATE custom_section_orders
+		 SET seq = :updateSection_seq
+		 WHERE issue_id = :updateSection_issueId AND section_id = :updateSection_sectionId'
+	);
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	$errors = array(
+		'custom_issue_order' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'custom_section_order' => array('insert' => array(), 'update' => array(), 'check' => array())
+	);
+	
+	$issue_orders_node = $xml->getElementsByTagName('issue_orders')->item(0);
+	
+	$issueOrders = xmlToArray($issue_orders_node, true); //from helperFunctions.php
+	
+	$numIssueOrderUpdates = 0;
+	$numIssueOrderInsertions = 0;
+	$numSectionOrderUpdates = 0;
+	$numSectionOrderInsertions = 0;
+	
+	foreach ($issueOrders as &$issue) {
+		
+		//var_dump($issue); exit();
+		
+		$issue['journal_new_id'] = $journalNewId;
+		
+		validateData('issue', $issue); //from helperFunctions.php
+		
+		$issueIdOk = false;
+		
+		//////////////////// checking data integrity /////////////////////////////////////////
+		if (array_key_exists($issue['issue_id'], $dataMapping['issue_id'])) {
+			$issue['issue_new_id'] = $dataMapping['issue_id'][$issue['issue_id']];
+			$issueIdOk = true;
+		}
+		////////////////////////////////////////////////////////////////////////////////////////
+		
+		if ($issueIdOk) {
+			
+			///////////////////////  insert the custom_issue_orders  ////////////////////////////////////////////////
+			$insertCustomIssueOrder = true;
+			
+			$checkIssueOrderSTMT->bindParam(':checkIssue_issueId', $issue['issue_new_id'], PDO::PARAM_INT);
+		
+			echo "\nChecking if the issue #'" . $issue['issue_new_id'] . " is ordered: ";
+			
+			if ($checkIssueOrderSTMT->execute()) {
+				if ($checkedIssueOrder = $checkIssueOrderSTMT->fetch(PDO::FETCH_ASSOC)) {
+					$insertCustomIssueOrder = false;
+					echo "Yes\n\n";
+					
+				}// end of the if to fetch the custom_issue_order
+				else {
+					echo "No\n"; // the plugin setting does not exist yet
+				}
+			}//end of the if checkIssueOrderSTMT executed
+			else {
+				$error = array('issue' => $issue, 'error' => $checkIssueOrderSTMT->errorInfo());
+				array_push($errors['custom_issue_order']['check'], $error);
+				echo "Error\n\n";
+			}
+			
+			if ($insertCustomIssueOrder) {
+			
+			if (array_key_exists('custom_issue_orders', $issue)) { if (!empty($issue['custom_issue_orders'])) {
+			foreach ($issue['custom_issue_orders'] as &$customIssueOrder) {
+				
+				$customIssueOrder['issue_new_id'] = $issue['issue_new_id'];
+				//$customIssueOrder['journal_new_id'] = $journalNewId;
+				
+				$arr = array();
+				$arr['data'] = $customIssueOrder;
+				$arr['params'] = array(
+					array('name' => ':insertIssue_issueId', 'attr' => 'issue_new_id', 'type' => PDO::PARAM_INT),
+					// do not need to set the journal_id as it has already been set after the statement declaration
+					// and will be the same for every statement execution 
+					array('name' => ':insertIssue_seq', 'attr' => 'seq') // is type double
+				);
+				
+				echo '    inserting the custom issue order ............ ';
+				
+				if (myExecute('insert', 'custom_issue_order', $arr, $insertCustomIssueOrderSTMT, $errors)) { //from helperFunctions.php
+					echo "Ok\n\n";
+					$numIssueOrderInsertions++;
+				}
+				else {
+					echo "Failed\n\n";
+				}
+				
+			}//end of the foreach custom_issue_order
+			unset($customIssueOrder);
+			}//end of the if custom_issue_orders not empty
+			}//end of the if custom_issue_orders exist
+			
+			}//end of the if insertCustomIssueOrder
+			
+			///////////////////////  end of insert the custom_issue_orders  //////////////////////////////////////////
+			
+			
+			/////////////////////  insert the custom_section_orders  /////////////////////////////////////////////////
+			
+			if (array_key_exists('custom_section_orders', $issue)) { if (!empty($issue['custom_section_orders'])) {
+			foreach ($issue['custom_section_orders'] as &$customSectionOrder) {
+				
+				$customSectionOrder['issue_new_id'] = $issue['issue_new_id'];
+	
+				$sectionIdOk = false;
+				
+				//////////////////// checking data integrity /////////////////////////////////////////
+				if (array_key_exists($customSectionOrder['section_id'], $dataMapping['section_id'])) {
+					$customSectionOrder['section_new_id'] = $dataMapping['section_id'][$customSectionOrder['section_id']];
+					$sectionIdOk = true;
+				}
+				//////////////////////////////////////////////////////////////////////////////////////
+				
+				if ($sectionIdOk) {
+					//////////////  check if the section is already ordered in this issue //////////////////
+					$insertCustomSectionOrder = true;
+					
+					$checkSectionOrderSTMT->bindParam(':checkSection_sectionId', $customSectionOrder['section_new_id'], PDO::PARAM_INT);
+					$checkSectionOrderSTMT->bindParam(':checkSection_issueId', $customSectionOrder['issue_new_id'], PDO::PARAM_INT);
+					
+					echo 'Checking if the issue #' . $issue['issue_new_id'] . ' section #' . $customSectionOrder['section_new_id'] . ' is already ordered: ';
+					
+					if ($checkSectionOrderSTMT->execute()) {
+						if ($checkedSectionOrder = $checkSectionOrderSTMT->fetch(PDO::FETCH_ASSOC)) {
+							echo "Yes\n\n";
+							$insertCustomSectionOrder = false;
+						}
+						else {
+							echo "No\n";
+						}
+					}
+					else {
+						$error = array('custom_section_order' => $customsectionOrder, 'error' => $checkSectionOrderSTMT->errorInfo());
+						array_push($errors['custom_section_order']['check'], $error);
+						echo "Error\n\n";
+					}
+					////////////////////////////////////////////////////////////////////////////////////////
+					
+					if ($insertCustomSectionOrder) {
+					///////// insert the custom_section_order //////////////////////////////////////////////
+					
+						$arr = array();
+						$arr['data'] = $customSectionOrder;
+						$arr['params'] = array(
+							array('name' => ':insertSection_issueId', 'attr' => 'issue_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':insertSection_sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':insertSection_seq', 'attr' => 'seq') // is type double
+						);
+						
+						echo '    inserting the custom section order ............ ';
+						
+						if (myExecute('insert', 'custom_section_order', $arr, $insertCustomSectionOrderSTMT, $errors)) { //from helperFunctions.php
+							echo "Ok\n\n";
+							$numSectionOrderInsertions++;
+						}
+						else {
+							echo "Failed\n\n";
+						}
+					
+					////////////////////////////////////////////////////////////////////////////////////////
+					}//end of the if insertCustomSectionOrder
+					
+				}//end of the if sectionIdOk
+				else {
+					$error = array('custom_section_order' => $customsectionOrder, 'error' => 'The section id is not in the dataMappings');
+					array_push($errors['custom_section_order']['insert'], $error);
+				}
+				
+			}//end of the foreach custom_section_order
+			unset($customSectionOrder);	
+			}//end of the if not empty custom_section_orders
+			}//end of the custom_section_orders exist 
+			
+			
+			//////////////////  end of the insert custom_section_orders  /////////////////////////////////////////////
+			
+		}//end of the if issueIdOk
+		else {
+			$error = array('issue_id' => $issue['issue_id'], 'error' => 'The issue_id #' . $issue['issue_id'] . ' is not in the dataMappings');
+			echo "Error\n\n";
+		}
+		
+	}//end of the foreach issueOrders
+	unset($issue);
+	
+	$returnData = array();
+	$returnData['errors'] = $errors;
+	$returnData['numInsertedRecords'] = array('custom_issue_orders' => $numIssueOrderInsertions, 'custom_section_orders' => $numSectionOrderInsertions);
+	$returnData['numUpdatedRecords'] = array('custom_issue_orders' => $numIssueOrderUpdates, 'custom_section_orders' => $numSectionOrderUpdates);
+	
+	return $returnData;
 }
 //end of insertIssueOrders
 
 
 // #14)
-function insertCitationsAndReferrals() {
-	echo "\n\nTHE FUNCTION insertCitationsAndReferrals DOES NOT DO ANYTHING YET\n\n";
+function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
+	//echo "\n\nTHE FUNCTION insertCitationsAndReferrals DOES NOT DO ANYTHING YET\n\n";
+	$limit = 10;
+	
+	if (is_array($args)) {
+		if (array_key_exists('limit', $args)) {
+			$limit = $args['limit'];
+		}
+	}
+	
+	if (!array_key_exists('event_log_id', $dataMapping)) {
+		$dataMapping['event_log_id'] = array();
+	}
+	
+	if (!array_key_exists('email_log_id', $dataMapping)) {
+		$dataMapping['email_log_id'] = array();
+	}
+	
+	
+	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
 }
 // end of insertCitationsAndReferrals

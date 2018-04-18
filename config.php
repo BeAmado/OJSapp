@@ -747,8 +747,8 @@ $tables['custom_issue_order']['properties'] = array(
 
 
 $tables['custom_section_order']['attributes'] = array('issue_id', 'section_id', 'seq');
-$tables['custom_section_order']['primary_keys'] = array('issue_id');
-$tables['custom_section_order']['foreign_keys'] = array('section_id');
+$tables['custom_section_order']['primary_keys'] = array('issue_id', 'section_id');
+$tables['custom_section_order']['foreign_keys'] = array();
 $tables['custom_section_order']['properties'] = array(
 	'issue_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
 	'section_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),

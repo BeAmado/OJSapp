@@ -1154,7 +1154,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 			$memberships = array();
 			$groupMembershipsSTMT->bindParam(':memberships_groupId', $group['group_id'], PDO::PARAM_INT);
 			
-			if ($verbose) echo "\n    fetching the group #" . $group['group_id'] . " memberships .......... ";
+			if ($verbose) echo "\n    fetching the group #" . $group['group_id'] . " memberships: \n ";
 			
 			if ($groupMembershipsSTMT->execute()) {
 				while ($membership = $groupMembershipsSTMT->fetch(PDO::FETCH_ASSOC)) {

@@ -1158,7 +1158,7 @@ return value:
 	-5 -> Unknown type
 	-6 -> did not save the xml file registering the new users
 */
-function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping, &$newUsers) {
+function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping, &$newUsers = null) {
 	
 	$returnValue = null;
 	
@@ -1250,18 +1250,19 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			break;
 			
 		case 'articles_history':
-			//echo "\nTHE OPTION articles_history DOES NOT WORK FOR IMPORTATION YET\n";
 			$returnedData = insertArticlesHistory($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
 		case 'plugin_settings':
-			echo "\nTHE OPTION plugin_settings DOES NOT WORK FOR IMPORTATION YET\n";
-			//$returnedData = insertPluginSettings($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			$returnedData = insertPluginSettings($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
 		case 'issue_orders':
-			echo "\nTHE OPTION issue_orders DOES NOT WORK FOR IMPORTATION YET\n";
-			//$returnedData = insertIssueOrders($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			$returnedData = insertIssueOrders($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			break;
+			
+		case 'citations_and_referrals':
+			echo "\nTHE OPTION citations and referrals DOES NOT WORK FOR IMPORTATION YET\n";
 			break;
 			
 		default:
