@@ -144,13 +144,13 @@ function fetchSections($conn, $journal = null, $args = null) {
 	$sections = array();
 	
 	$sectionsSTMT = $conn->prepare('SELECT * FROM sections WHERE journal_id = :sections_journalId');
-	$sectionSettingsSTMT = $conn->prepare("SELECT * FROM section_settings WHERE section_id = :sectionSettings_sectionId");
+	$sectionSettingsSTMT = $conn->prepare('SELECT * FROM section_settings WHERE section_id = :sectionSettings_sectionId');
 	
-	$sectionsSTMT->bindParam(":sections_journalId", $journal["journal_id"], PDO::PARAM_INT);
+	$sectionsSTMT->bindParam(':sections_journalId', $journal['journal_id'], PDO::PARAM_INT);
 	
 	$errors = array(
-		"sections" => array(),
-		"section_settings" => array(),
+		'sections' => array(),
+		'section_settings' => array(),
 	);
 	
 	if ($verbose) echo "\n\nFetching the sections...\n\n";
@@ -843,71 +843,71 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 			
 			$errorOccurred = false;
 			
-			$reviewAssignmentsSTMT->bindParam(":revAssign_submissionId", $article["article_id"], PDO::PARAM_INT);
+			$reviewAssignmentsSTMT->bindParam(':revAssign_submissionId', $article['article_id'], PDO::PARAM_INT);
 			if ($reviewAssignmentsSTMT->execute()) {
 				$reviewAssignments = array();
 				while($reviewAssign = $reviewAssignmentsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($reviewAssign, "review_assignments", $collations);
+					processCollation($reviewAssign, 'review_assignments', $collations);
 					
-					$userSTMT->bindParam(":userId", $reviewAssign["reviewer_id"], PDO::PARAM_INT);
+					$userSTMT->bindParam(':userId', $reviewAssign['reviewer_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$reviewer = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($reviewer, "users", $collations);
+						processCollation($reviewer, 'users', $collations);
 						
-						$reviewAssign["reviewer"] = $reviewer;
+						$reviewAssign['reviewer'] = $reviewer;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "reviewer_id" => $reviewAssign["reviewer_id"], "error" => $userSTMT->errorInfo());
-						array_push($errors["reviewer"], $error);
+						$error = array('article_id' => $article['article_id'], 'reviewer_id' => $reviewAssign['reviewer_id'], 'error' => $userSTMT->errorInfo());
+						array_push($errors['reviewer'], $error);
 						$numErrors++;
 					}
 					
 					$reviewResponses = array();
-					$reviewFormResponsesSTMT->bindParam(":rfResponses_reviewId", $reviewAssign["review_id"], PDO::PARAM_INT);
+					$reviewFormResponsesSTMT->bindParam(':rfResponses_reviewId', $reviewAssign['review_id'], PDO::PARAM_INT);
 					
 					if ($reviewFormResponsesSTMT->execute()) {
 						while ($response = $reviewFormResponsesSTMT->fetch(PDO::FETCH_ASSOC)) {
 							array_push($reviewResponses, $response);
 						}
 						
-						processCollation($reviewResponses, "review_form_responses", $collations);
+						processCollation($reviewResponses, 'review_form_responses', $collations);
 						
-						$reviewAssign["review_form_responses"] = $reviewResponses;
+						$reviewAssign['review_form_responses'] = $reviewResponses;
 					}
 					else {
 						$errorOccurred = true;
-						$error = array("article_id" => $article["article_id"], "review_assignment" => $reviewAssign, "error" => $reviewFormResponses->errorInfo());
-						array_push($errors["review_form_responses"], $error);
+						$error = array('article_id' => $article['article_id'], 'review_assignment' => $reviewAssign, 'error' => $reviewFormResponses->errorInfo());
+						array_push($errors['review_form_responses'], $error);
 						$numErrors++;
 					}
 					
 					array_push($reviewAssignments, $reviewAssign);
 				}
-				$article["review_assignments"] = $reviewAssignments;
+				$article['review_assignments'] = $reviewAssignments;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"], "error" => $reviewAssignmentsSTMT->errorInfo());
-				array_push($errors["review_assignments"], $error);
+				$error = array('article_id' => $article['article_id'], 'error' => $reviewAssignmentsSTMT->errorInfo());
+				array_push($errors['review_assignments'], $error);
 				$numErrors++;
 			}
 			
 			// all fields in review_rounds are integers
-			$reviewRoundsSTMT->bindParam(":revRounds_submissionId", $article["article_id"], PDO::PARAM_INT);
+			$reviewRoundsSTMT->bindParam(':revRounds_submissionId', $article['article_id'], PDO::PARAM_INT);
 			if ($reviewRoundsSTMT->execute()) {
 				$reviewRounds = array();
 				while($reviewRound = $reviewRoundsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					array_push($reviewRounds, $reviewRound);
 				}
-				$article["review_rounds"] = $reviewRounds;
+				$article['review_rounds'] = $reviewRounds;
 			}
 			else {
 				$errorOccurred = true;
-				$error = array("article_id" => $article["article_id"], "error" => $reviewRoundsSTMT->errorInfo());
-				array_push($errors["review_rounds"], $error);
+				$error = array('article_id' => $article['article_id'], 'error' => $reviewRoundsSTMT->errorInfo());
+				array_push($errors['review_rounds'], $error);
 				$numErrors++;
 			}
 			
@@ -924,7 +924,7 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 	
 	echo "\nFetched $numArticles unpublished articles.\n";
 	
-	return array("unpublished_articles" => $unpubArt, "numArticles" => $numArticles, "errors" => $errors, "numErrors" => $numErrors);
+	return array('unpublished_articles' => $unpubArt, 'numArticles' => $numArticles, 'errors' => $errors, 'numErrors' => $numErrors);
 	
 }
 ////////// END OF fetchUnpublishedArticles  ///////////////////////////////////////////
@@ -1423,27 +1423,6 @@ function fetchCitations($conn, $journal, $args = null) {
 		'citation_settings' => array()
 	);
 	
-	/*$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
-	
-	if (!array_key_exists('article_id', $dataMapping)) {
-		echo "\n\nThere is not any article data mapped yet\n\n";
-		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
-		return false;
-	}
-	
-	$articleIds = array();
-	foreach ($dataMapping['article_id'] as $oldId => $newId) {
-		array_push($articleIds, $oldId);
-	}
-	
-	$totalArticles = count($articleIds);
-	
-	$articleIdsSTR = '(';
-	for ($i = 0; $i < $totalArticles - 1; $i++) {
-		$articleIdsSTR .= $articleIds[$i] . ', ';
-	}
-	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';*/
-	
 	if ($articleIdsSTR === null || $articleIdsSTR === false) {
 		$articleIds = getArticleIds($conn, $journal); //from helperFunctions function #27
 		
@@ -1547,27 +1526,6 @@ function fetchReferrals($conn, $journal, $args = null) {
 		$articleIdsSTR = getArticleIdsSTR($articleIds); // from helperFunctions function #28
 	}
 	
-	/*$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
-	
-	if (!array_key_exists('article_id', $dataMapping)) {
-		echo "\n\nThere is not any article data mapped yet\n\n";
-		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
-		return false;
-	}
-	
-	$articleIds = array();
-	foreach ($dataMapping['article_id'] as $oldId => $newId) {
-		array_push($articleIds, $oldId);
-	}
-	
-	$totalArticles = count($articleIds);
-	
-	$articleIdsSTR = '(';
-	for ($i = 0; $i < $totalArticles - 1; $i++) {
-		$articleIdsSTR .= $articleIds[$i] . ', ';
-	}
-	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';*/
-	
 	$query = 'SELECT * FROM referrals WHERE article_id IN ' . $articleIdsSTR;
 	
 	$referralsSTMT = $conn->prepare($query);
@@ -1660,7 +1618,6 @@ function fetchCitationsAndReferrals($conn, $journal, $args = null) {
 	
 	return array('citations_and_referrals' => $citationsAndReferrals, 'errors' => $errors);
 	
-	
 }
 
 // #09.1
@@ -1745,7 +1702,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 			}
 			/////////////// end of fetching the user data  ////////////////////////
 			
-			///// fetch the event_log_settings
+			///// fetch the event_log_settings //////////////////
 			$eventLogSettingsSTMT->bindParam(':settings_logId', $eventLog['log_id'], PDO::PARAM_INT);
 			
 			if ($verbose) echo '    fetching the event_log #' . $eventLog['log_id'] . ' settings .....';
@@ -1973,27 +1930,6 @@ function fetchArticlesHistory($conn, $journal = null, $args = null) {
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
 	}
-	
-	/*$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
-	
-	if (!array_key_exists('article_id', $dataMapping)) {
-		echo "\n\nThere is not any article data mapped yet\n\n";
-		echo "The data mapping:\n" . print_r($dataMapping, true) . "\n";
-		return false;
-	}
-	
-	$articleIds = array();
-	foreach ($dataMapping['article_id'] as $oldId => $newId) {
-		array_push($articleIds, $oldId);
-	}
-	
-	$totalArticles = count($articleIds);
-	
-	$articleIdsSTR = '(';
-	for ($i = 0; $i < $totalArticles - 1; $i++) {
-		$articleIdsSTR .= $articleIds[$i] . ', ';
-	}
-	$articleIdsSTR .= $articleIds[$totalArticles - 1] . ')';*/
 	
 	$articleIds = getArticleIds($conn, $journal);
 	

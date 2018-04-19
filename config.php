@@ -654,7 +654,7 @@ $tables['event_log_settings']['properties']['setting_type'] = array('type' => 'v
 $tables['email_log']['attributes'] = array('log_id', 'assoc_type', 'assoc_id', 'sender_id', 'date_sent', 'ip_address', 'event_type', 'from_address', 'recipients',  'cc_recipients',
 'bcc_recipients', 'subject', 'body');
 $tables['email_log']['primary_keys'] = array('log_id');
-$tables['email_log']['foreign_keys'] = array('assoc_id', 'user_id'); // assoc id the id of the article
+$tables['email_log']['foreign_keys'] = array('assoc_id', 'sender_id'); // assoc id the id of the article
 $tables['email_log']['properties'] = array();
 $tables['email_log']['properties']['log_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment');
 $tables['email_log']['properties']['assoc_type'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => 'mul', 'default' => null, 'extra' => '');

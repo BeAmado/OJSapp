@@ -34,6 +34,7 @@ FUNCTIONS DEFINED IN THIS SCRIPT
 27) getArticleIds
 28) getArticleIdsSTR
 29) mapIssueIds
+30) mapPublishedArticles
 
 
 Developed in 2017-2018 by Bernardo Amado
@@ -782,8 +783,13 @@ function countErrors($errors, $type = 'importation') {
 	switch ($type) {
 		case 'exportation': {
 			foreach ($errors as $item => $arr) {
-				$count += count($arr);
-			}
+				if (strpos($item, 'errors') !== false) {
+					$count += countErrors($arr, 'exportation'); // recursive call
+				}
+				else {
+					$count += count($arr);
+				}
+			}// end of the foreach errors
 		} break;
 		
 		case 'importation': {
@@ -977,15 +983,48 @@ function getArticleIdsSTR($articleIds = null) {
 	return $articleIdsSTR;
 }
 
+// #29.1)
+/**
+return values:
+   0: the setting does not exist
+  -1: the issue is not an array
+  -2: the issue settings array is empty
+  -3: the issue settings array does no exist
+*/
+function getIssueSetting($issue, $settingName) {
+	
+	if (!is_array($issue)) {
+		return -1;
+	}
+	
+	if (array_key_exists('settings', $issue)) { if (!empty($issue['settings'])) {
+	foreach ($issue['settings'] as &$setting) {
+		
+		if ($setting['setting_name'] === $settingName) {
+			return $setting['setting_value'];
+		}
+		
+	}//end of the foreach issue settings
+	unset($setting);
+	
+	}//end of the if issue settings not empty
+	else {
+		return -2; // the issue settings array is empty
+	}
+	}//end of the if settings exist
+	else {
+		return -3; // the issue settings array does no exist
+	}
+	
+	return 0;
+}
 
 // #29)
 /**
-this functions receives an array with the issues data including their settings, and tries to map their ids
+this functions receives an array with the issues data including their settings, 
+and tries to map their ids in the dataMapping array
 */
 function mapIssueIds($conn, &$dataMapping, &$issues, $journal) {
-	
-	echo "\nTHIS FUNCTION DOES NOT DO ANYTHING YET\n";
-	return false;
 	
 	if (!is_array($dataMapping)) {
 		include_once('appFunctions.php');
@@ -996,32 +1035,184 @@ function mapIssueIds($conn, &$dataMapping, &$issues, $journal) {
 		$dataMapping['issue_id'] = array();
 	}
 	
+	$errors = array(
+		'notFound' => array(),
+		'stmtDOI' => array(),
+		'stmtTitle' => array(),
+		'issueSTMT' => array(),
+		'other' => array()
+	);
 	
+	$stmtDOI = $conn->prepare('SELECT * FROM issue_settings WHERE setting_name = "pub-id::publisher-id" AND setting_value = :issueDOI');
+	$stmtTitle = $conn->prepare('SELECT * FROM issue_settings WHERE setting_name = "title" AND setting_value = :issueTitle');
+	$issueSTMT = $conn->prepare('SELECT * FROM issues WHERE issue_id = :issueId');
 	
-}
+	echo "\n\nMapping the issues ids:\n\n";
+	
+	$notFound = 0;
+	$alreadyMapped = 0;
+	$newlyMapped = 0;
+	
+	foreach ($issues as $issue) {
+		
+		if (array_key_exists($issue['issue_id'], $dataMapping['issue_id'])) {
+			$id = $dataMapping['issue_id'][$issue['issue_id']];
+			if ($id != '' && $id != null) {
+				echo "\nThe issue #" . $issue['issue_id']. " has been mapped already. Its new id is '$id'\n\n"; 
+				$alreadyMapped++;
+				continue; //go to the next issue
+			}
+		}
+		
+		$importedIssue = null;
+		$issueFound = false;
+		
+		$useTitle = false;
+		$doi = getIssueSetting($issue, 'pub-id::publisher-id'); // from this script function #29.1
+		
+		if (is_string($doi)) {
+			$stmtDOI->bindParam(':issueDOI', $doi, PDO::PARAM_STR);
+			if ($stmtDOI->execute()) {
+				while ($importedSetting = $stmtDOI->fetch(PDO::FETCH_ASSOC)) {
+					
+					$issueSTMT->bindParam(':issueId', $importedSetting['issue_id']);
+					if ($issueSTMT->execute()) {
+						
+						$importedIssue = $issueSTMT->fetch(PDO::FETCH_ASSOC);
+						
+						if ($importedIssue['journal_id'] == $journal['journal_id']) {
+							$isTheOne = true;
+							
+							//////// check the volume, year and number to be sure //////////////
+							if (($importedIssue['volume']) != null && ($issue['volume'] != null)) {
+								if ($importedIssue['volume'] != $issue['volume']) $isTheOne = false;
+							}
+							
+							if (($importedIssue['number']) != null && ($issue['number'] != null)) {
+								if ($importedIssue['number'] != $issue['number']) $isTheOne = false;
+							}
+							
+							if (($importedIssue['year']) != null && ($issue['year'] != null)) {
+								if ($importedIssue['year'] != $issue['year']) $isTheOne = false;
+							}
+							////////////////////////////////////////////////////////////////////
+							
+							if ($isTheOne) {
+								//the issue is the correct one
+								$issueFound = true;
+								break; // breaks out of the while to fetch settings
+							}
+						}
+						
+					}//end of the if issueSTMT executed
+					else {
+						//the issueSTMT did not execute
+						$error = array('error' => $issueSTMT->errorInfo(), 'doi' => $doi, 'importedSetting' => $importedSetting, 'issue' => $issue);
+						array_push($errors['issueSTMT'], $error);
+					}
+					
+				}// end of the while to fetch the issue settings
+			}//end of the if stmtDOI executed
+			else {
+				// THE stmtDOI did not execute
+				$error = array('doi' => $doi, 'error' => $stmtDOI->errorInfo(), 'issue' => $issue);
+				array_push($errors['stmtDOI'], $error);
+			}
+			
+		}//end of the if is string doi
+		else {
+			$useTitle = true;
+		}
+		
+		if ($useTitle || !$issueFound) {
+		$title = getIssueSetting($issue, 'title'); // from this script function #29.1
+		if (is_string($title)) {
+			$stmtTitle->bindParam(':issueTitle', $title, PDO::PARAM_STR);
+			if ($stmtTitle->execute()) {
+				while ($importedSetting = $stmtTitle->fetch(PDO::FETCH_ASSOC)) {
+					
+					$issueSTMT->bindParam(':issueId', $importedSetting['issue_id']);
+					if ($issueSTMT->execute()) {
+						
+						$importedIssue = $issueSTMT->fetch(PDO::FETCH_ASSOC);
+						
+						if ($importedIssue['journal_id'] == $journal['journal_id']) {
+							$isTheOne = true;
+							
+							//////// check the volume, year and number to be sure //////////////
+							if (($importedIssue['volume']) != null && ($issue['volume'] != null)) {
+								if ($importedIssue['volume'] != $issue['volume']) $isTheOne = false;
+							}
+							
+							if (($importedIssue['number']) != null && ($issue['number'] != null)) {
+								if ($importedIssue['number'] != $issue['number']) $isTheOne = false;
+							}
+							
+							if (($importedIssue['year']) != null && ($issue['year'] != null)) {
+								if ($importedIssue['year'] != $issue['year']) $isTheOne = false;
+							}
+							////////////////////////////////////////////////////////////////////
+							
+							if ($isTheOne) {
+								//the issue is the correct one
+								$issueFound = true;
+								break; // breaks out of the while to fetch settings
+							}
+							
+						}
+						
+					}//end of the if issueSTMT executed
+					else {
+						//the issueSTMT did not execute
+						$error = array('error' => $issueSTMT->errorInfo(), 'title' => $title, 'importedSetting' => $importedSetting, 'issue' => $issue);
+						array_push($errors['issueSTMT'], $error);
+					}
+					
+				}//end of the while to fetch the issue settings
+			}//end of the if stmtTitle executed
+			else {
+				//the stmtTitle did not execute
+				$error = array('title' => $title, 'error' => $stmtTitle->errorInfo(), 'issue' => $issue);
+				array_push($errors['stmtTitle'], $error);
+			}
+		}//end of the if is string title
+		}//end of the if useTitle
+		
+		
+		if ($issueFound) {
+			if ($importedIssue !== null) {
+				$dataMapping['issue_id'][$issue['issue_id']] = $importedIssue['issue_id']; // maps the issue_id
+				$newlyMapped++;
+			}
+			else {
+				//the importedIssue is null
+				$error = array('error' => 'The importedIssue is null', 'issue' => $issue);
+				array_push($errors['other'], $error);
+			}
+		}
+		else {
+			//the issue was not found
+			$error = array('issue_id' => $issue['issue_id'], 'issue' => $issue);
+			array_push($errors['notFound'], $error);
+			$notFound++;
+		}
+		
+	}// end of the foreach issues
+	
+	$returnData = array(
+		'errors' => $errors,
+		'numbers' => array('notFound' => $notFound, 'newlyMapped' => $newlyMapped, 'alreadyMapped' => $alreadyMapped)
+	);
+
+	return $returnData;
+	
+}//end of the function mapIssueIds
+
 
 // #30)
 /**
-this function tries to fetch an issue searching by the setting selected by the user
+this function maps the articles already published
 */
-function fetchIssue($conn, $settingName, $settingValue, $journalId) {
-	
-	echo "\nTHIS FUNCTION DOES NOT DO ANYTHING YET\n";
-	return false;
-	
-	$errors = array();
-	
-	////// THE PREPARED STATEMENT  ////////////
-	$fetchIssuesSTMT = $conn->prepare('SELECT * FROM issues WHERE journal_id = :journalId');
-	$fetchIssuesSTMT->bindParam(':journalId', $journalId, PDO::PARAM_INT);
-	
-	$fetchIssueSettingsTMT = $conn->prepare('SELECT * FROM issue_settings WHERE issue_id = :issueId');
-	
-	if ($fetchIssuesSTMT->execute()) {
-		$issues;
-	}
-	else {
-		// the fetchIssues did not execute
-	}
+function mapPublishedArticles($conn, &$dataMapping, &$publishedArticles, $journal) {
 	
 }

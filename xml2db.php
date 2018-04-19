@@ -323,7 +323,7 @@ function getSectionBySetting($conn, $journalId, $locale, $settingName, $settingV
 	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_STR);
 	
 	if ($stmt->execute()) { // I	
-	if ($fetched = $stmt->fetch(PDO::FETCH_ASSOC)) { // II 
+	if ($fetched = $stmt->fetch(PDO::FETCH_ASSOC)) { // II                                             
 		   
   		$getSection->bindParam(':sectionId', $fetched['section_id'], PDO::PARAM_INT);
 		if ($getSection->execute()) { // III
@@ -1267,13 +1267,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				$arr = array();
 				$arr['data'] = $articleSetting;
-				$arr['params'] = [
-					['name' => ':articleSettings_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':articleSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR],
-					['name' => ':articleSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR],
-					['name' => ':articleSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR],
-					['name' => ':articleSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR]
-				];
+				$arr['params'] = array(
+					array('name' => ':articleSettings_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':articleSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+					array('name' => ':articleSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':articleSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+					array('name' => ':articleSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+				);
 				
 				if (myExecute('insert', 'article_settings', $arr, $insertArticleSettingsSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
@@ -1299,18 +1299,18 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				$arr = array();
 				$arr['data'] = $author;
-				$arr['params'] = [
-					['name' => ':author_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':author_primaryContact', 'attr' => 'primary_contact', 'type' => PDO::PARAM_INT],
-					['name' => ':author_seq', 'attr' => 'seq'],
-					['name' => ':author_firstName', 'attr' => 'first_name', 'type' => PDO::PARAM_STR],
-					['name' => ':author_middleName', 'attr' => 'middle_name', 'type' => PDO::PARAM_STR],
-					['name' => ':author_lastName', 'attr' => 'last_name', 'type' => PDO::PARAM_STR],
-					['name' => ':author_country', 'attr' => 'country', 'type' => PDO::PARAM_STR],
-					['name' => ':author_email', 'attr' => 'email', 'type' => PDO::PARAM_STR],
-					['name' => ':author_url', 'attr' => 'url', 'type' => PDO::PARAM_STR],
-					['name' => ':author_suffix', 'attr' => 'suffix', 'type' => PDO::PARAM_STR],
-				];
+				$arr['params'] = array(
+					array('name' => ':author_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':author_primaryContact', 'attr' => 'primary_contact', 'type' => PDO::PARAM_INT),
+					array('name' => ':author_seq', 'attr' => 'seq'),
+					array('name' => ':author_firstName', 'attr' => 'first_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':author_middleName', 'attr' => 'middle_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':author_lastName', 'attr' => 'last_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':author_country', 'attr' => 'country', 'type' => PDO::PARAM_STR),
+					array('name' => ':author_email', 'attr' => 'email', 'type' => PDO::PARAM_STR),
+					array('name' => ':author_url', 'attr' => 'url', 'type' => PDO::PARAM_STR),
+					array('name' => ':author_suffix', 'attr' => 'suffix', 'type' => PDO::PARAM_STR),
+				);
 				
 				echo "\ninserting author #" . $author['author_id'] . " ......... "; 
 			
@@ -1355,21 +1355,21 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $articleFile;
-					$arr['params'] = [
-						['name' => ':file_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT],
-						['name' => ':file_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT],
-						['name' => ':file_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':file_fileName', 'attr' => 'file_name', 'type' => PDO::PARAM_STR],
-						['name' => ':file_fileType', 'attr' => 'file_type', 'type' => PDO::PARAM_STR],
-						['name' => ':file_originalFileName', 'attr' => 'original_file_name', 'type' => PDO::PARAM_STR],
-						['name' => ':file_fileSize', 'attr' => 'file_size', 'type' => PDO::PARAM_INT],
-						['name' => ':file_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT],
-						['name' => ':file_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT],
-						['name' => ':file_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR],
-						['name' => ':file_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR],
-						['name' => ':file_round', 'attr' => 'round', 'type' => PDO::PARAM_INT],
-						['name' => ':file_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT]
-					];
+					$arr['params'] = array(
+						array('name' => ':file_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_fileName', 'attr' => 'file_name', 'type' => PDO::PARAM_STR),
+						array('name' => ':file_fileType', 'attr' => 'file_type', 'type' => PDO::PARAM_STR),
+						array('name' => ':file_originalFileName', 'attr' => 'original_file_name', 'type' => PDO::PARAM_STR),
+						array('name' => ':file_fileSize', 'attr' => 'file_size', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+						array('name' => ':file_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+						array('name' => ':file_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+						array('name' => ':file_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
+					);
 					
 					echo '    inserting article file #' . $articleFile['file_id']. '............ ';
 					
@@ -1424,17 +1424,17 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $articleSuppFile;
-					$arr['params'] = [
-						['name' => ':supp_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':supp_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':supp_type', 'attr' => 'type', 'type' => PDO::PARAM_STR],
-						['name' => ':supp_language', 'attr' => 'language', 'type' => PDO::PARAM_STR],
-						['name' => ':supp_showReviewers', 'attr' => 'show_reviewers', 'type' => PDO::PARAM_INT],
-						['name' => ':supp_dateCreated', 'attr' => 'date_created', 'type' => PDO::PARAM_STR],
-						['name' => ':supp_dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR],
-						['name' => ':supp_seq', 'attr' => 'seq'],
-						['name' => ':supp_remoteUrl', 'attr' => 'remote_url', 'type' => PDO::PARAM_STR]
-					];
+					$arr['params'] = array(
+						array('name' => ':supp_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':supp_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':supp_type', 'attr' => 'type', 'type' => PDO::PARAM_STR),
+						array('name' => ':supp_language', 'attr' => 'language', 'type' => PDO::PARAM_STR),
+						array('name' => ':supp_showReviewers', 'attr' => 'show_reviewers', 'type' => PDO::PARAM_INT),
+						array('name' => ':supp_dateCreated', 'attr' => 'date_created', 'type' => PDO::PARAM_STR),
+						array('name' => ':supp_dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR),
+						array('name' => ':supp_seq', 'attr' => 'seq'),
+						array('name' => ':supp_remoteUrl', 'attr' => 'remote_url', 'type' => PDO::PARAM_STR)
+					);
 					
 					echo '    inserting article supplemetary file #' . $articleSuppFile['supp_id']. '............ ';
 					
@@ -1477,13 +1477,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						$arr = array();
 						$arr['data'] = $setting;
-						$arr['params'] = [
-							['name' => ':suppSettings_suppId', 'attr' => 'supp_new_id', 'type' => PDO::PARAM_INT],
-							['name' => ':suppSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR],
-							['name' => ':suppSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR],
-							['name' => ':suppSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR],
-							['name' => ':suppSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR]
-						];
+						$arr['params'] = array(
+							array('name' => ':suppSettings_suppId', 'attr' => 'supp_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':suppSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+							array('name' => ':suppSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+							array('name' => ':suppSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+							array('name' => ':suppSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+						);
 						
 						if (myExecute('insert', 'article_supp_file_settings', $arr, $insertArticleSuppFileSettingSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
@@ -1555,18 +1555,18 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $articleComment;
-					$arr['params'] = [
-						['name' => ':comment_commentType', 'attr' => 'comment_type', 'type' => PDO::PARAM_INT],
-						['name' => ':comment_roleId', 'attr' => 'role_id', 'type' => PDO::PARAM_INT],
-						['name' => ':comment_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':comment_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT],
-						['name' => ':comment_authorId', 'attr' => 'author_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':comment_commentTitle', 'attr' => 'comment_title', 'type' => PDO::PARAM_STR],
-						['name' => ':comment_comments', 'attr' => 'comments', 'type' => PDO::PARAM_STR],
-						['name' => ':comment_datePosted', 'attr' => 'date_posted', 'type' => PDO::PARAM_STR],
-						['name' => ':comment_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR],
-						['name' => ':comment_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT]
-					];
+					$arr['params'] = array(
+						array('name' => ':comment_commentType', 'attr' => 'comment_type', 'type' => PDO::PARAM_INT),
+						array('name' => ':comment_roleId', 'attr' => 'role_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':comment_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':comment_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':comment_authorId', 'attr' => 'author_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':comment_commentTitle', 'attr' => 'comment_title', 'type' => PDO::PARAM_STR),
+						array('name' => ':comment_comments', 'attr' => 'comments', 'type' => PDO::PARAM_STR),
+						array('name' => ':comment_datePosted', 'attr' => 'date_posted', 'type' => PDO::PARAM_STR),
+						array('name' => ':comment_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+						array('name' => ':comment_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT)
+					);
 					
 					echo '    inserting article comment #' . $articleComment['comment_id']. '............ ';
 					
@@ -1649,16 +1649,16 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $articleGalley;
-					$arr['params'] = [
-						['name' => ':articleGalley_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR],
-						['name' => ':articleGalley_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':articleGalley_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':articleGalley_label', 'attr' => 'label', 'type' => PDO::PARAM_STR],
-						['name' => ':articleGalley_htmlGalley', 'attr' => 'html_galley', 'type' => PDO::PARAM_INT],
-						['name' => ':articleGalley_styleFileId', 'attr' => 'style_file_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':articleGalley_seq', 'attr' => 'seq'],
-						['name' => ':articleGalley_remoteUrl', 'attr' => 'remote_url', 'type' => PDO::PARAM_STR]
-					];
+					$arr['params'] = array(
+						array('name' => ':articleGalley_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+						array('name' => ':articleGalley_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':articleGalley_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':articleGalley_label', 'attr' => 'label', 'type' => PDO::PARAM_STR),
+						array('name' => ':articleGalley_htmlGalley', 'attr' => 'html_galley', 'type' => PDO::PARAM_INT),
+						array('name' => ':articleGalley_styleFileId', 'attr' => 'style_file_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':articleGalley_seq', 'attr' => 'seq'),
+						array('name' => ':articleGalley_remoteUrl', 'attr' => 'remote_url', 'type' => PDO::PARAM_STR)
+					);
 					
 					echo '    inserting article galley #' . $articleGalley['galley_id']. '............ ';
 					
@@ -1695,13 +1695,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						$arr = array();
 						$arr['data'] = $setting;
-						$arr['params'] = [
-							['name' => ':galleySetting_galleyId', 'attr' => 'galley_new_id', 'type' => PDO::PARAM_INT],
-							['name' => ':galleySetting_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR],
-							['name' => ':galleySetting_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR],
-							['name' => ':galleySetting_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR],
-							['name' => ':galleySetting_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR]
-						];
+						$arr['params'] = array(
+							array('name' => ':galleySetting_galleyId', 'attr' => 'galley_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':galleySetting_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+							array('name' => ':galleySetting_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+							array('name' => ':galleySetting_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+							array('name' => ':galleySetting_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+						);
 						
 						if (myExecute('insert', 'article_galley_settings', $arr, $insertArticleGalleySettingSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
@@ -1741,13 +1741,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							$arr = array();
 							$arr['data'] = $xmlGalley;
-							$arr['params'] = [
-								['name' => ':xmlGalley_galleyId', 'attr' => 'galley_new_id', 'type' => PDO::PARAM_INT],
-								['name' => ':xmlGalley_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-								['name' => ':xmlGalley_label', 'attr' => 'label', 'type' => PDO::PARAM_STR],
-								['name' => ':xmlGalley_galleyType', 'attr' => 'galley_type', 'type' => PDO::PARAM_STR],
-								['name' => ':xmlGalley_views', 'attr' => 'views', 'type' => PDO::PARAM_INT]
-							];
+							$arr['params'] = array(
+								array('name' => ':xmlGalley_galleyId', 'attr' => 'galley_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':xmlGalley_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':xmlGalley_label', 'attr' => 'label', 'type' => PDO::PARAM_STR),
+								array('name' => ':xmlGalley_galleyType', 'attr' => 'galley_type', 'type' => PDO::PARAM_STR),
+								array('name' => ':xmlGalley_views', 'attr' => 'views', 'type' => PDO::PARAM_INT)
+							);
 							
 							if (myExecute('insert', 'article_xml_galley', $arr, $insertArticleXmlGalleySTMT, $errors)) { //from helperFunctions.php
 								echo "Ok\n";
@@ -1761,7 +1761,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							}
 						}
 						else {
-							$error = ['xml_galley_id' => $xmlGalley['xml_galley_id'], 'error' => 'article_id '. $xmlGalley['article_id'] . ' not found on dataMappings.'];
+							$error = array('xml_galley_id' => $xmlGalley['xml_galley_id'], 'error' => 'article_id '. $xmlGalley['article_id'] . ' not found on dataMappings.');
 							array_push($errors['article_xml_galley']['insert'], $error);
 						}
 					}//end of the foreach xml_galley
@@ -1796,10 +1796,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							$arr = array();
 							$arr['data'] = $setting;
-							$arr['params'] = [
-								['name' => ':galleyImage_galleyId', 'attr' => 'galley_new_id', 'type' => PDO::PARAM_INT],
-								['name' => ':galleyImage_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT]
-							];
+							$arr['params'] = array(
+								array('name' => ':galleyImage_galleyId', 'attr' => 'galley_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':galleyImage_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT)
+							);
 							
 							if (myExecute('insert', 'article_html_galley_image', $arr, $insertArticleHtmlGalleyImageSTMT, $errors)) { //from helperFunctions.php
 								echo "Ok\n";
@@ -1809,8 +1809,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							}
 						}
 						else {
-							$error = ['galley_id' => $galleyImage['galley_id'], 'file_id' => $galleyImage['file_id'], 
-							'error' => 'file_id '. $galleyImage['file_id'] . ' not found on dataMappings.'];
+							$error = array(
+								'galley_id' => $galleyImage['galley_id'], 
+								'file_id' => $galleyImage['file_id'], 
+								'error' => 'file_id '. $galleyImage['file_id'] . ' not found on dataMappings.'
+							);
 							array_push($errors['article_html_galley_image']['insert'], $error);
 						}
 						
@@ -1863,7 +1866,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$editorIdOk = true;
 				}
 				else {
-					
 					$editorIdOk = processUser($editDecision['editor'], array('type' => 'edit_decision', 'data' => $editDecision), $dataMapping, $errors, $insertedUsers, $userStatements);
 					
 					if ($editorIdOk) {
@@ -1885,13 +1887,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $editDecision;
-					$arr['params'] = [
-						['name' => ':editDecision_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':editDecision_round', 'attr' => 'round', 'type' => PDO::PARAM_INT],
-						['name' => ':editDecision_editorId', 'attr' => 'editor_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':editDecision_decision', 'attr' => 'decision', 'type' => PDO::PARAM_INT],
-						['name' => ':editDecision_dateDecided', 'attr' => 'date_decided', 'type' => PDO::PARAM_STR]
-					];
+					$arr['params'] = array(
+						array('name' => ':editDecision_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':editDecision_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+						array('name' => ':editDecision_editorId', 'attr' => 'editor_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':editDecision_decision', 'attr' => 'decision', 'type' => PDO::PARAM_INT),
+						array('name' => ':editDecision_dateDecided', 'attr' => 'date_decided', 'type' => PDO::PARAM_STR)
+					);
 					
 					if (myExecute('insert', 'edit_decision', $arr, $insertEditDecisionSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
@@ -1967,15 +1969,15 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $editAssignment;
-					$arr['params'] = [
-						['name' => ':editAssign_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':editAssign_canEdit', 'attr' => 'can_edit', 'type' => PDO::PARAM_INT],
-						['name' => ':editAssign_editorId', 'attr' => 'editor_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':editAssign_canReview', 'attr' => 'can_review', 'type' => PDO::PARAM_INT],
-						['name' => ':editAssign_dateAssigned', 'attr' => 'date_assigned', 'type' => PDO::PARAM_STR],
-						['name' => ':editAssign_dateNotified', 'attr' => 'date_notified', 'type' => PDO::PARAM_STR],
-						['name' => ':editAssign_dateUnderway', 'attr' => 'date_underway', 'type' => PDO::PARAM_STR]
-					];
+					$arr['params'] = array(
+						array('name' => ':editAssign_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':editAssign_canEdit', 'attr' => 'can_edit', 'type' => PDO::PARAM_INT),
+						array('name' => ':editAssign_editorId', 'attr' => 'editor_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':editAssign_canReview', 'attr' => 'can_review', 'type' => PDO::PARAM_INT),
+						array('name' => ':editAssign_dateAssigned', 'attr' => 'date_assigned', 'type' => PDO::PARAM_STR),
+						array('name' => ':editAssign_dateNotified', 'attr' => 'date_notified', 'type' => PDO::PARAM_STR),
+						array('name' => ':editAssign_dateUnderway', 'attr' => 'date_underway', 'type' => PDO::PARAM_STR)
+					);
 					
 					if (myExecute('insert', 'edit_assignment', $arr, $insertEditAssignmentSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
@@ -2016,11 +2018,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 				$arr = array();
 				$arr['data'] = $searchObj;
-				$arr['params'] = [
-					['name' => ':searchObj_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':searchObj_type', 'attr' => 'type', 'type' => PDO::PARAM_INT],
-					['name' => ':searchObj_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT]
-				];
+				$arr['params'] = array(
+					array('name' => ':searchObj_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':searchObj_type', 'attr' => 'type', 'type' => PDO::PARAM_INT),
+					array('name' => ':searchObj_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
+				);
 				
 				if (myExecute('insert', 'article_search_object', $arr, $insertArticleSearchObjectSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
@@ -2063,9 +2065,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 										
 										$arr = array();
 										$arr['data'] = $keyword;
-										$arr['params'] = [
-											['name' => ':keywordList_keywordText', 'attr' => 'keyword_text', 'type' => PDO::PARAM_STR]
-										];
+										$arr['params'] = array(
+											array('name' => ':keywordList_keywordText', 'attr' => 'keyword_text', 'type' => PDO::PARAM_STR)
+										);
 										
 										if (myExecute('insert', 'article_search_keyword_list', $arr, $insertArticleSearchKeywordListSTMT, $errors)) { //from helperFunctions.php
 											echo "Ok\n";
@@ -2109,11 +2111,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									
 								$arr = array();
 								$arr['data'] = $searchObjKeyword;
-								$arr['params'] = [
-									['name' => ':objectKeyword_objectId', 'attr' => 'object_new_id', 'type' => PDO::PARAM_INT],
-									['name' => ':objectKeyword_keywordId', 'attr' => 'keyword_new_id', 'type' => PDO::PARAM_INT],
-									['name' => ':objectKeyword_pos', 'attr' => 'pos', 'type' => PDO::PARAM_INT]
-								];
+								$arr['params'] = array(
+									array('name' => ':objectKeyword_objectId', 'attr' => 'object_new_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':objectKeyword_keywordId', 'attr' => 'keyword_new_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':objectKeyword_pos', 'attr' => 'pos', 'type' => PDO::PARAM_INT)
+								);
 								
 								if (myExecute('insert', 'article_search_object_keyword', $arr, $insertArticleSearchObjectKeywordSTMT, $errors)) {  //from helperFunctions.php
 									echo "Ok\n";
@@ -2223,35 +2225,35 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					$arr = array();
 					$arr['data'] = $revAssign;
-					$arr['params'] = [
-						['name' => ':revAssign_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_reviewerId', 'attr' => 'reviewer_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_competingInterests', 'attr' => 'competing_interests', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_regretMessage', 'attr' => 'regret_message', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_recommendation', 'attr' => 'recommendation', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_dateAssigned', 'attr' => 'date_assigned', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_dateNotified', 'attr' => 'date_notified', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_dateConfirmed', 'attr' => 'date_confirmed', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_dateCompleted', 'attr' => 'date_completed', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_dateAcknowledged', 'attr' => 'date_acknowledged', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_dateDue', 'attr' => 'date_due', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_reminderAuto', 'attr' => 'reminder_was_automatic', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_declined', 'attr' => 'declined', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_replaced', 'attr' => 'replaced', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_cancelled', 'attr' => 'cancelled', 'type' => PDO::PARAM_STR],
-						['name' => ':revAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_dateRated', 'attr' => 'date_rated', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_dateReminded', 'attr' => 'date_reminded', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_quality', 'attr' => 'quality', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_reviewRoundId', 'attr' => 'review_round_id', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_reviewMethod', 'attr' => 'review_method', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_round', 'attr' => 'round', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_step', 'attr' => 'step', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT],
-						['name' => ':revAssign_unconsidered', 'attr' => 'unconsidered', 'type' => PDO::PARAM_INT]
-					];
+					$arr['params'] = array(
+						array('name' => ':revAssign_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_reviewerId', 'attr' => 'reviewer_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_competingInterests', 'attr' => 'competing_interests', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_regretMessage', 'attr' => 'regret_message', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_recommendation', 'attr' => 'recommendation', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_dateAssigned', 'attr' => 'date_assigned', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_dateNotified', 'attr' => 'date_notified', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_dateConfirmed', 'attr' => 'date_confirmed', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_dateCompleted', 'attr' => 'date_completed', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_dateAcknowledged', 'attr' => 'date_acknowledged', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_dateDue', 'attr' => 'date_due', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_reminderAuto', 'attr' => 'reminder_was_automatic', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_declined', 'attr' => 'declined', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_replaced', 'attr' => 'replaced', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_cancelled', 'attr' => 'cancelled', 'type' => PDO::PARAM_STR),
+						array('name' => ':revAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_dateRated', 'attr' => 'date_rated', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_dateReminded', 'attr' => 'date_reminded', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_quality', 'attr' => 'quality', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_reviewRoundId', 'attr' => 'review_round_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_reviewMethod', 'attr' => 'review_method', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_step', 'attr' => 'step', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revAssign_unconsidered', 'attr' => 'unconsidered', 'type' => PDO::PARAM_INT)
+					);
 					
 					
 					echo "\ninserting review_assignment #" . $revAssign['review_id'] . " ......... "; 
@@ -2304,12 +2306,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							$arr = array();
 							$arr['data'] = $revFormResponse;
-							$arr['params'] = [
-								['name' => ':response_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT],
-								['name' => ':reponse_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT],
-								['name' => ':response_responseType', 'attr' => 'response_type', 'type' => PDO::PARAM_STR],
-								['name' => ':response_reponseValue', 'attr' => 'response_value', 'type' => PDO::PARAM_STR]
-							];
+							$arr['params'] = array(
+								array('name' => ':response_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':reponse_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':response_responseType', 'attr' => 'response_type', 'type' => PDO::PARAM_STR),
+								array('name' => ':response_reponseValue', 'attr' => 'response_value', 'type' => PDO::PARAM_STR)
+							);
 							
 							if (myExecute('insert', 'review_form_response', $arr, $insertReviewFormResponseSTMT, $errors)) {  //from helperFunctions.php
 								echo "Ok\n";
@@ -2351,13 +2353,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				$arr = array();
 				$arr['data'] = $revRound;
-				$arr['params'] = [
-					['name' => ':revRound_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':revRound_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT],
-					['name' => ':revRound_round', 'attr' => 'round', 'type' => PDO::PARAM_INT],
-					['name' => ':revRound_reviewRevision', 'attr' => 'review_revision', 'type' => PDO::PARAM_INT],
-					['name' => ':revRound_status', 'attr' => 'status', 'type' => PDO::PARAM_INT]
-				];
+				$arr['params'] = array(
+					array('name' => ':revRound_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':revRound_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':revRound_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+					array('name' => ':revRound_reviewRevision', 'attr' => 'review_revision', 'type' => PDO::PARAM_INT),
+					array('name' => ':revRound_status', 'attr' => 'status', 'type' => PDO::PARAM_INT)
+				);
 				
 				if (myExecute('insert', 'review_round', $arr, $insertReviewRoundSTMT, $errors)) {  //from helperFunctions.php
 					echo "Ok\n";
@@ -2386,8 +2388,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		else {
 			//article not ok
+			// the getNewId function already flagged the error
 		}
-		//exit();
 	}//end of foreach articles
 	unset($article);
 	
@@ -2440,13 +2442,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		if ($updateArticle) {
 			$arr = array();
 			$arr['data'] = $article;
-			$arr['params'] = [
-				['name' => ':updateArticle_submissionFileId', 'attr' => 'submission_file_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':updateArticle_revisedFileId', 'attr' => 'revised_file_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':updateArticle_reviewFileId', 'attr' => 'review_file_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':updateArticle_editorFileId', 'attr' => 'editor_file_new_id', 'type' => PDO::PARAM_INT],
-				['name' => ':updateArticle_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT]
-			];
+			$arr['params'] = array(
+				array('name' => ':updateArticle_submissionFileId', 'attr' => 'submission_file_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateArticle_revisedFileId', 'attr' => 'revised_file_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateArticle_reviewFileId', 'attr' => 'review_file_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateArticle_editorFileId', 'attr' => 'editor_file_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateArticle_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT)
+			);
 			
 			echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
 			
@@ -2524,13 +2526,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			if ($updateFile) {
 				$arr = array();
 				$arr['data'] = $articleFile;
-				$arr['params'] = [
-					['name' => ':updateFile_sourceFileId', 'attr' => 'source_file_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':updateFile_fileName', 'attr' => 'file_new_name', 'type' => PDO::PARAM_STR],
-					['name' => ':updateFile_originalFileName', 'attr' => 'original_file_new_name', 'type' => PDO::PARAM_STR],
-					['name' => ':updateFile_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':updateFile_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT]
-				];
+				$arr['params'] = array(
+					array('name' => ':updateFile_sourceFileId', 'attr' => 'source_file_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':updateFile_fileName', 'attr' => 'file_new_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':updateFile_originalFileName', 'attr' => 'original_file_new_name', 'type' => PDO::PARAM_STR),
+					array('name' => ':updateFile_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':updateFile_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT)
+				);
 				
 				echo "\nupdating file #" . $articleFile['file_new_id'] . " ......... "; 
 				
@@ -2568,10 +2570,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			if ($revAssignOk) {
 				$arr = array();
 				$arr['data'] = $revAssign;
-				$arr['params'] = [
-					['name' => ':updateRevAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT],
-					['name' => ':updateRevAssign_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT]
-				];
+				$arr['params'] = array(
+					array('name' => ':updateRevAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':updateRevAssign_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT)
+				);
 				
 				echo "\nupdating review_assignment #" . $revAssign['review_new_id'] . " ......... "; 
 				
@@ -2950,9 +2952,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$userOk = true;
 					}
 					else {
-						$user = $membership['user'];
-						$userOk = processUser($user, array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
-						$membership['user_new_id'] = $user['user_new_id'];
+						//$user = $membership['user'];
+						$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
+						$membership['user_new_id'] = $membership['user']['user_new_id'];
 					}
 					//////////////////////////////////////////////////////////////
 					
@@ -3202,12 +3204,6 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 					echo "Failed\n";
 				}
 				
-				/*
-				$insertReviewFormElementSettingsSTMT = $conn->prepare(
-		'INSERT INTO review_form_element_settings (review_form_element_id, locale, setting_name, setting_value, setting_type) 
-		 VALUES (:rfElemSettings_reviewFormElementId, :rfElemSettings_locale, :rfElemSettings_settingName, :rfElemSettings_settingValue, :rfElemSettings_settingType)'
-	);
-				*/
 				
 				if ($reviewFormElementOk) {
 					////////// insert the review_form settings ///////////////////////////////
@@ -3323,7 +3319,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$lastEventLogsSTMT = $conn->prepare("SELECT * FROM event_log ORDER BY log_id DESC LIMIT $limit");
 	
 	$insertEventLogSettingsSTMT = $conn->prepare(
-		'INSERT INTO review_form_settings (log_id, setting_name, setting_value, setting_type) 
+		'INSERT INTO event_log_settings (log_id, setting_name, setting_value, setting_type) 
 		 VALUES (:eventLogId, :settingName, :settingValue, :settingType)'
 	);
 	//////////////////////////
@@ -3378,12 +3374,14 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		/////////////// checking data integrity ///////////////////////////////////////////
 		if (array_key_exists($emailLog['assoc_id'], $dataMapping['article_id'])) {
-			$emailLog['assoc_new_id'] = $dataMapping['article_id'][$email_log['assoc_id']];
+			$emailLog['assoc_new_id'] = $dataMapping['article_id'][$emailLog['assoc_id']];
 			$assocIdOk = true;
 		}
 		else {
 			$error['assocIdError'] = 'The email log assoc_id #' . $emailLog['assoc_id'] . ' , which is an article_id, is not in the dataMapping.'; 
 		}
+		
+		$sender = null;
 		
 		if (array_key_exists($emailLog['sender_id'], $dataMapping['user_id'])) {
 			$emailLog['sender_new_id'] = $dataMapping['user_id'][$emailLog['sender_id']];
@@ -3391,6 +3389,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		}
 		else {
 			$senderIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
+			$emailLog['sender_new_id'] = $emailLog['sender']['user_new_id'];
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 		
@@ -3511,6 +3510,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$eventLogs = xmlToArray($event_logs_node, true); //from helperFunctions.php
 	$numInsertedEventLogs = 0;
 	
+	echo "\n\nInserting the event logs:\n";
+	
 	foreach ($eventLogs as &$eventLog) {
 		if (array_key_exists($eventLog['log_id'], $dataMapping['event_log_id'])) {
 			echo "\nevent_log #" . $eventLog['log_id'] . " was already imported.\n";
@@ -3525,7 +3526,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		//////////////////// checking data integrity /////////////////////////////////////////
 		if (array_key_exists($eventLog['assoc_id'], $dataMapping['article_id'])) {
-			$eventLog['assoc_new_id'] = $dataMapping['article_id'][$email_log['assoc_id']];
+			$eventLog['assoc_new_id'] = $dataMapping['article_id'][$eventLog['assoc_id']];
 			$assocIdOk = true;
 		}
 		else {
@@ -3534,10 +3535,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		if (array_key_exists($eventLog['user_id'], $dataMapping['user_id'])) {
 			$eventLog['user_new_id'] = $dataMapping['user_id'][$eventLog['user_id']];
-			$senderIdOk = true;
+			$userIdOk = true;
 		}
 		else {
 			$userIdOk = processUser($eventLog['user'], array('type' => 'event_log', 'data' => $eventLog), $dataMapping, $errors, $insertedUsers, $userStatements);
+			$eventLog['user_new_id'] = $eventLog['user']['user_new_id'];
 		}
 		////////////////////////////////////////////////////////////////////////////////////////
 		
@@ -3573,7 +3575,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		}//end of the if assocIdOk and userIdOk
 		else { //the data had no integrity
 			if (!$userIdOk) {
-				$error['userIdError'] = 'The user_id #' . $eventLog['user_id'] . ' is not in the dataMappings.';
+				$error['userIdError'] = array(
+					'user' => $eventLog['user'], 
+					'error' => 'The user_id #' . $eventLog['user_id'] . ' is not in the dataMappings.'
+				);
 			}
 			
 			$error['event_log_id'] = $eventLog['log_id'];
@@ -3584,6 +3589,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		if ($eventLogOk) {
 			if (array_key_exists('settings', $eventLog)) { if (!empty($eventLog['settings'])) {
 			foreach ($eventLog['settings'] as &$setting) {
+				
+				/*
+				$insertEventLogSettingsSTMT = $conn->prepare(
+		'INSERT INTO review_form_settings (log_id, setting_name, setting_value, setting_type) 
+		 VALUES (:eventLogId, :settingName, :settingValue, :settingType)'
+	);
+				*/
 				
 				validateData('event_log_settings', $setting); 
 						
@@ -3680,22 +3692,6 @@ function insertPluginSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args 
 		
 		validateData('plugin_settings', $plugin); //from helperFunctions.php
 		
-	/*$checkPluginSTMT = $conn->prepare(
-		'SELECT * FROM plugin_settings WHERE 
-		 plugin_name = :check_pluginName AND locale = :check_locale AND
-		 journal_id = :check_journalId AND setting_name = :check_settingName'
-	);
-	
-	$insertPluginSettingsSTMT = $conn->prepare('INSERT INTO plugin_settings (plugin_name, locale, journal_id, setting_name, setting_value, setting_type)
-		VALUES (:insert_pluginName, :insert_locale, :insert_journalId, :insert_settingName, :insert_settingValue, :insert_settingType)');
-	
-	$updatePluginSettingsSTMT = $conn->prepare(
-		'UPDATE plugin_settings 
-		 SET setting_value = :update_settingValue, setting_type = :update_settingType 
-		 WHERE plugin_name = :update_pluginName AND locale = :update_locale AND
-		 journal_id = :update_journalId AND setting_name = :update_settingName'
-	);*/
-		
 		$pluginSettingExists = false;
 		/////////// check if the plugin setting exists //////////////////////////
 		$checkPluginSTMT->bindParam(':check_pluginName', $plugin['plugin_name'], PDO::PARAM_STR);
@@ -3714,12 +3710,6 @@ function insertPluginSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args 
 				
 				if ($checkPlugin['setting_value'] != $plugin['setting_value']) {
 					//update the plugin setting value
-					/*$updatePluginSettingsSTMT->bindParam(':update_settingValue', $plugin['setting_value'], PDO::PARAM_STR);
-					$updatePluginSettingsSTMT->bindParam(':update_settingType', $plugin['setting_type'], PDO::PARAM_STR);
-					$updatePluginSettingsSTMT->bindParam(':update_pluginName', $checkedPlugin['plugin_name'], PDO::PARAM_STR);
-					$updatePluginSettingsSTMT->bindParam(':update_locale', $checkedPlugin['locale'], PDO::PARAM_STR);
-					$updatePluginSettingsSTMT->bindParam(':update_settingName', $checkedPlugin['setting_name'], PDO::PARAM_STR);*/
-					
 					$arr = array();
 					$arr['data'] = $plugin;
 					$arr['params'] = array(
@@ -3798,8 +3788,8 @@ function insertPluginSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args 
 
 
 // #13)
-function insertIssueOrders(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
-	//echo "\n\nTHE FUNCTION insertIssueOrders DOES NOT DO ANYTHING YET\n\n";
+function insertIssueOrders(&$xml, $conn, &$dataMapping, $journal, $args = null) {
+	
 	$limit = 10;
 	
 	if (is_array($args)) {
@@ -3847,17 +3837,45 @@ function insertIssueOrders(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 	
 	$errors = array(
 		'custom_issue_order' => array('insert' => array(), 'update' => array(), 'check' => array()),
-		'custom_section_order' => array('insert' => array(), 'update' => array(), 'check' => array())
+		'custom_section_order' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'mapping' => array('check' => array())
 	);
 	
 	$issue_orders_node = $xml->getElementsByTagName('issue_orders')->item(0);
 	
 	$issueOrders = xmlToArray($issue_orders_node, true); //from helperFunctions.php
 	
+	///////// first of all the issues must be mapped ////////////////////////////
+	$mappedIssues = 0;
+	$issuesTotal = count($issueOrders);
+	
+	$returnedData = mapIssueIds($conn, $dataMapping, $issueOrders, $journal); //from helperFunctions function #29
+	if (is_array($returnedData)) {
+		$mappedIssues = $returnedData['numbers']['newlyMapped'] + $returnedData['numbers']['alreadyMapped'];
+	}
+	
+	if ($mappedIssues > 0) {
+		if ($mappedIssues < $issuesTotal) {
+			$error = array(
+				'error' => "From the $issuesTotal issues only $mappedIssues were mapped", 
+				'mappingNumbers' => $returnedData['numbers'], 
+				'mappingErrors' => $returnedData['errors']
+			);
+			array_push($errors['mapping']['check'], $error);
+		}
+	}
+	else {
+		$error = array('error' => 'None of the issues were mapped', 'mappingErrors' => $returnedData['errors']);
+		array_push($errors['mapping']['check'], $error);
+	}
+	/////////////////////////////////////////////////////////////////////////////
+	
 	$numIssueOrderUpdates = 0;
 	$numIssueOrderInsertions = 0;
 	$numSectionOrderUpdates = 0;
 	$numSectionOrderInsertions = 0;
+	
+	$journalNewId = $journal['journal_id'];
 	
 	foreach ($issueOrders as &$issue) {
 		
@@ -4020,6 +4038,7 @@ function insertIssueOrders(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 		}//end of the if issueIdOk
 		else {
 			$error = array('issue_id' => $issue['issue_id'], 'error' => 'The issue_id #' . $issue['issue_id'] . ' is not in the dataMappings');
+			array_push($errors['custom_issue_order']['check'], $error);
 			echo "Error\n\n";
 		}
 		

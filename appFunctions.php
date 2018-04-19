@@ -28,30 +28,30 @@ This is the main library for the OJSapp
 Developed in 2017 by Bernardo Amado
 */
 
-include_once("helperFunctions.php");
-include_once("db2xml.php");
-include_once("xml2db.php");
+include_once('helperFunctions.php');
+include_once('db2xml.php');
+include_once('xml2db.php');
 
 // #00)
 /**
 creates a backup of the dataMappings.xml
 */
-function backupDataMapping($pathToXml = "dataMappings", $filename = "dataMappings.xml") {
+function backupDataMapping($pathToXml = 'dataMappings', $filename = 'dataMappings.xml') {
 	
-	$now = date("Y-m-d_H:i:s");
-	$name = "";
+	$now = date('Y-m-d_H:i:s');
+	$name = '';
 	
-	if (substr($filename, -4) === ".xml") { //the last 4 characters of $filename
+	if (substr($filename, -4) === '.xml') { //the last 4 characters of $filename
 		$name = substr($filename, 0, -4); 
-		$now = date("Y-m-d_H:i:s");
-		$name .= $now . ".xml";
+		$now = date('Y-m-d_H:i:s');
+		$name .= $now . '.xml';
 	}
 	else {
-		$name = $filename . "." . $now;
+		$name = $filename . '.' . $now;
 	}
 	
-	$filenameFull = $pathToXml . "/" . $filename;
-	$nameFull = $pathToXml . "/backups/" . $name;
+	$filenameFull = $pathToXml . '/' . $filename;
+	$nameFull = $pathToXml . '/backups/' . $name;
 	
 	if (copy($filenameFull, $nameFull)) {
 		return $nameFull;
@@ -85,10 +85,10 @@ function makeXmlDataMapping(&$xml, &$mappings_node, $journalDataMapping) {
 	foreach ($journalDataMapping as $field => $mapping) {
 		$field_node = $xml->createElement($field);
 		foreach ($mapping as $old => $new) {
-			$mapping_node = $xml->createElement("mapping");
+			$mapping_node = $xml->createElement('mapping');
 			
-			$old_node = $xml->createElement("old", $old);
-			$new_node = $xml->createElement("new", $new);
+			$old_node = $xml->createElement('old', $old);
+			$new_node = $xml->createElement('new', $new);
 			
 			$mapping_node->appendChild($old_node);
 			$mapping_node->appendChild($new_node);
@@ -112,11 +112,11 @@ return values:
   1 if the xml file with the data mapping was saved successfully
   
 */
-function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pathToXml = "./dataMappings", $xmlFilename = "dataMappings.xml") {
+function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pathToXml = './dataMappings', $xmlFilename = 'dataMappings.xml') {
 	
-	$xml = new DOMDocument("1.0", "UTF-8");
+	$xml = new DOMDocument('1.0', 'UTF-8');
 	
-	$filename = $pathToXml . "/" . $xmlFilename;
+	$filename = $pathToXml . '/' . $xmlFilename;
 	
 	if (!$xml->load($filename)) {
 		echo "\nCould not load '$filename'.\n";
@@ -127,20 +127,20 @@ function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pa
 	backupDataMapping(); //from this script function #00 
 	
 	//the data mapping  //////
-	$mappings = $xml->createElement("mappings");
+	$mappings = $xml->createElement('mappings');
 	//arrayToXml($xml, $mappings, $dataMapping, ["type" => "mappings"]); // from helperFunctions.php function #13
 	makeXmlDataMapping($xml, $mappings, $dataMapping); //from this script function #01
 	//////////////////////////
 	
-	$data_mappings = $xml->getElementsByTagName("data_mappings")->item(0);
+	$data_mappings = $xml->getElementsByTagName('data_mappings')->item(0);
 	
-	$data_list = $data_mappings->getElementsByTagName("data_mapping");
+	$data_list = $data_mappings->getElementsByTagName('data_mapping');
 	$append = true;
 	if ($data_list->length > 0) {
 		foreach ($data_list as $old_data) {
-			if ($old_data->getAttribute("journal") === $journalName) {
+			if ($old_data->getAttribute('journal') === $journalName) {
 				//put the new data_mapping in the file
-				$old_mappings = $old_data->getElementsByTagName("mappings")->item(0);
+				$old_mappings = $old_data->getElementsByTagName('mappings')->item(0);
 				$old_data->replaceChild($mappings, $old_mappings);
 				//$data_mappings->replaceChild($data_mapping, $old_data);
 				$append = false;
@@ -150,13 +150,13 @@ function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pa
 	}
 	
 	if ($append) {
-		$data_mapping = $xml->createElement("data_mapping");
+		$data_mapping = $xml->createElement('data_mapping');
 		
-		$data_mapping->setAttribute("journal", $journalName);
+		$data_mapping->setAttribute('journal', $journalName);
 		
 		//the journal mapping/////
-		$journal = $xml->createElement("journal");
-		arrayToXml($xml, $journal, $journalMapping, ["type" => "journal"]); //from helperFunctions.php function #13
+		$journal = $xml->createElement('journal');
+		arrayToXml($xml, $journal, $journalMapping, ['type' => 'journal']); //from helperFunctions.php function #13
 		//////////////////////////
 		
 		$data_mapping->appendChild($journal);
@@ -185,56 +185,56 @@ return values:
   $dataMapping array if found and null otherwise
 
 */
-function getDataMapping($journalName, $dataMappingXml = "dataMappings.xml", $pathToXml = "./dataMappings") {
+function getDataMapping($journalName, $dataMappingXml = 'dataMappings.xml', $pathToXml = './dataMappings') {
 	
-	$xml = new DOMDocument("1.0", "UTF-8");
+	$xml = new DOMDocument('1.0', 'UTF-8');
 	
 	//$filename = $pathToXml . $dataMappingXml;
-	$filename = $pathToXml . "/" . $dataMappingXml;
+	$filename = $pathToXml . '/' . $dataMappingXml;
 	
 	if (!$xml->load($filename)) {
 		echo "\nCould not open '$filename'.\n";
 		return -1;
 	}
 	
-	$data_mappings = $xml->getElementsByTagName("data_mapping");
+	$data_mappings = $xml->getElementsByTagName('data_mapping');
 	
 	if ($data_mappings->length > 0) {
 		foreach ($data_mappings as $data_mapping) {
-			if ($data_mapping->getAttribute("journal") === strtolower($journalName)) {
+			if ($data_mapping->getAttribute('journal') === strtolower($journalName)) {
 				//$dataMapping = xmlToArray($data_mapping, true); //from helperFunctions.php function #14
 				
 				$dataMapping = array();
 				
 				/////////////////////// the journal mapping //////////////////////////////////
-				$journal_mapping = $data_mapping->getElementsByTagName("journal")->item(0);
+				$journal_mapping = $data_mapping->getElementsByTagName('journal')->item(0);
 				
-				$id_node = $journal_mapping->getElementsByTagName("id")->item(0);
-				$journalOldId = $id_node->getElementsByTagName("old")->item(0)->nodeValue;
-				$journalNewId = $id_node->getElementsByTagName("new")->item(0)->nodeValue;
-				$dataMapping["journal_id"] = array($journalOldId => $journalNewId);
+				$id_node = $journal_mapping->getElementsByTagName('id')->item(0);
+				$journalOldId = $id_node->getElementsByTagName('old')->item(0)->nodeValue;
+				$journalNewId = $id_node->getElementsByTagName('new')->item(0)->nodeValue;
+				$dataMapping['journal_id'] = array($journalOldId => $journalNewId);
 				
-				$path_node = $journal_mapping->getElementsByTagName("path")->item(0);
-				$journalOldPath = $path_node->getElementsByTagName("old")->item(0)->nodeValue;
-				$journalNewPath = $path_node->getElementsByTagName("new")->item(0)->nodeValue;
-				$dataMapping["journal_path"] = array($journalOldPath => $journalNewPath);
+				$path_node = $journal_mapping->getElementsByTagName('path')->item(0);
+				$journalOldPath = $path_node->getElementsByTagName('old')->item(0)->nodeValue;
+				$journalNewPath = $path_node->getElementsByTagName('new')->item(0)->nodeValue;
+				$dataMapping['journal_path'] = array($journalOldPath => $journalNewPath);
 				///////////////////////////////////////////////////////////////////////////////
 				
 				
 				//////////////////////  the data mappings  ////////////////////////////////////
-				$mappings_node = $data_mapping->getElementsByTagName("mappings")->item(0);
+				$mappings_node = $data_mapping->getElementsByTagName('mappings')->item(0);
 				
 				foreach ($mappings_node->childNodes as $field_node) {
 					
 					$fieldName = $field_node->tagName;
 					$fieldMapping = array(); // array to store the mappings of the field
 					
-					$mapping_nodes = $field_node->getElementsByTagName("mapping"); //the mappings for the field
+					$mapping_nodes = $field_node->getElementsByTagName('mapping'); //the mappings for the field
 					
 					// loop to map the old field value to the new field value
 					foreach ($mapping_nodes as $mapping_node) {
-						$old = $mapping_node->getElementsByTagName("old")->item(0)->nodeValue;
-						$new = $mapping_node->getElementsByTagName("new")->item(0)->nodeValue;
+						$old = $mapping_node->getElementsByTagName('old')->item(0)->nodeValue;
+						$new = $mapping_node->getElementsByTagName('new')->item(0)->nodeValue;
 						$fieldMapping[$old] = $new;
 					}
 					
@@ -266,14 +266,14 @@ function processFiles($filesDirOld, $filesDirNew, &$dataMapping, &$copied, &$err
 	$fileCopyErrors = array();
 	$copiedFiles = array();
 	$filesTranslation = array(
-		"PB" => "public",
-		"AT" => "attachment",
-		"SP" => "supp",
-		"CE" => "submission/copyedit",
-		"SM" => "submission/original",
-		"RV" => "submission/review",
-		"ED" => "submission/editor",
-		"LE" => "submission/layout"
+		'PB' => 'public',
+		'AT' => 'attachment',
+		'SP' => 'supp',
+		'CE' => 'submission/copyedit',
+		'SM' => 'submission/original',
+		'RV' => 'submission/review',
+		'ED' => 'submission/editor',
+		'LE' => 'submission/layout'
 	);
 	$files = scandir($filesDirOld);
 	
@@ -283,7 +283,7 @@ function processFiles($filesDirOld, $filesDirNew, &$dataMapping, &$copied, &$err
 	
 	//echo "\ngetting the journal id\n";
 	
-	$values = array_values($dataMapping["journal_id"]);
+	$values = array_values($dataMapping['journal_id']);
 	if (count($values) !== 1) {
 		//do not know the journal_id
 		echo "\nDon't know the journal_id to copy the files to the good location\n";
@@ -298,17 +298,17 @@ function processFiles($filesDirOld, $filesDirNew, &$dataMapping, &$copied, &$err
 	
 	foreach ($files as $file) {
 		
-		if ($file === "." || $file === "..") {
+		if ($file === '.' || $file === '..') {
 			//DO NOTHING
 			
 		}
 		else if (is_dir("$filesDirOld/$file")) {
 			processFiles("$filesDirOld/$file", $filesDirNew, $dataMapping, $copied, $errors); //recursive call
 		}
-		else if (array_key_exists($file, $dataMapping["file_name"])){
+		else if (array_key_exists($file, $dataMapping['file_name'])){
 			
-			$fileNewName = $dataMapping["file_name"][$file];
-			$words = explode("-", $fileNewName);
+			$fileNewName = $dataMapping['file_name'][$file];
+			$words = explode('-', $fileNewName);
 			if (sizeof($words) === 4) {
 				$type = substr($words[3], 0, 2);
 				$articleId = $words[0];
@@ -397,12 +397,12 @@ function mapJournalSections($sectionsFilename, $conn = null, $journal = null) {
 	
 	echo "\nMapping journal sections...\n";
 	
-	$sections = $xml->getElementsByTagName("sections")->item(0);
+	$sections = $xml->getElementsByTagName('sections')->item(0);
 	
-	$journalOldPath = $sections->getAttribute("journal_original_path");
-	$journalOldId = $sections->getAttribute("journal_original_id");
+	$journalOldPath = $sections->getAttribute('journal_original_path');
+	$journalOldId = $sections->getAttribute('journal_original_id');
 	
-	$settings = $sections->getElementsByTagName("setting");
+	$settings = $sections->getElementsByTagName('setting');
 	
 	$sectionMapping = getDataMapping($journalOldPath);
 	
@@ -410,23 +410,23 @@ function mapJournalSections($sectionsFilename, $conn = null, $journal = null) {
 		$sectionMapping = array();
 	}
 	
-	if (!array_key_exists("journal_id", $sectionMapping)) $sectionMapping["journal_id"] = array($journalOldId => $journal["journal_id"]);
+	if (!array_key_exists('journal_id', $sectionMapping)) $sectionMapping['journal_id'] = array($journalOldId => $journal['journal_id']);
 	
-	if (!array_key_exists("section_id", $sectionMapping)) $sectionMapping["section_id"] = array();
+	if (!array_key_exists('section_id', $sectionMapping)) $sectionMapping['section_id'] = array();
 	
 	foreach ($settings as $setting) {
 		
-		$name = $setting->getElementsByTagName("setting_name")->item(0)->nodeValue;
+		$name = $setting->getElementsByTagName('setting_name')->item(0)->nodeValue;
 		
-		if ($name === "abbrev") {
+		if ($name === 'abbrev') {
 			
-			$abbrev = $setting->getElementsByTagName("setting_value")->item(0)->nodeValue;
-			$sectionOldId = $setting->getElementsByTagName("section_id")->item(0)->nodeValue;
+			$abbrev = $setting->getElementsByTagName('setting_value')->item(0)->nodeValue;
+			$sectionOldId = $setting->getElementsByTagName('section_id')->item(0)->nodeValue;
 			
-			if (!array_key_exists($sectionOldId, $sectionMapping["section_id"])) {
-				$section = getSectionByAbbrev($conn, $journal["journal_id"], $abbrev); // from xml2db.php function #02.5
+			if (!array_key_exists($sectionOldId, $sectionMapping['section_id'])) {
+				$section = getSectionByAbbrev($conn, $journal['journal_id'], $abbrev); // from xml2db.php function #02.5
 				if (is_array($section)) {
-					$sectionMapping["section_id"][$sectionOldId] = $section["section_id"];
+					$sectionMapping['section_id'][$sectionOldId] = $section['section_id'];
 				}
 				
 			}// closing the if section_id not in data mappings
@@ -475,7 +475,7 @@ function treatExportErrors($result, $type = null) {
 	
 	if (!$stop) {
 		$resp = readline("\n\nContinue the execution even with the errors? (y/N): ");
-		$responseYes = strtolower($resp) === "y" || strtolower($resp) === "yes";
+		$responseYes = strtolower($resp) === 'y' || strtolower($resp) === 'yes';
 	}
 	
 	if (!$responseYes || $stop) {
@@ -526,7 +526,7 @@ function treatImportErrors($result, &$conn, $type = null) {
 		
 		if (!$stop) {
 			$resp = readline("\n\nContinue the importation even with the errors? (y/N): ");
-			$responseYes = strtolower($resp) === "y" || strtolower($resp) === "yes";
+			$responseYes = strtolower($resp) === 'y' || strtolower($resp) === 'yes';
 		}
 		
 		if (!$responseYes || $stop) {
@@ -547,17 +547,17 @@ function getCollations(&$conn, $db_name) {
 	$collations = array();
 	
 	//get the collations to know which tables need to transform the characters to utf-8
-	$stmt = $conn->prepare("SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=:db_name");
+	$stmt = $conn->prepare('SELECT TABLE_SCHEMA, TABLE_NAME, TABLE_COLLATION FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA=:db_name');
 	
 	if ($db_name === null) {
 		exit("\n\ndb_name must not be null appFunctions.php function getCollations\n\n");
 	}
 	
-	$stmt->bindParam(":db_name", $db_name, PDO::PARAM_STR);
+	$stmt->bindParam(':db_name', $db_name, PDO::PARAM_STR);
 	
 	if ($stmt->execute()) {
 		while ($info = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$collations[$info["TABLE_NAME"]] = $info["TABLE_COLLATION"];
+			$collations[$info['TABLE_NAME']] = $info['TABLE_COLLATION'];
 		}
 	}
 	else {
@@ -584,12 +584,12 @@ function mainMenu($options) {
 	
 	echo "\n";
 	
-	$opt = readline("Enter the desired option: ");
+	$opt = readline('Enter the desired option: ');
 	
 	if (array_key_exists($opt, $options)) {
 		// confirm the chosen option
 		$confirm = strtolower(readline("You chose '" . $options[$opt] . "'. Do you confirm this option? (Y/n) : "));
-		if ($confirm === "n" || $confirm === "no") {
+		if ($confirm === 'n' || $confirm === 'no') {
 			return mainMenu($options); //call again the same menu
 		}
 	}
@@ -624,12 +624,12 @@ function migrateFiles($journal = null, $conn = null) {
 	
 	echo "\n\nFILES MIGRATION\n\n";
 	
-	$filesOld = readline("Enter the location of the files_dir for the OLD OJS instalation: ");
-	$filesNew = readline("Enter the location of the files_dir for the NEW OJS instalation: ");
+	$filesOld = readline('Enter the location of the files_dir for the OLD OJS instalation: ');
+	$filesNew = readline('Enter the location of the files_dir for the NEW OJS instalation: ');
 	$copiedFiles = 0; // the number of copied files
 	$fileErrors = array(); // array to store the errors while copying the files
 	
-	$dataMapping = getDataMapping($journal["path"]); // from this script function #03
+	$dataMapping = getDataMapping($journal['path']); // from this script function #03
 	
 	if (is_array($dataMapping)) {
 		processFiles($filesOld, $filesNew, $dataMapping, $copiedFiles, $fileErrors); // from this script function #04
@@ -671,12 +671,12 @@ function myExport($options, &$arr, $conn = null, $journal = null, $args = null) 
 	$collations = null;
 	
 	if (is_array($args)) {
-		if (array_key_exists("db_name", $args)) {
-			$db_name = $args["db_name"];
+		if (array_key_exists('db_name', $args)) {
+			$db_name = $args['db_name'];
 		}
 		
-		if (array_key_exists("collations", $args)) {
-			$collations = $args["collations"];
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
 		}
 	}
 	
@@ -687,9 +687,9 @@ function myExport($options, &$arr, $conn = null, $journal = null, $args = null) 
 		
 		
 		$connData = AskConnectData(); // from helperFunctions.php function #02
-		$db_name = $connData["db"]; //saving the db_name to use later
+		$db_name = $connData['db']; //saving the db_name to use later
 		
-		$conn = myConnect($connData["host"], $connData["user"], $connData["pass"], $connData["db"]); // from helperFunctions.php function #01
+		$conn = myConnect($connData['host'], $connData['user'], $connData['pass'], $connData['db']); // from helperFunctions.php function #01
 	}
 	
 	if ($journal === null) {
@@ -745,12 +745,12 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 	$saveDataMappingXml = false;
 	
 	if (is_array($args)) {
-		if (array_key_exists("db_name", $args)) {
-			$db_name = $args["db_name"];
+		if (array_key_exists('db_name', $args)) {
+			$db_name = $args['db_name'];
 		}
 		
-		if (array_key_exists("tables_info", $args)) {
-			$tables_info = $args["tables_info"];
+		if (array_key_exists('tables_info', $args)) {
+			$tables_info = $args['tables_info'];
 		}
 	}
 	
@@ -758,9 +758,9 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 		echo "\n-------- Connection with the database to import data -----------\n\n";
 		
 		$connData = AskConnectData(); // from helperFunctions.php function #02
-		if ($db_name === null) $db_name = $connData["db"]; //saving the db_name to use later
+		if ($db_name === null) $db_name = $connData['db']; //saving the db_name to use later
 		
-		$conn = myConnect($connData["host"], $connData["user"], $connData["pass"], $connData["db"]); // from helperFunctions.php function #01
+		$conn = myConnect($connData['host'], $connData['user'], $connData['pass'], $connData['db']); // from helperFunctions.php function #01
 	}
 	
 	if ($journal === null) {
@@ -778,8 +778,8 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 	
 	if (is_array($tables_info)) { 
 		foreach ($tables_info as $info) {
-			if ($info["ENGINE"] !== "InnoDB") {
-				echo "\n\nTable " . $info["TABLE_NAME"] . " is not InnoDB\n\n";
+			if ($info['ENGINE'] !== 'InnoDB') {
+				echo "\n\nTable " . $info['TABLE_NAME'] . " is not InnoDB\n\n";
 				return 1; //indicates numberOfProblems = 1
 			}
 		}
@@ -807,7 +807,7 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 		foreach ($options as $printableType => $import) { 
 		if ($import) {
 			//////// replace empty spaces (' ') with underlines ('_') /////////////
-			$type = str_replace(" ", "_", $printableType);
+			$type = str_replace(' ', '_', $printableType);
 			
 			echo "\nImporting the journal $printableType...\n";
 			
@@ -838,12 +838,12 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 			/////// this data will be used later to map the journal  ///////////
 			if ($journalOldId === null || $journalOldPath === null) {
 				
-				$dataXml = new DOMDocument("1.0", "UTF-8");
+				$dataXml = new DOMDocument('1.0', 'UTF-8');
 				@$dataXml->loadHTMLFile($xmlFiles[$type]);
 				
 				$data_node = $dataXml->getElementsByTagName($type)->item(0);
-				$journalOldPath = $data_node->getAttribute("journal_original_path");
-				$journalOldId = $data_node->getAttribute("journal_original_id");
+				$journalOldPath = $data_node->getAttribute('journal_original_path');
+				$journalOldId = $data_node->getAttribute('journal_original_id');
 			}
 			////////////////////////////////////////////////////////////////////
 			
@@ -857,8 +857,8 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 			if ($journalOldId !== null && $journalOldPath !== null) {
 				
 				$journalMapping = array(
-					"path" => array("old" => $journalOldPath, "new" => $journal["path"]), 
-					"id" => array("old" => $journalOldId, "new" => $journal["journal_id"])
+					'path' => array('old' => $journalOldPath, 'new' => $journal['path']), 
+					'id' => array('old' => $journalOldId, 'new' => $journal['journal_id'])
 				);
 				
 				$dataMappingSaved = saveDataMapping($dataMapping, $journal["path"], $journalMapping);  //from this script function #02
@@ -943,7 +943,7 @@ function myMain() {
 	$action = $actions[$index];
 	
 	$options = array(
-		'review_forms' => false, 
+		'review forms' => false, 
 		'sections' => false, 
 		'unpublished articles' => false, 
 		'announcements' => false, 
@@ -956,8 +956,12 @@ function myMain() {
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
 	foreach ($options as $type => &$value) {
-		$resp = readline("Do you want to $action the $type? (y/N) : ");
-		if (strtolower($resp) === "y" || strtolower($resp) === "yes") {
+		$extra = '';
+		if ($type === 'articles history' || $type === 'citations and referrals') {
+			$extra = 'Note: To export this data there must be article_ids already mapped for this journal.';
+		}
+		$resp = readline("Do you want to $action the $type? $extra (y/N) : ");
+		if (strtolower($resp) === 'y' || strtolower($resp) === 'yes') {
 			$value = true;
 		}
 	}
@@ -965,7 +969,7 @@ function myMain() {
 	
 	///////// VARIABLES NEEDED TO PERFORM THE ACTIONS //////////////////
 	
-	$xmlFiles = array("data_mappings" => "dataMappings.xml"); 
+	$xmlFiles = array('data_mappings' => 'dataMappings.xml'); 
 	
 	////////////////////////////////////////////////////////////////////
 	
@@ -1105,11 +1109,11 @@ function getData($type, $conn = null, $journal = null, $collations) {
 	
 	if ($numErrors > 0) {
 		echo "\nThere were errors while fetching the $printableType:\n";
-		print_r($returnedData["errors"]);
+		print_r($returnedData['errors']);
 		
 		$resp = readline("\n\nContinue the execution even with the errors? (y/N): ");
 		
-		if (strtolower($resp) !== "y" && strtolower($resp) !== "yes") {
+		if (strtolower($resp) !== 'y' && strtolower($resp) !== 'yes') {
 			return -2;
 		}
 		
@@ -1122,19 +1126,19 @@ function getData($type, $conn = null, $journal = null, $collations) {
 		return -1;
 	}
 	
-	$xml = new DOMDocument("1.0", "UTF-8");
+	$xml = new DOMDocument('1.0', 'UTF-8');
 	
-	$data_node = $xml->getElementsByTagName("data")->item(0);
+	$data_node = $xml->getElementsByTagName('data')->item(0);
 	
 	$dumpArgs = array();
-	$dumpArgs["addRootNode"] = true;
-	$dumpArgs["rootNode"] = $type;
-	$dumpArgs["journal"] = $journal;
-	$dumpArgs["type"] = $type;
+	$dumpArgs['addRootNode'] = true;
+	$dumpArgs['rootNode'] = $type;
+	$dumpArgs['journal'] = $journal;
+	$dumpArgs['type'] = $type;
 	
 	arrayToXml($xml, $xml, $data, $dumpArgs); //from helperFunctions.php function #13
 	
-	$filename = $journal["path"] . "_$type.xml";
+	$filename = $journal['path'] . "_$type.xml";
 	
 	if (saveMyXml($xml, $filename, false)) { //from helperFunctions.php function #04
 		return $filename;
@@ -1258,7 +1262,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			break;
 			
 		case 'issue_orders':
-			$returnedData = insertIssueOrders($dataXml, $conn, $dataMapping, $journal['journal_id']);
+			$returnedData = insertIssueOrders($dataXml, $conn, $dataMapping, $journal); // the journal path might be used when trying to map the issues
 			break;
 			
 		case 'citations_and_referrals':
@@ -1277,17 +1281,17 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 	}
 	
 	
-	$numErrors = countErrors($returnedData["errors"]); //from helperFunction function #21
+	$numErrors = countErrors($returnedData['errors']); //from helperFunction function #21
 	
 	if ($numErrors > 0) {
 		echo "\nErrors:\n";
-		print_r($returnedData["errors"]);
+		print_r($returnedData['errors']);
 		
 		echo "\nNumber of errors: $numErrors\n";
 		
-		$resp = readline("The changes are not yet committed. Continue with the importation? (y/N): ");
+		$resp = readline('The changes are not yet committed. Continue with the importation? (y/N): ');
 		
-		if (strtolower($resp) !== "y" &&  strtolower($resp) !== "yes") {
+		if (strtolower($resp) !== 'y' &&  strtolower($resp) !== 'yes') {
 			return -4;
 		}
 	}
@@ -1295,8 +1299,8 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 		echo "\nThere were no errors while inserting the $printableType\n";
 	}
 	
-	if (array_key_exists("insertedUsers", $returnedData)) {
-		$insertedUsers = $returnedData["insertedUsers"];
+	if (array_key_exists('insertedUsers', $returnedData)) {
+		$insertedUsers = $returnedData['insertedUsers'];
 	
 		if (count($insertedUsers) > 0) {
 			
@@ -1321,7 +1325,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			}
 			
 			
-			$newUsersXml = new DOMDocument('1.0", "UTF-8');
+			$newUsersXml = new DOMDocument('1.0', 'UTF-8');
 			
 			$extraArgs = array();
 			/*$extraArgs['addRootNode'] = true;
@@ -1331,7 +1335,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			
 			arrayToXml($newUsersXml, $newUsersXml, $insertedUsers, $extraArgs); // from helperFunctions function #13
 			
-			$usersFilename = $journal["path"] . "_newUsers.xml";
+			$usersFilename = $journal['path'] . "_newUsers.xml";
 			
 			echo "\nSaving the newly imported users in a .xml file:\n";
 			if (saveMyXml($newUsersXml, $usersFilename, false)) { // from helperFunctions function #04 
@@ -1347,8 +1351,8 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 		}
 	}
 	
-	if (is_array($returnedData["numInsertedRecords"])) {
-		foreach ($returnedData["numInsertedRecords"] as $item => $number) {
+	if (is_array($returnedData['numInsertedRecords'])) {
+		foreach ($returnedData['numInsertedRecords'] as $item => $number) {
 			if ($number > 0) {
 				$saveDataMappingXml = true;
 				echo "\nImported $number new $item";
@@ -1358,11 +1362,11 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			}
 		}
 	}
-	else if ($returnedData["numInsertedRecords"] > 0) {
+	else if ($returnedData['numInsertedRecords'] > 0) {
 		
 		//only save the dataMappings if at least one article or new user was inserted
 		
-		echo "\nImported " . $returnedData["numInsertedRecords"] . " new $printableType.";
+		echo "\nImported " . $returnedData['numInsertedRecords'] . " new $printableType.";
 		$saveDataMappingXml = true;
 		
 	}
