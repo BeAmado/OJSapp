@@ -725,9 +725,35 @@ function getNewId($type, &$stmt, &$data, &$dataMapping, &$errors, $args = null) 
 			$same = same2($data, $last, $arguments);
 			
 			if ( $same > 0) {
-				if (!array_key_exists($data[$pk], $dataMapping[$pk])) {
+				
+				
+				if ($type === 'event_log' || $type === 'email_log') {
+				switch($type) {
+					case 'event_log': {
+						if (!array_key_exists('event_log_id', $dataMapping)) {
+							$dataMapping['event_log_id'] = array();
+						}
+						
+						if (!array_key_exists($data['log_id'], $dataMapping['event_log_id'])) {
+							$dataMapping['event_log_id'][$data['log_id']] = $data[$newId];
+						}
+					} break;
+					
+					case 'email_log': {
+						if (!array_key_exists('email_log_id', $dataMapping)) {
+							$dataMapping['email_log_id'] = array();
+						}
+						
+						if (!array_key_exists($data['log_id'], $dataMapping['email_log_id'])) {
+							$dataMapping['email_log_id'][$data['log_id']] = $data[$newId];
+						}
+					} break;
+				}
+				}
+				else if (!array_key_exists($data[$pk], $dataMapping[$pk])) {
 					$dataMapping[$pk][$data[$pk]] = $data[$newId];
 				}
+				
 				return true;
 			}
 			else if ($same === -1){
@@ -845,6 +871,7 @@ gets a string data and translates to utf-8
 transforms the array data into the selected
 */
 function translateArray2utf8(&$array) {
+	if (is_array($array)) {
 	foreach ($array as $key => $value) {
 		if (is_array($value)) {
 			translateArray2utf8($array[$key]);
@@ -852,7 +879,8 @@ function translateArray2utf8(&$array) {
 		else if (is_string($value)){
 			$array[$key] = unmessEncoding($value); // from cleanEncoding.php
 		}
-	}
+	}//end of the foreach 
+	}// end of the if is_array
 }
 
 // #24)

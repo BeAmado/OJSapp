@@ -66,50 +66,52 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 	
 	$userSTMT->bindParam(':userId', $userId, PDO::PARAM_INT);
 	if ($userSTMT->execute()) {
-		$user = $userSTMT->fetch(PDO::FETCH_ASSOC);
+		if ($user = $userSTMT->fetch(PDO::FETCH_ASSOC)) {
+			processCollation($user, 'users', $collations);
 		
-		processCollation($user, 'users', $collations);
-		
-		//fetching the user settings
-		$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
-		if ($userSettingsSTMT->execute()) {
-			$userSettings = array();
-			while ($setting = $userSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
-				array_push($userSettings, $setting);
+			//fetching the user settings
+			$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
+			if ($userSettingsSTMT->execute()) {
+				$userSettings = array();
+				while ($setting = $userSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
+					array_push($userSettings, $setting);
+				}
+				
+				processCollation($userSettings, 'user_settings', $collations);
+				if (!empty($userSettings)) {
+					$user['settings'] = $userSettings;
+				}
+			}// end of the if userSettingsSTMT executed
+			else {
+				$errorOccurred = true;
+				$error['userSettingsError'] = $userSettingsSTMT->errorInfo();
 			}
 			
-			processCollation($userSettings, 'user_settings', $collations);
-			
-			$user['settings'] = $userSettings;
-		}// end of the if userSettingsSTMT executed
-		else {
-			$errorOccurred = true;
-			$error['userSettingsError'] = $userSettingsSTMT->errorInfo();
-		}
-		
-		//fetching the user roles for this journal
-		$rolesSTMT->bindParam(':roles_userId', $user['user_id'], PDO::PARAM_INT);
-		if ($rolesSTMT->execute()) {
-			$roles = array();
-			while ($role = $rolesSTMT->fetch(PDO::FETCH_ASSOC)) {
-				array_push($roles, $role);
+			//fetching the user roles for this journal
+			$rolesSTMT->bindParam(':roles_userId', $user['user_id'], PDO::PARAM_INT);
+			if ($rolesSTMT->execute()) {
+				$roles = array();
+				while ($role = $rolesSTMT->fetch(PDO::FETCH_ASSOC)) {
+					array_push($roles, $role);
+				}
+				
+				processCollation($roles, 'roles', $collations);
+				
+				if (!empty($roles)) {
+					$user['roles'] = $roles;
+				}
+			}// end of the if rolesSTMT executed
+			else {
+				$errorOccurred = true;
+				$error['rolesError'] = $rolesSTMT->errorInfo();
 			}
 			
-			processCollation($roles, 'roles', $collations);
 			
-			$user['roles'] = $roles;
-		}// end of the if rolesSTMT executed
-		else {
-			$errorOccurred = true;
-			$error['rolesError'] = $rolesSTMT->errorInfo();
-		}
+			if ($errorOccurred) {
+				$error['user'] = $user;
+			}
 		
-		
-		if ($errorOccurred) {
-			$error['user'] = $user;
-		}
-		
-		
+		}//end of the if user was fetched
 		
 	}// end of the if userSTMT executed
 	else {
@@ -1015,6 +1017,12 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 function fetchEmailTemplates($conn, $journal = null, $args = null) {
 	
 	echo "\n\nTHE FUNCTION fetchEmailTemplates DOES NOT DO ANYTHING \n\n";
+	
+	/**
+	$emailTemplate['email_body'] = $emailTemplate['body'];
+	*/
+	
+	
 	/*if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
 	}
@@ -1698,7 +1706,11 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 				else {
 					if ($verbose) echo "Ok\n";
 				}
-				$eventLog['user'] = $data['user'];
+				
+				if ($data['user'] !== null) {
+					$eventLog['user'] = $data['user'];
+				}
+				
 			}
 			/////////////// end of fetching the user data  ////////////////////////
 			
@@ -1795,6 +1807,8 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 		while ($emailLog = $emailLogSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
 			processCollation($emailLog, 'email_log', $collations);
+			$emailLog['email_body'] = $emailLog['body'];
+			unset($emailLog['body']);
 			
 			/////////// fetching the sender data if it was not yet imported ////////
 			
@@ -1832,7 +1846,11 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 				else {
 					if ($verbose) echo "Ok\n";
 				}
-				$emailLog['sender'] = $data['user'];
+				
+				if ($data['user'] !== null) {
+					$emailLog['sender'] = $data['user'];
+				}
+				
 			}
 			
 			/////////////// end of fetching the sender data  ////////////////////////
@@ -1865,24 +1883,27 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 					
 					if ($fetchUserData) {
 						
-						if ($verbose) echo "\n    fetching the user #" . $emailLogUsers['user_id'] . " data ..........";
+						if ($verbose) echo "\n    fetching the user #" . $emailLogUser['user_id'] . " data ..........";
 						
 						$data = fetchUser($conn, $senderId, $journal, $args);
 						if ($data['errorOccurred']) {
 							if ($verbose) {
 								echo "Error\n";
-								$errors['email_log_users'] = array('emailLogUsers' => $emailLogUsers, 'error' => $data['error']);
+								$errors['email_log_users'] = array('emailLogUser' => $emailLogUser, 'error' => $data['error']);
 								$showErrors = true;
 							}
 						}
 						else {
 							if ($verbose) echo "Ok\n";
 						}
-						$emailLogUser['user'] = $data['user'];
+						
+						if ($data['user'] !== null) {
+							$emailLogUser['user'] = $data['user'];
+						}
 					}
 					/////////////// end of fetching the user data  ////////////////////////
 					
-					echo "        fetched email_log_id #" . $emailLogUser['email_log_id'] . " with user_id #" . $emailLogUsers['user_id'] . "\n";
+					echo "        fetched email_log_id #" . $emailLogUser['email_log_id'] . " with user_id #" . $emailLogUser['user_id'] . "\n";
 					
 					array_push($emailLogUsers, $emailLogUser);
 				}

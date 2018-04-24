@@ -120,6 +120,7 @@ function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$
 				}						
 			}
 			
+			echo "\n\nThe user is : " . print_r($user, true) . "\n\n";
 			
 			$arr = array();
 			$arr['data'] = $user;
@@ -1142,8 +1143,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		}
 		
 		// get the user that owns the article to identify on the new journal  ///////////////////
-		$userOk = processUser($article['user'], array('type' => 'article', 'data' => $article), $dataMapping, $errors, $insertedUsers, $userStatements);
-		
+		if (is_array($article['user'])) {
+			$userOk = processUser($article['user'], array('type' => 'article', 'data' => $article), $dataMapping, $errors, $insertedUsers, $userStatements);
+		}
 		
 		// get the section new id //////////////////////////////////////
 		
@@ -1535,7 +1537,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$articleComment['author_new_id'] = $dataMapping['user_id'][$articleComment['author_id']];
 					$authorIdOk = true;
 				}
-				else {
+				else if (is_array($articleComment['author'])){
 					
 					$authorIdOk = processUser($articleComment['author'], array('type' => 'article_comment', 'data' => $articleComment), $dataMapping, $errors, $insertedUsers, $userStatements);
 					
@@ -1865,7 +1867,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$editDecision['editor_new_id'] = $dataMapping['editor_id'][$editDecision['editor_id']];
 					$editorIdOk = true;
 				}
-				else {
+				else if (is_array($editDecision['editor'])) {
 					$editorIdOk = processUser($editDecision['editor'], array('type' => 'edit_decision', 'data' => $editDecision), $dataMapping, $errors, $insertedUsers, $userStatements);
 					
 					if ($editorIdOk) {
@@ -1946,7 +1948,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$editAssignment['editor_new_id'] = $dataMapping['editor_id'][$editAssignment['editor_id']];
 					$editorIdOk = true;
 				}	
-				else {
+				else if (is_array($editAssignment['editor'])) {
 					
 					$editorIdOk = processUser($editAssignment['editor'], array('type' => 'edit_assignment', 'data' => $editAssignment), $dataMapping, $errors, $insertedUsers, $userStatements);
 					
@@ -2193,7 +2195,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$revAssign['reviewer_new_id'] = $dataMapping['reviewer_id'][$revAssign['reviewer_id']];
 					$reviewerIdOk = true;
 				}
-				else {
+				else if (is_array($revAssign['reviewer'])) {
 					$reviewerIdOk = processUser($revAssign['reviewer'], array('type' => 'review_assignment', 'data' => $revAssign), $dataMapping, $errors, $insertedUsers, $userStatements);
 					
 					if ($reviewerIdOk) {
@@ -2951,7 +2953,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$membership['user_new_id'] = $dataMapping['user_id'][$membership['user_id']];
 						$userOk = true;
 					}
-					else {
+					else if (is_array($membership['user'])) {
 						//$user = $membership['user'];
 						$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
 						$membership['user_new_id'] = $membership['user']['user_new_id'];
@@ -3366,6 +3368,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			continue; // go to the next review_form
 		}
 		
+		//echo "\n\nThe sender is:\n" . print_r($emailLog['sender'], true) . "\n\n"; 
+		
 		$emailLogOk = false;
 		$assocIdOk = false;
 		$senderIdOk = false;
@@ -3381,20 +3385,31 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			$error['assocIdError'] = 'The email log assoc_id #' . $emailLog['assoc_id'] . ' , which is an article_id, is not in the dataMapping.'; 
 		}
 		
-		$sender = null;
+		//$sender = null;
 		
 		if (array_key_exists($emailLog['sender_id'], $dataMapping['user_id'])) {
 			$emailLog['sender_new_id'] = $dataMapping['user_id'][$emailLog['sender_id']];
 			$senderIdOk = true;
 		}
-		else {
+		else if (is_array($emailLog['sender'])){
+			
+			//echo "Passing the sender: \n" . print_r($emailLog['sender'], true) . "\n to processUser\n\n";
+			
 			$senderIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
 			$emailLog['sender_new_id'] = $emailLog['sender']['user_new_id'];
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
 		
 		if ($assocIdOk && $senderIdOk) { //if data integrity is ok
+			
+			$emailLog['body'] = $emailLog['email_body'];
+			unset($emailLog['email_body']);
+			
 			validateData('email_log', $emailLog); //from helperFunctions.php
+			
+			/*echo "\n\nThe email_log is: \n";
+			var_dump($emailLog);
+			echo "\n\n";*/
 			
 			$arr = array();
 			$arr['data'] = $emailLog;
@@ -3463,7 +3478,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$emailLogUser['user_new_id'] = $dataMapping['user_id'][$emailLogUser['user_id']];
 					$userIdOk = true;
 				}
-				else {
+				else if (is_array($emailLogUsers['user'])){
 					$userIdOk = processUser($emailLogUser['user'], array('type' => 'email_log_users', 'data' => $emailLogUser), $dataMapping, $errors, $insertedUsers, $userStatements);
 				}
 				/////////////////////////////////////////////////////////////////////////////////////
@@ -3537,7 +3552,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			$eventLog['user_new_id'] = $dataMapping['user_id'][$eventLog['user_id']];
 			$userIdOk = true;
 		}
-		else {
+		else if (is_array($eventLog['user'])){
 			$userIdOk = processUser($eventLog['user'], array('type' => 'event_log', 'data' => $eventLog), $dataMapping, $errors, $insertedUsers, $userStatements);
 			$eventLog['user_new_id'] = $eventLog['user']['user_new_id'];
 		}
