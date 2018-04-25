@@ -908,16 +908,8 @@ function OJSappRootDir() {
 
 		$ls = scandir($cwd);
 
-		if (in_array($indentFile, $ls)) {
-			break;
-		}
-		else if (in_array("OJSapp", $ls)){
+		if (in_array("OJSapp", $ls)){
 			$cwd .= "/OJSapp";
-		}
-		else {
-			echo "\nCould not locate the .xsl file for indentation.\n";
-			$indentFile = readline("Please enter the name of the indentation .xsl file with its path: ");
-			break;
 		}
 	}
 

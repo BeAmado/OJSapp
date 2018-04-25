@@ -760,7 +760,10 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 			
 				if ($fetchedSection) {
 					//map the section
-					$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
+					if (is_array($fetchedSection)) { if (array_key_exists('section_id', $fetchedSection)) {
+						$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
+					}}
+					
 					continue; // go to the next section
 					
 				}//end of the if fetchedSection

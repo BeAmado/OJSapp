@@ -112,9 +112,17 @@ return values:
   1 if the xml file with the data mapping was saved successfully
   
 */
-function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pathToXml = './dataMappings', $xmlFilename = 'dataMappings.xml') {
+function saveDataMapping($dataMapping, $journalPath, $journalMapping = null, $pathToXml = './dataMappings', $xmlFilename = 'dataMappings.xml') {
 	
 	$xml = new DOMDocument('1.0', 'UTF-8');
+	
+	$testJournalPath = '';
+	$journalPath = strtolower($journalPath);
+		
+	if (substr($journalPath, -6) == '_teste') {
+		$testJournalPath = $journalPath;
+		$journalPath = substr($journalPath, 0, -6);
+	}
 	
 	$filename = $pathToXml . '/' . $xmlFilename;
 	
@@ -138,7 +146,7 @@ function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pa
 	$append = true;
 	if ($data_list->length > 0) {
 		foreach ($data_list as $old_data) {
-			if ($old_data->getAttribute('journal') === $journalName) {
+			if ($old_data->getAttribute('journal') === $journalPath || $old_data->getAttribute('test_journal') === $testJournalPath) {
 				//put the new data_mapping in the file
 				$old_mappings = $old_data->getElementsByTagName('mappings')->item(0);
 				$old_data->replaceChild($mappings, $old_mappings);
@@ -152,7 +160,8 @@ function saveDataMapping($dataMapping, $journalName, $journalMapping = null, $pa
 	if ($append) {
 		$data_mapping = $xml->createElement('data_mapping');
 		
-		$data_mapping->setAttribute('journal', $journalName);
+		$data_mapping->setAttribute('journal', $journalPath);
+		$data_mapping->setAttribute('test_journal', $testJournalPath);
 		
 		//the journal mapping/////
 		$journal = $xml->createElement('journal');
@@ -185,9 +194,17 @@ return values:
   $dataMapping array if found and null otherwise
 
 */
-function getDataMapping($journalName, $dataMappingXml = 'dataMappings.xml', $pathToXml = './dataMappings') {
+function getDataMapping($journalPath, $dataMappingXml = 'dataMappings.xml', $pathToXml = './dataMappings') {
 	
 	$xml = new DOMDocument('1.0', 'UTF-8');
+	
+	$testJournalPath = '';
+	$journalPath = strtolower($journalPath);
+		
+	if (substr($journalPath, -6) == '_teste') {
+		$testJournalPath = $journalPath;
+		$journalPath = substr($journalPath, 0, -6);
+	}
 	
 	//$filename = $pathToXml . $dataMappingXml;
 	$filename = $pathToXml . '/' . $dataMappingXml;
@@ -201,7 +218,7 @@ function getDataMapping($journalName, $dataMappingXml = 'dataMappings.xml', $pat
 	
 	if ($data_mappings->length > 0) {
 		foreach ($data_mappings as $data_mapping) {
-			if ($data_mapping->getAttribute('journal') === strtolower($journalName)) {
+			if ($data_mapping->getAttribute('journal') === $journalPath || $data_mapping->getAttribute('test_journal') === $testJournalPath) {
 				//$dataMapping = xmlToArray($data_mapping, true); //from helperFunctions.php function #14
 				
 				$dataMapping = array();
