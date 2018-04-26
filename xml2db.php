@@ -542,118 +542,155 @@ function getSetting($element, $setting) {
 /**
 function to update or insert new data to the section already in the database
 */
-function updateSection($conn, &$section, &$dataMapping) {
+function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 	
-	$sectionId = 0;
-	$journalId = 0;
-	$reviewFormId = 0;
-	$dbSection = null;
+	$reviewFormNewId = null;
+	$results = array('section' => null, 'section_settings' => null);
 	
-	if (array_key_exists($section['section_id'], $dataMapping['section_id'])) {
-		$sectionId = $dataMapping['section_id'][$section['section_id']];
-	}
-	else {
-		return 1;
-	}
-	
-	if (!$dbSection = getSectionById($conn, $sectionId)) {
-		return 2;
+	if ($section['review_form_id'] !== 0 && $section['review_form_id'] !== null) {
+		if (array_key_exists($section['review_form_id'], $dataMapping['review_form_id'])) {
+			$reviewFormNewId = $dataMapping['review_form_id'][$section['review_form_id']];
+		}
+		else if ($section['review_form_id'] === 0){
+			$reviewFormNewId = 0;
+		}
 	}
 	
-	/////////  compare the section data /////////////////////////
-	
-	if (same2($section, $dbSection) !== 1) { // from helperFunctions.php function #16
-		
-		//the section data do not match so we have to update them
-		
-		$updateSectionSTMT = $conn->prepare('UPDATE sections SET journal_id = :updateSection_journalId, review_form_id = :updateSection_reviewFormId, seq = :updateSection_seq, 
+	$updateSectionSTMT = $conn->prepare('UPDATE sections SET review_form_id = :updateSection_reviewFormId, seq = :updateSection_seq, 
 		editor_restricted = :updateSection_editorRestricted, meta_indexed = :updateSection_metaIndexed, meta_reviewed = :updateSection_metaReviewed, 
 		abstracts_not_required = :updateSection_abstractsNotRequired, hide_title = :updateSection_hideTitle, hide_author = :updateSection_hideAuthor, 
 		hide_about = :updateSection_hideAbout, disable_comments = :updateSection_disableComments, abstract_word_count = :updateSection_abstractWordCount
 		WHERE section_id = :updateSection_sectionId');
-		
-		
-		if (array_key_exists($section['journal_id'], $dataMapping['journal_id'])) {
-			$journalId = $dataMapping['journal_id'][$section['journal_id']];
+	
+	
+	$updateSectionSTMT->bindParam(':updateSection_reviewFormId', $reviewFormNewId, PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_seq', $section['seq']);
+	$updateSectionSTMT->bindParam(':updateSection_editorRestricted', $section['editor_restricted'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_metaIndexed', $section['meta_indexed'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_metaReviewed', $section['meta_reviewed'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_abstractsNotRequired', $section['abstracts_not_required'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_hideTitle', $section['hide_title'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_hideAuthor', $section['hide_author'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_hideAbout', $section['hide_about'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_disableComments', $section['disable_comments'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_abstractWordCount', $section['abstract_word_count'], PDO::PARAM_INT);
+	$updateSectionSTMT->bindParam(':updateSection_sectionId', $sectionNewId, PDO::PARAM_INT);
+	
+	$message = '';
+	$result = '';
+	$errorInfo = null;
+	$data = $section;
+	
+	if ($updateSectionSTMT->execute()) {
+		if ($updateSectionSTMT->rowCount() > 0) {
+			$result = 'success';
+			$message = 'Successfully updated the section #' . $sectionNewId;
 		}
 		else {
-			return 3; //journal_id PROBLEM
+			$result = 'error';
+			$message = 'Did not update the section #' . $sectionNewId;
 		}
-		
-		
-		if ($section['review_form_id'] !== 0 && $section['review_form_id'] !== null) {
-			if (array_key_exists($section['review_form_id'], $dataMapping['review_form_id'])) {
-				$reviewFormId = $dataMapping['review_form_id'][$section['review_form_id']];
-			}
-			else {
-				return 4; //review_form_id PROBLEM
-			}
-		}
-		
-		$updateSectionSTMT->bindParam(':updateSection_journalId', $journalId, PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_reviewFormId', $reviewFormId, PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_seq', $section['seq']);
-		$updateSectionSTMT->bindParam(':updateSection_editorRestricted', $section['editor_restricted'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_metaIndexed', $section['meta_indexed'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_metaReviewed', $section['meta_reviewed'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_abstractsNotRequired', $section['abstracts_not_required'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_hideTitle', $section['hide_title'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_hideAuthor', $section['hide_author'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_hideAbout', $section['hide_about'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_disableComments', $section['disable_comments'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_abstractWordCount', $section['abstract_word_count'], PDO::PARAM_INT);
-		$updateSectionSTMT->bindParam(':updateSection_sectionId', $sectionId, PDO::PARAM_INT);
-		
-		if ($updateSectionSTMT->execute()) {
-			//TRATAR MELHOR
-			echo "\nExecuted updateSectionSTMT\n";
-		}
-		else {
-			//TRATAR MELHOR
-			echo "\nDid not execute updateSectionSTMT\n";
-		}
-		
+	}
+	else {
+		$result = 'error';
+		$message = 'Did not execute the statement to update the section #' . $sectionNewId;
+		$errorInfo = $updateSectionSTMT->errorInfo();
 	}
 	
-	////////////// end of compare section data ///////////
-	
-	
-	
-	$insertSectionSettingSTMT = $conn->prepare('INSERT INTO section_settings (section_id, locale, setting_name, setting_value, setting_type) VALUES (
-	:insertSetting_sectionId, :insertSetting_locale, :insertSetting_settingName, :insertSetting_settingValue, :insertSetting_settingType)');
-	
-	$updateSectionSettingSTMT = $conn->prepare('UPDATE section_settings SET setting_value = :updateSetting_settingValue, setting_type = :updateSetting_settingType
-	WHERE section_id = :updateSetting_sectionId AND locale = :updateSetting_locale AND setting_name = :updateSetting_settingName');
+	$results['section'] = array('result' => $result, 'message' => $message, 'errorInfo' => $errorInfo, 'data' => $section);
 	
 	if (array_key_exists('settings', $section)) { 
 	if (!empty($section['settings'])) {
 		
+		$results['section_settings'] = array();
+		
+		$selectSectionSettingSTMT = $conn->prepare('SELECT * FROM section_settings 
+		WHERE section_id = :selectSetting_sectionId AND locale = :selectSetting_locale AND setting_name = :selectSetting_settingName');
+		
+		$updateSectionSettingSTMT = $conn->prepare('UPDATE section_settings SET setting_value = :updateSetting_settingValue, setting_type = :updateSetting_settingType
+		WHERE section_id = :updateSetting_sectionId AND locale = :updateSetting_locale AND setting_name = :updateSetting_settingName');
+		
+		$insertSectionSettingSTMT = $conn->prepare('INSERT INTO section_settings (section_id, locale, setting_name, setting_value, setting_type) VALUES (
+		:insertSetting_sectionId, :insertSetting_locale, :insertSetting_settingName, :insertSetting_settingValue, :insertSetting_settingType)');
+		
+		$selectSectionSettingSTMT->bindParam(':selectSetting_sectionId', $sectionNewId, PDO::PARAM_INT);
+		$updateSectionSettingSTMT->bindParam(':updateSetting_sectionId', $sectionNewId, PDO::PARAM_INT);
+		$insertSectionSettingSTMT->bindParam(':insertSetting_sectionId', $sectionNewId, PDO::PARAM_INT);
+		
 		foreach ($section['settings'] as $setting) {
 			
-			if ($setting['setting_value'] !== '' && $setting['setting_value'] !== null) {
+			$message = '';
+			$result = '';
+			$errorInfo = null;
+			$data = $setting;
 			
-				if ($dbSectionSetting = getSetting($dbSection, $setting)) { //from this script function #04
-					if ($setting['setting_value'] !== $dbSectionSetting['setting_value']) {
-						//update the setting
-						$updateSectionSettingSTMT->bindParam(':updateSetting_sectionId', $dbSectionSetting['section_id'], PDO::PARAM_INT);
-						$updateSectionSettingSTMT->bindParam(':updateSetting_locale', $dbSectionSetting['locale'], PDO::PARAM_STR);
-						$updateSectionSettingSTMT->bindParam(':updateSetting_settingName', $dbSectionSetting['setting_name'], PDO::PARAM_STR);
-						$updateSectionSettingSTMT->bindParam(':updateSetting_settingValue', $setting['setting_value'], PDO::PARAM_STR);
-						$updateSectionSettingSTMT->bindParam(':updateSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
+			if ($setting['setting_value'] !== '' && $setting['setting_value'] !== null) {
+				
+				if ($selectSectionSettingSTMT->execute()) {
+					if ($dbSectionSetting = $selectSectionSettingSTMT->fetch(PDO::FETCH_ASSOC)) {
 						
-						$updateSectionSettingSTMT->execute();
-					}
-				}
-				else {
-					//insert the setting
-					$insertSectionSettingSTMT->bindParam(':insertSetting_sectionId', $sectionId, PDO::PARAM_INT);
-					$insertSectionSettingSTMT->bindParam(':insertSetting_locale', $setting['locale'], PDO::PARAM_STR);
-					$insertSectionSettingSTMT->bindParam(':insertSetting_settingName', $setting['setting_name'], PDO::PARAM_STR);
-					$insertSectionSettingSTMT->bindParam(':insertSetting_settingValue', $setting['setting_value'], PDO::PARAM_STR);
-					$insertSectionSettingSTMT->bindParam(':insertSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
+						if ($setting['setting_value'] !== $dbSectionSetting['setting_value']) {
+							//update the setting
+							$updateSectionSettingSTMT->bindParam(':updateSetting_locale', $dbSectionSetting['locale'], PDO::PARAM_STR);
+							$updateSectionSettingSTMT->bindParam(':updateSetting_settingName', $dbSectionSetting['setting_name'], PDO::PARAM_STR);
+							$updateSectionSettingSTMT->bindParam(':updateSetting_settingValue', $setting['setting_value'], PDO::PARAM_STR);
+							$updateSectionSettingSTMT->bindParam(':updateSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
+							
+							if ($updateSectionSettingSTMT->execute()) {
+								if ($updateSectionSettinSTMT->rowCount() > 0) {
+									$result = 'success';
+									$message = 'Successfully updated the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+								}
+								else {
+									$result = 'error';
+									$message = 'Did not update the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+								}
+							}
+							else {
+								$result = 'error';
+								$message = 'Did not execute the statement to update the section setting';
+								$errorInfo = $updateSectionSettingSTMT->errorInfo();
+							}
+						}
+						//else {
+						//    do not need to update
+						//}
+						
+					}//end of the if fetchedSection
 					
-					$insertSectionSettingSTMT->execute();
+					else { // the section setting does not exist
+						//insert the setting
+						$insertSectionSettingSTMT->bindParam(':insertSetting_locale', $setting['locale'], PDO::PARAM_STR);
+						$insertSectionSettingSTMT->bindParam(':insertSetting_settingName', $setting['setting_name'], PDO::PARAM_STR);
+						$insertSectionSettingSTMT->bindParam(':insertSetting_settingValue', $setting['setting_value'], PDO::PARAM_STR);
+						$insertSectionSettingSTMT->bindParam(':insertSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
+						
+						if ($insertSectionSettingSTMT->execute()) {
+							if ($updateSectionSettinSTMT->rowCount() > 0) {
+								$result = 'success';
+								$message = 'Successfully inserted the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+							}
+							else {
+								$result = 'error';
+								$message = 'Did not insert the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+							}
+						}
+						else {
+							$result = 'error';
+							$message = 'Did not execute the statement to insert the section setting';
+							$errorInfo = $insertSectionSettingSTMT->errorInfo();
+						}
+					}
+					
+				}//end of the if selectSectionSetting executed
+				else {
+					$result = 'error'
+					$message = 'Did not execute the statement to select the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+					$errorInfo = $insertSectionSettingSTMT->errorInfo();
 				}
+				
+				$resultArray = array('result' => $result, 'message' => $message, 'errorInfo' => $errorInfo, 'data' => $data)
+				array_push($results['section_settings'], $resultArray);
 			
 			}// closing the if setting value not null nor empty string
 		}//end fo the foreach section settings
@@ -661,9 +698,10 @@ function updateSection($conn, &$section, &$dataMapping) {
 	}//closing the if section settings not empty	
 	}//closing the if section settings exists
 	
-	return 0;
+	return $results;
 	
 }
+//end of updateSection
 
 
 // #05)
@@ -737,7 +775,12 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 			}
 			else {
 				echo "\nsection #" . $section['section_id'] . " was already imported.\n";
-				echo "Its new id is '" . $mappedId . "'\n";
+				//echo "Its new id is '" . $mappedId . "'\n";
+				
+				//updating the section
+				$updateResult = updateSection($conn, $section, $mappedId, $dataMapping);
+				echo "Section update results: " ; //TREAT BETTER show the results
+				
 				continue; // go to the next section
 			}
 		}
@@ -761,6 +804,12 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 				if ($fetchedSection) {
 					//map the section
 					if (is_array($fetchedSection)) { if (array_key_exists('section_id', $fetchedSection)) {
+						
+						
+						//updating the section
+						$updateResult = updateSection($conn, $section, $fetchedSection['section_id'], $dataMapping);
+						echo "Section update results: " ; //TREAT BETTER show the results
+						
 						$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
 					}}
 					
