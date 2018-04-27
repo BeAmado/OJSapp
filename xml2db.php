@@ -975,6 +975,17 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		VALUES (:userId, :journalId, :sectionId, :language, :commentsToEd, :dateSubmitted, :lastModified, :dateStatusModified,
 		:status, :submissionProgress, :currentRound, :pages, :fastTracked, :hideAuthor, :commentsStatus, :locale, :citations)');
 	
+	$updateArticleSTMT2 = $conn->prepare(
+		'UPDATE articles
+		SET language = :updateArt_language, comments_to_ed = :updateArt_commentsToEd, last_modified = :updateArt_lastModified, 
+		date_status_modified = :updateArt_dateStatusModified, status = :updateArt_status, submission_progress = :updateArt_submissionProgress, 
+		current_round = :updateArt_currentRound, pages = :updateArt_pages, fast_tracked = :updateArt_fastTracked, hide_author = :updateArt_hideAuthor, 
+		comments_status = :updateArt_commentsStatus, locale = :updateArt_locale, citations = :updateArt_citations
+		WHERE article_id = :updateArt_articleId'
+	);
+	
+	$checkArticleSTMT = $conn->prepare('SELECT * FROM articles WHERE article_id = :checkArticle_articleId');
+	
 	//get the inserted article_id
 	$lastArticlesSTMT = $conn->prepare("SELECT * FROM articles ORDER BY article_id DESC LIMIT $limit"); 
 	
@@ -1000,6 +1011,20 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		:file_originalFileName, :file_fileStage, :file_viewable, :file_dateUploaded, :file_dateModified, :file_round, :file_assocId)');
 	
 	$lastArticleFilesSTMT = $conn->prepare("SELECT * FROM article_files ORDER BY file_id DESC LIMIT $limit");
+	
+	$insertArticleFileRevisedSTMT = $conn->prepare('INSERT INTO article_files 
+		(file_id, revision, source_revision, article_id, file_name, file_type, file_size, 
+		original_file_name, file_stage, viewable, date_uploaded, date_modified, round, assoc_id) 
+		VALUES (:fileRev_articleId, :fileRev_revision, :fileRev_sourceRevision, :fileRev_articleId, :fileRev_fileName, :fileRev_fileType, :fileRev_fileSize, 
+		:fileRev_originalFileName, :fileRev_fileStage, :fileRev_viewable, :fileRev_dateUploaded, :fileRev_dateModified, :fileRev_round, :fileRev_assocId)');
+	
+	$checkRevisedFileSTMT = $conn->prepare('SELECT * FROM article_files WHERE file_id = :checkRev_fileId AND revision = :checkRev_revision');
+	
+	$updateArticleFileSTMT2 = $conn->prepare(
+		'UPDATE article_files 
+		SET source_revision = :updateArtFile_sourceRevision, file_stage = :updateArtFile_fileStage , viewable = :updateArtFile_viewable, 
+			date_uploaded = :updateArtFile_dateUploaded, date_modified = :updateArtFile_dateModified, round = :updateArtFile_round, assoc_id = :updateArtFile_assocId
+		WHERE file_id = :updateArtFile_fileId AND revision = :updateArtFile_revision');
 	
 	//article_supplementary_file  ///////
 	$insertArticleSuppFileSTMT = $conn->prepare('INSERT INTO article_supplementary_files (file_id, article_id, type, language, date_created, show_reviewers, date_submitted, seq, 
@@ -1137,7 +1162,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$errors = array(
 		'article' => array('insert' => array(), 'update' => array()),
 		'article_settings' => array('insert' => array(), 'update' => array()),
-		'article_file' => array('insert' => array(), 'update' => array()),
+		'article_file' => array('insert' => array(), 'update' => array(), 'check' => array()),
 		'article_supplementary_file' => array('insert' => array(), 'update' => array()),
 		'article_supp_file_settings' => array('insert' => array(), 'update' => array()),
 		'article_note' => array('insert' => array(), 'update' => array()),
@@ -1167,10 +1192,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	//and map the id's in the old database to the id's in the new one
 	foreach($unpubArticles as &$article) {
 		
-		if (array_key_exists($article['article_id'], $dataMapping['article_id'])) {
+		/*if (array_key_exists($article['article_id'], $dataMapping['article_id'])) {
 			echo "\narticle #" . $article['article_id'] . " was already imported.\n";
 			continue; // go to the next article
-		}
+		}*/
 		
 		//validateData('article', $article); //from helperFunctions.php
 		
@@ -1255,49 +1280,136 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			$article['user_new_id'] = $article['user']['user_new_id'];
 			
 			validateData('article', $article); //from helperFunctions.php
-			 
-			$arr = array();
-			$arr['data'] = $article;
-			$arr['params'] = array(
-				array('name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT),
-				array('name' => ':journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_INT),
-				array('name' => ':sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT),
-				array('name' => ':language', 'attr' => 'language', 'type' => PDO::PARAM_STR),
-				array('name' => ':commentsToEd', 'attr' => 'comments_to_ed', 'type' => PDO::PARAM_STR),
-				array('name' => ':dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR),
-				array('name' => ':lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_STR),
-				array('name' => ':dateStatusModified', 'attr' => 'date_status_modified', 'type' => PDO::PARAM_STR),
-				array('name' => ':status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
-				array('name' => ':submissionProgress', 'attr' => 'submission_progress', 'type' => PDO::PARAM_INT),
-				array('name' => ':currentRound', 'attr' => 'current_round', 'type' => PDO::PARAM_INT),
-				array('name' => ':pages', 'attr' => 'pages', 'type' => PDO::PARAM_STR),
-				array('name' => ':fastTracked', 'attr' => 'fast_tracked', 'type' => PDO::PARAM_INT),
-				array('name' => ':hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT),
-				array('name' => ':commentsStatus', 'attr' => 'comments_status', 'type' => PDO::PARAM_INT),
-				array('name' => ':locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
-				array('name' => ':citations', 'attr' => 'citations', 'type' => PDO::PARAM_STR)
-			);
 			
-			
-			echo "\ninserting article #" . $article['article_id'] . " ......... "; 
-			
-			if (myExecute('insert', 'article', $arr, $insertArticleSTMT, $errors)) { //from helperFunctions.php
-				echo "Ok\n";
-				$insertedArticles++;
+			if (array_key_exists($article['article_id'], $dataMapping['article_id'])) {
+				$article['article_new_id'] = $dataMapping['article_id'][$article['article_id']];
 				
-				$args = array();
-				$args['compare'] = 'almost all';
-				$args['notCompare'] = ['submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id'];
-				
-				if (getNewId('article', $lastArticlesSTMT, $article, $dataMapping, $errors, $args)) { //from helperFunctions.php
-					echo "article new id = " . $article['article_new_id'] . "\n";
-					$articleOk = true;
+				//check if need to update the article
+				$checkArticleSTMT->bindParam(':checkArticle_articleId', $article['article_new_id'], PDO::PARAM_INT);
+				if ($checkArticleSTMT->execute()) {
+					
+					if ($fetchedArticle = $checkArticleSTMT->fetch(PDO::FETCH_ASSOC)) {
+						
+						$updateArticle = false;
+						
+						//update the article if at least one of the file_ids is not mapped, which would mean the file_id changed
+						
+						if ($article['submission_file_id'] != null && $article['submission_file_id'] != '') {
+							if (!array_key_exists($fetchedArticle['submission_file_id'], $dataMapping['file_id'])) {
+								$updateArticle = true;
+							}
+						}
+						if ($article['revised_file_id'] != null && $article['revised_file_id'] != '') {
+							if (!array_key_exists($fetchedArticle['revised_file_id'], $dataMapping['file_id'])) {
+								$updateArticle = true;
+							}
+						}
+						if ($article['review_file_id'] != null && $article['review_file_id'] != '') {
+							if (!array_key_exists($fetchedArticle['review_file_id'], $dataMapping['file_id'])) {
+								$updateArticle = true;
+							}
+						}
+						if ($article['editor_file_id'] != null && $article['editor_file_id'] != '') {
+							if (!array_key_exists($fetchedArticle['editor_file_id'], $dataMapping['file_id'])) {
+								$updateArticle = true;
+							}
+						}
+							
+						$args = array();
+						$args['compare'] = 'almost all';
+						$args['notCompare'] = ['submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id'];
+						
+						if (same2($article, $fetchedArticle, $args)) {
+							
+							if (!$updateArticle) $article['DNU'] = true; // DNU means Do Not Update
+							
+						}//end of the if same2
+						else { //update the article
+							$updateArticleSTMT2->bindParam(':updateArt_language', $article['language'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_commentsToEd', $article['comments_to_ed'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_lastModified', $article['last_modified'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_dateStatusModified', $article['date_status_modified'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_status', $article['status'], PDO::PARAM_INT);
+							$updateArticleSTMT2->bindParam(':updateArt_submissionProgress', $article['submission_progress'], PDO::PARAM_INT);
+							$updateArticleSTMT2->bindParam(':updateArt_currentRound', $article['current_round'], PDO::PARAM_INT);
+							$updateArticleSTMT2->bindParam(':updateArt_pages', $article['pages'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_fastTracked', $article['fast_tracked'], PDO::PARAM_INT);
+							$updateArticleSTMT2->bindParam(':updateArt_hideAuthor', $article['hide_author'], PDO::PARAM_INT);
+							$updateArticleSTMT2->bindParam(':updateArt_commentsStatus', $article['comments_status'], PDO::PARAM_INT);
+							$updateArticleSTMT2->bindParam(':updateArt_locale', $article['locale'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_citations', $article['citations'], PDO::PARAM_STR);
+							$updateArticleSTMT2->bindParam(':updateArt_articleId', $article['article_new_id'], PDO::PARAM_STR);
+						}
+					}//end of the if fetched the article
+					
+				}//end of the if checkArticleSTMT executed
+				else {
+					//checkArticleSTMT did not execute
+					//TREAT THE ERROR
 				}
 				
+				/*
+				$updateArticleSTMT2 = $conn->prepare(
+		'UPDATE articles
+		SET language = :updateArt_language, comments_to_ed = :updateArt_commentsToEd, last_modified = :updateArt_lastModified, 
+		date_status_modified = :updateArt_dateStatusModified, status = :updateArt_status, submission_progress = :updateArt_submissionProgress, 
+		current_round = :updateArt_currentRound, pages = :updateArt_pages, fast_tracked = :updateArt_fastTracked, hide_author = :updateArt_hideAuthor, 
+		comments_status = :updateArt_commentsStatus, locale = :updateArt_locale, citations = :updateArt_citations
+		WHERE article_id = :updateArt_articleId'
+	);
+	
+	$checkArticleSTMT = $conn->prepare('SELECT * FROM articles WHERE article_id = :checkArticle_articleId');
+				*/
+				
 			}
-			else {
-				echo "Failed\n";
-			}
+			else {// insert the article
+				
+				$arr = array();
+				$arr['data'] = $article;
+				$arr['params'] = array(
+					array('name' => ':userId', 'attr' => 'user_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':sectionId', 'attr' => 'section_new_id', 'type' => PDO::PARAM_INT),
+					array('name' => ':language', 'attr' => 'language', 'type' => PDO::PARAM_STR),
+					array('name' => ':commentsToEd', 'attr' => 'comments_to_ed', 'type' => PDO::PARAM_STR),
+					array('name' => ':dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR),
+					array('name' => ':lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_STR),
+					array('name' => ':dateStatusModified', 'attr' => 'date_status_modified', 'type' => PDO::PARAM_STR),
+					array('name' => ':status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
+					array('name' => ':submissionProgress', 'attr' => 'submission_progress', 'type' => PDO::PARAM_INT),
+					array('name' => ':currentRound', 'attr' => 'current_round', 'type' => PDO::PARAM_INT),
+					array('name' => ':pages', 'attr' => 'pages', 'type' => PDO::PARAM_STR),
+					array('name' => ':fastTracked', 'attr' => 'fast_tracked', 'type' => PDO::PARAM_INT),
+					array('name' => ':hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT),
+					array('name' => ':commentsStatus', 'attr' => 'comments_status', 'type' => PDO::PARAM_INT),
+					array('name' => ':locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+					array('name' => ':citations', 'attr' => 'citations', 'type' => PDO::PARAM_STR)
+				);
+				
+				
+				echo "\ninserting article #" . $article['article_id'] . " ......... "; 
+				
+				if (myExecute('insert', 'article', $arr, $insertArticleSTMT, $errors)) { //from helperFunctions.php
+					echo "Ok\n";
+					$insertedArticles++;
+					
+					$args = array();
+					$args['compare'] = 'almost all';
+					$args['notCompare'] = ['submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id'];
+					
+					if (getNewId('article', $lastArticlesSTMT, $article, $dataMapping, $errors, $args)) { //from helperFunctions.php
+						echo "article new id = " . $article['article_new_id'] . "\n";
+						$articleOk = true;
+					}
+					
+				}
+				else {
+					echo "Failed\n";
+				}
+				
+			}//end of the block to insert the article
+			 
+			
 			
 		}
 		else {
@@ -1407,40 +1519,154 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if ($articleIdOk) {
 					
-					$arr = array();
-					$arr['data'] = $articleFile;
-					$arr['params'] = array(
-						array('name' => ':file_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_fileName', 'attr' => 'file_name', 'type' => PDO::PARAM_STR),
-						array('name' => ':file_fileType', 'attr' => 'file_type', 'type' => PDO::PARAM_STR),
-						array('name' => ':file_originalFileName', 'attr' => 'original_file_name', 'type' => PDO::PARAM_STR),
-						array('name' => ':file_fileSize', 'attr' => 'file_size', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
-						array('name' => ':file_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
-						array('name' => ':file_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
-						array('name' => ':file_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
-					);
+					/*
+					$insertArticleFileRevisedSTMT = $conn->prepare('INSERT INTO article_files 
+		(file_id, revision, source_revision, article_id, file_name, file_type, file_size, 
+		original_file_name, file_stage, viewable, date_uploaded, date_modified, round, assoc_id) 
+		VALUES (:fileRev_fileId, :fileRev_revision, :fileRev_sourceRevision, :fileRev_articleId, :fileRev_fileName, :fileRev_fileType, :fileRev_fileSize, 
+		:fileRev_originalFileName, :fileRev_fileStage, :fileRev_viewable, :fileRev_dateUploaded, :fileRev_dateModified, :fileRev_round, :fileRev_assocId)');
+	
+	$checkRevisedFileSTMT = $conn->prepare('SELECT * FROM article_files WHERE file_id = :checkRev_fileId AND revision = :checkRev_revision');
+					*/
 					
-					echo '    inserting article file #' . $articleFile['file_id']. '............ ';
-					
-					if (myExecute('insert', 'article_file', $arr, $insertArticleFileSTMT, $errors)) { //from helperFunctions.php
-						echo "Ok\n";
-						$args = array();
-						$args['compare'] = 'almost all';
-						$args['notCompare'] = ['file_name','original_file_name', 'source_file_id'];
+					if (array_key_exists($articleFile['file_id'], $dataMapping['file_id'])) {
+						//check if the article_file needs to be updated or even inserted if the revision is > 1
 						
-						if (getNewId('article_file', $lastArticleFilesSTMT, $articleFile, $dataMapping, $errors, $args)) { //from helperFunctions.php
-							echo "    file new id = " . $articleFile['file_new_id'] . "\n\n";
-							$articleFileOk = true;
+						$articleFile['file_new_id'] = $dataMapping['file_id'][$articleFile['file_id']];
+						
+						$checkRevisedFileSTMT->bindParam(':checkRev_fileId', $articleFile['file_new_id'], PDO::PARAM_INT);
+						$checkRevisedFileSTMT->bindParam(':checkRev_revision', $articleFile['revision'], PDO::PARAM_INT);
+						
+						if ($checkRevisedFileSTMT->execute()) {
+							
+							if ($fetchedArticleFile = $checkRevisedFileSTMT->fetch(PDO::FETCH_ASSOC)) {
+								//check if needs to update
+								
+								$args = array();
+								$args['compare'] = 'almost all';
+								$args['notCompare'] = ['file_name','original_file_name', 'source_file_id'];
+								
+								
+								if (same2($articleFile, $fetchedArticleFile, $args)) {
+									// does not need to update
+								}
+								else { // update the article_file
+									
+									/*
+									$updateArticleFileSTMT2 = $conn->prepare(
+		'UPDATE article_files 
+		SET source_revision = :updateArtFile_sourceRevision, file_stage = :updateArtFile_fileStage , viewable = :updateArtFile_viewable, 
+			date_uploaded = :updateArtFile_dateUploaded, date_modified = :updateArtFile_dateModified, round = :updateArtFile_round, assoc_id = :updateArtFile_assocId
+		WHERE file_id = :updateArtFile_fileId AND revision = :updateArtFile_revision');
+									*/
+									$arr = array();
+									$arr['data'] = $articleFile;
+									$arr['params'] = array(
+										array('name' => ':updateArtFile_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
+										array('name' => ':updateArtFile_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
+										array('name' => ':updateArtFile_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
+										array('name' => ':updateArtFile_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+										array('name' => ':updateArtFile_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+										array('name' => ':updateArtFile_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+										array('name' => ':updateArtFile_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':updateArtFile_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':updateArtFile_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT)
+									);
+									
+									echo '    updating article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .'............ ';
+									
+									if (myExecute('update', 'article_file', $arr, $updateArticleFileSTMT2, $errors)) { //from helperFunctions.php
+										echo "Ok\n";
+									}
+									else {
+										echo "Failed\n";
+									}
+									
+								}// end of the update article_file block
+								
+								$articleFile['DNU'] = true; // DNU means Do Not Update
+								
+							}// end of the if fetchedArticleFile
+							else if ( ((int)$articleFile['revision']) > 1){
+								// insert the revised file
+								
+								$arr = array();
+								$arr['data'] = $articleFile;
+								$arr['params'] = array(
+									array('name' => ':fileRev_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_fileName', 'attr' => 'file_name', 'type' => PDO::PARAM_STR),
+									array('name' => ':fileRev_fileType', 'attr' => 'file_type', 'type' => PDO::PARAM_STR),
+									array('name' => ':fileRev_originalFileName', 'attr' => 'original_file_name', 'type' => PDO::PARAM_STR),
+									array('name' => ':fileRev_fileSize', 'attr' => 'file_size', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+									array('name' => ':fileRev_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+									array('name' => ':fileRev_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+									array('name' => ':fileRev_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
+								);
+								
+								echo '    inserting article file #' . $articleFile['file_id']. ' revision ' . $articleFile['revision'] .'............ ';
+								
+								if (myExecute('insert', 'article_file', $arr, $insertArticleFileRevisedSTMT, $errors)) { //from helperFunctions.php
+									echo "Ok\n";
+								}
+								else {
+									echo "Failed\n";
+								}
+								
+							}// end of the if to insert the revised file
+							
+						}// end of the if checkRevisedFileSTMT executed
+						else {
+							//checkRevisedFileSTMT did not execute
+							//TREAT THE ERROR
 						}
+						
 					}
-					else {
-						echo "Failed\n";
-					}
+					else { //insert the article_file
+						
+						$arr = array();
+						$arr['data'] = $articleFile;
+						$arr['params'] = array(
+							array('name' => ':file_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_fileName', 'attr' => 'file_name', 'type' => PDO::PARAM_STR),
+							array('name' => ':file_fileType', 'attr' => 'file_type', 'type' => PDO::PARAM_STR),
+							array('name' => ':file_originalFileName', 'attr' => 'original_file_name', 'type' => PDO::PARAM_STR),
+							array('name' => ':file_fileSize', 'attr' => 'file_size', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+							array('name' => ':file_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+							array('name' => ':file_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+							array('name' => ':file_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
+						);
+						
+						echo '    inserting article file #' . $articleFile['file_id']. '............ ';
+						
+						if (myExecute('insert', 'article_file', $arr, $insertArticleFileSTMT, $errors)) { //from helperFunctions.php
+							echo "Ok\n";
+							$args = array();
+							$args['compare'] = 'almost all';
+							$args['notCompare'] = ['file_name','original_file_name', 'source_file_id'];
+							
+							if (getNewId('article_file', $lastArticleFilesSTMT, $articleFile, $dataMapping, $errors, $args)) { //from helperFunctions.php
+								echo "    file new id = " . $articleFile['file_new_id'] . "\n\n";
+								$articleFileOk = true;
+							}
+						}
+						else {
+							echo "Failed\n";
+						}
+						
+					}//end of the file insertion block
+					
+					
 				}
 				else {
 					$error = ['file_id' => $articleFile['file_id'], 'error' => 'article_id '. $articleFile['article_id'] . ' not found on dataMappings.'];
@@ -2464,6 +2690,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	//loop through every article to update data to the correct ones in the database
 	foreach($unpubArticles as &$article) {
 		
+		if (array_key_exists('DNU', $article)) { if ($article['DNU']) {
+			//DNU means Do Not Update
+			continue; // go to the next article
+		}}
+		
 		//updatting article
 		$article['submission_file_new_id'] = null;
 		$article['revised_file_new_id'] = null;
@@ -2517,6 +2748,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		//updating article_files
 		if (array_key_exists('files', $article)) { if (!empty($article['files']) && $article['files'] != null) {
 		foreach ($article['files'] as &$articleFile) {
+			
+			if (array_key_exists('DNU', $articleFile)) { if ($articleFile['DNU']) {
+				//DNU means Do Not Update
+				continue; // go to the next article file
+			}}
 			
 			$articleFile['source_file_new_id'] = null;
 			$articleFile['file_new_name'] = null;
@@ -2605,6 +2841,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		//update reviewer file id
 		if (array_key_exists('review_assignments', $article)) { if (!empty($article['review_assignments']) && $article['review_assignments'] != null) {
 		foreach($article['review_assignments'] as &$revAssign) { 
+			
+			if (array_key_exists('DNU', $revAssign)) { if ($revAssign['DNU']) {
+				//DNU means Do Not Update
+				continue; // go to the next review assignment
+			}}
+			
 			//updatting article
 			$revAssignOk = true;
 			

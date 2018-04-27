@@ -181,22 +181,27 @@ function chooseJournal($conn) {
 	$res = $conn->query("SELECT journal_id, path FROM journals ORDER BY journal_id");
 
 	while ($jou = $res->fetch(PDO::FETCH_ASSOC)) {
-		array_push($journals,  $jou);
+		$journals[$jou['journal_id']] =  $jou;
 	}
 	
 	$res = null;
 	
-	//colocar um menu na tela para o usuário selecionar de qual revista ele deseja pegar os ids
-	echo "\nHosted journals:\n";
-	foreach($journals as $journal) {
-		echo $journal["journal_id"] . " - " . $journal["path"] . "\n";
-	}
+	$journalId = null;
+	$userResponse = null;
 	
-	$jId = readline("\nEnter the id of the journal wanted: ");
+	do {
+		//menu to select the journal
+		echo "\nHosted journals:\n";
+		foreach($journals as $journal) {
+			echo $journal["journal_id"] . " - " . $journal["path"] . "\n";
+		}
+		
+		$journalId = readline("\nEnter the id of the journal wanted: ");
+		echo "\n";
+		$userResponse = strtolower(readline('You chose ' . $journals[$journalId] . '. Do you confirm your choice? (y/N) : '));
+	} while ($userResponse !== 'y' && $userResponse !== 'yes');
 	
-	echo "\n";
-	
-	return getJournalFromArray($journals, $jId);
+	return getJournalFromArray($journals, $journalId);
 }
 
 
