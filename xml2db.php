@@ -3160,9 +3160,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			//echo "\ngroup #" . $grp['group_id'] . " was already imported.\n";
 			//continue; // go to the next group
 			$groupExists = true;
+			$grp['group_new_id'] = $dataMapping['group_id'][$grp['group_id']];
 		}
 		
-		$groupOk = false;
+		$groupOk = true;
 		$grp['assoc_new_id'] = $journalNewId;
 		
 		validateData('group', $grp); //from helperFunctions.php
@@ -3188,6 +3189,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					echo "    new id = " . $grp['group_new_id'] . "\n\n";
 					$groupOk = true;
 					$numInsertedGroups++;
+				}
+				else {
+					$groupOk = false;
 				}
 			}
 			else {
