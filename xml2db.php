@@ -975,13 +975,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		VALUES (:userId, :journalId, :sectionId, :language, :commentsToEd, :dateSubmitted, :lastModified, :dateStatusModified,
 		:status, :submissionProgress, :currentRound, :pages, :fastTracked, :hideAuthor, :commentsStatus, :locale, :citations)');
 	
-	$updateArticleSTMT2 = $conn->prepare(
+	$updtArticleSTMT = $conn->prepare(
 		'UPDATE articles
-		SET language = :updateArt_language, comments_to_ed = :updateArt_commentsToEd, last_modified = :updateArt_lastModified, 
-		date_status_modified = :updateArt_dateStatusModified, status = :updateArt_status, submission_progress = :updateArt_submissionProgress, 
-		current_round = :updateArt_currentRound, pages = :updateArt_pages, fast_tracked = :updateArt_fastTracked, hide_author = :updateArt_hideAuthor, 
-		comments_status = :updateArt_commentsStatus, locale = :updateArt_locale, citations = :updateArt_citations
-		WHERE article_id = :updateArt_articleId'
+		SET language = :updtArticle_language, comments_to_ed = :updtArticle_commentsToEd, last_modified = :updtArticle_lastModified, 
+		date_status_modified = :updtArticle_dateStatusModified, status = :updtArticle_status, submission_progress = :updtArticle_submissionProgress, 
+		current_round = :updtArticle_currentRound, pages = :updtArticle_pages, fast_tracked = :updtArticle_fastTracked, hide_author = :updtArticle_hideAuthor, 
+		comments_status = :updtArticle_commentsStatus, locale = :updtArticle_locale, citations = :updtArticle_citations
+		WHERE article_id = :updtArticle_articleId'
 	);
 	
 	$checkArticleSTMT = $conn->prepare('SELECT * FROM articles WHERE article_id = :checkArticle_articleId');
@@ -1020,11 +1020,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	$checkRevisedFileSTMT = $conn->prepare('SELECT * FROM article_files WHERE file_id = :checkRev_fileId AND revision = :checkRev_revision');
 	
-	$updateArticleFileSTMT2 = $conn->prepare(
+	$updtArticleFileSTMT = $conn->prepare(
 		'UPDATE article_files 
-		SET source_revision = :updateArtFile_sourceRevision, file_stage = :updateArtFile_fileStage , viewable = :updateArtFile_viewable, 
-			date_uploaded = :updateArtFile_dateUploaded, date_modified = :updateArtFile_dateModified, round = :updateArtFile_round, assoc_id = :updateArtFile_assocId
-		WHERE file_id = :updateArtFile_fileId AND revision = :updateArtFile_revision');
+		SET source_revision = :updtArticleFile_sourceRevision, file_stage = :updtArticleFile_fileStage , viewable = :updtArticleFile_viewable, 
+			date_uploaded = :updtArticleFile_dateUploaded, date_modified = :updtArticleFile_dateModified, round = :updtArticleFile_round, assoc_id = :updtArticleFile_assocId
+		WHERE file_id = :updtArticleFile_fileId AND revision = :updtArticleFile_revision');
 	
 	//article_supplementary_file  ///////
 	$insertArticleSuppFileSTMT = $conn->prepare('INSERT INTO article_supplementary_files (file_id, article_id, type, language, date_created, show_reviewers, date_submitted, seq, 
@@ -1097,6 +1097,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$insertReviewRoundSTMT = $conn->prepare('INSERT INTO review_rounds (submission_id, stage_id, round, review_revision, status) VALUES (:revRound_submissionId,
 		:revRound_stageId, :revRound_round, :revRound_reviewRevision, :revRound_status)');
 	
+	$updtRevRoundSTMT = $conn->prepare('UPDATE review_rounds SET 
+		stage_id = :updtRevRound_stageId, round = :updtRevRound_round, 
+		review_revision = :updtRevRound_reviewRevision, status = :updtRevRound_status
+		WHERE review_round_id = :updtRevRound_reviewRoundId');
+	
 	$lastReviewRoundsSTMT = $conn->prepare("SELECT * FROM review_rounds ORDER BY review_round_id DESC LIMIT $limit");
 	
 	$insertReviewAssignmentSTMT = $conn->prepare('INSERT INTO review_assignments (submission_id, reviewer_id, competing_interests, regret_message, recommendation, date_assigned,
@@ -1107,10 +1112,25 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	:revAssign_cancelled, :revAssign_reviewerFileId, :revAssign_dateRated, :revAssign_dateReminded, :revAssign_quality, :revAssign_reviewRoundId, :revAssign_stageId, 
 	:revAssign_reviewMethod, :revAssign_round, :revAssign_step, :revAssign_reviewFormId, :revAssign_unconsidered)');
 	
+	$updtRevAssignSTMT = $conn->prepare('UPDATE review_assignments SET
+	competing_interests = :updtRevAssign_competingInterests, regret_message = :updtRevAssign_regretMessage, recommendation = :updtRevAssign_regretMessage, 
+	date_assigned = :updtRevAssign_dateAssigned, date_notified = :updtRevAssign_dateNotified, date_confirmed = :updtRevAssign_dateConfirmed, 
+	date_completed = :updtRevAssign_dateCompleted, date_acknowledged = :updtRevAssign_dateAcknowledged, date_due = :updtRevAssign_dateDue, 
+	last_modified = :updtRevAssign_lastModified, reminder_was_automatic = :updtRevAssign_reminderWasAutomatic, declined = :updtRevAssign_declined, 
+	replaced = :updtRevAssign_replaced, cancelled = :updtRevAssign_cancelled, reviewer_file_id = :updtRevAssign_reviewerFileId, 
+	date_rated = :updtRevAssign_dateRated, date_reminded = :updtRevAssign_dateReminded, quality = :updtRevAssign_quality, 
+	review_round_id = :updtRevAssign_reviewRoundId, stage_id = :updtRevAssign_stageId, review_method = :updtRevAssign_reviewMethod, 
+	round = :updtRevAssign_round, step = :updtRevAssign_step, review_form_id = :updtRevAssign_reviewFormId, unconsidered = :updtRevAssign_unconsidered
+	WHERE review_id = :updtRevAssign_reviewId');
+	
 	$lastReviewAssignmentsSTMT = $conn->prepare("SELECT * FROM review_assignments ORDER BY review_id DESC LIMIT $limit");
 	
 	$insertReviewFormResponseSTMT = $conn->prepare('INSERT INTO review_form_responses (review_form_element_id, review_id, response_type, response_value) 
 	VALUES (:response_reviewFormElementId, :reponse_reviewId, :response_responseType, :response_reponseValue)');
+	
+	$updtReviewFormResponseSTMT = $conn->prepare('UPDATE review_form_responses 
+		SET response_type, response_value
+		WHERE review_form_element_id = :updtRevFormResp_reviewFormElementId AND review_id = :updtRevFormResp_reviewId');
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -1184,7 +1204,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		'user' => array('insert' => array(), 'update' => array())
 	);	
 	
-	$insertedArticles = 0;
+	$numInsertedArticles = 0;
+	$numUpdatedArticles = 0;
+	$numInsertedArticleFiles = 0;
+	$numUpdatedArticleFiles = 0;
+	$numInsertedSuppFiles = 0;
 	
 	///////////////////  BEGINNING OF THE INSERT STAGE  //////////////////////////////////////////////////////////////////////////
 	
@@ -1325,20 +1349,39 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 						}//end of the if same2
 						else { //update the article
-							$updateArticleSTMT2->bindParam(':updateArt_language', $article['language'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_commentsToEd', $article['comments_to_ed'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_lastModified', $article['last_modified'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_dateStatusModified', $article['date_status_modified'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_status', $article['status'], PDO::PARAM_INT);
-							$updateArticleSTMT2->bindParam(':updateArt_submissionProgress', $article['submission_progress'], PDO::PARAM_INT);
-							$updateArticleSTMT2->bindParam(':updateArt_currentRound', $article['current_round'], PDO::PARAM_INT);
-							$updateArticleSTMT2->bindParam(':updateArt_pages', $article['pages'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_fastTracked', $article['fast_tracked'], PDO::PARAM_INT);
-							$updateArticleSTMT2->bindParam(':updateArt_hideAuthor', $article['hide_author'], PDO::PARAM_INT);
-							$updateArticleSTMT2->bindParam(':updateArt_commentsStatus', $article['comments_status'], PDO::PARAM_INT);
-							$updateArticleSTMT2->bindParam(':updateArt_locale', $article['locale'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_citations', $article['citations'], PDO::PARAM_STR);
-							$updateArticleSTMT2->bindParam(':updateArt_articleId', $article['article_new_id'], PDO::PARAM_STR);
+							
+							
+							$arr = array();
+							$arr['data'] = $article;
+							$arr['params'] = array(
+								array('name' => ':updtArticle_language', 'attr' => 'language', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_commentsToEd', 'attr' => 'comments_to_ed', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_dateStatusModified', 'attr' => 'date_status_modified', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
+								array('name' => ':updtArticle_submissionProgress', 'attr' => 'submission_progress', 'type' => PDO::PARAM_INT),
+								array('name' => ':updtArticle_currentRound', 'attr' => 'current_round', 'type' => PDO::PARAM_INT),
+								array('name' => ':updtArticle_pages', 'attr' => 'pages', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_fastTracked', 'attr' => 'fast_tracked', 'type' => PDO::PARAM_INT),
+								array('name' => ':updtArticle_hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT),
+								array('name' => ':updtArticle_commentsStatus', 'attr' => 'comments_status', 'type' => PDO::PARAM_INT),
+								array('name' => ':updtArticle_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_citations', 'attr' => 'citations', 'type' => PDO::PARAM_STR),
+								array('name' => ':updtArticle_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+							);
+							
+							
+							echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
+							
+							if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors)) { //from helperFunctions.php
+								echo "Ok\n";
+								$numUpdatedArticles++;
+							}
+							else {
+								echo "Failed\n";
+							}
+							
 						}
 					}//end of the if fetched the article
 					
@@ -1347,19 +1390,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					//checkArticleSTMT did not execute
 					//TREAT THE ERROR
 				}
-				
-				/*
-				$updateArticleSTMT2 = $conn->prepare(
-		'UPDATE articles
-		SET language = :updateArt_language, comments_to_ed = :updateArt_commentsToEd, last_modified = :updateArt_lastModified, 
-		date_status_modified = :updateArt_dateStatusModified, status = :updateArt_status, submission_progress = :updateArt_submissionProgress, 
-		current_round = :updateArt_currentRound, pages = :updateArt_pages, fast_tracked = :updateArt_fastTracked, hide_author = :updateArt_hideAuthor, 
-		comments_status = :updateArt_commentsStatus, locale = :updateArt_locale, citations = :updateArt_citations
-		WHERE article_id = :updateArt_articleId'
-	);
-	
-	$checkArticleSTMT = $conn->prepare('SELECT * FROM articles WHERE article_id = :checkArticle_articleId');
-				*/
 				
 			}
 			else {// insert the article
@@ -1391,7 +1421,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (myExecute('insert', 'article', $arr, $insertArticleSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
-					$insertedArticles++;
+					$numInsertedArticles++;
 					
 					$args = array();
 					$args['compare'] = 'almost all';
@@ -1408,10 +1438,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				}
 				
 			}//end of the block to insert the article
-			 
 			
-			
-		}
+		}// end of the if sectionOk and UserOk
 		else {
 			array_push($errors['article']['insert'], $error);
 		}
@@ -1553,29 +1581,29 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								else { // update the article_file
 									
 									/*
-									$updateArticleFileSTMT2 = $conn->prepare(
+									$updtArticleFileSTMT = $conn->prepare(
 		'UPDATE article_files 
-		SET source_revision = :updateArtFile_sourceRevision, file_stage = :updateArtFile_fileStage , viewable = :updateArtFile_viewable, 
-			date_uploaded = :updateArtFile_dateUploaded, date_modified = :updateArtFile_dateModified, round = :updateArtFile_round, assoc_id = :updateArtFile_assocId
-		WHERE file_id = :updateArtFile_fileId AND revision = :updateArtFile_revision');
+		SET source_revision = :updtArticleFile_sourceRevision, file_stage = :updtArticleFile_fileStage , viewable = :updtArticleFile_viewable, 
+			date_uploaded = :updtArticleFile_dateUploaded, date_modified = :updtArticleFile_dateModified, round = :updtArticleFile_round, assoc_id = :updtArticleFile_assocId
+		WHERE file_id = :updtArticleFile_fileId AND revision = :updtArticleFile_revision');
 									*/
 									$arr = array();
 									$arr['data'] = $articleFile;
 									$arr['params'] = array(
-										array('name' => ':updateArtFile_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
-										array('name' => ':updateArtFile_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
-										array('name' => ':updateArtFile_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
-										array('name' => ':updateArtFile_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
-										array('name' => ':updateArtFile_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
-										array('name' => ':updateArtFile_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
-										array('name' => ':updateArtFile_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT),
-										array('name' => ':updateArtFile_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
-										array('name' => ':updateArtFile_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT)
+										array('name' => ':updtArticleFile_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtArticleFile_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtArticleFile_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtArticleFile_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+										array('name' => ':updtArticleFile_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+										array('name' => ':updtArticleFile_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtArticleFile_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtArticleFile_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtArticleFile_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT)
 									);
 									
 									echo '    updating article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .'............ ';
 									
-									if (myExecute('update', 'article_file', $arr, $updateArticleFileSTMT2, $errors)) { //from helperFunctions.php
+									if (myExecute('update', 'article_file', $arr, $updtArticleFileSTMT, $errors)) { //from helperFunctions.php
 										echo "Ok\n";
 									}
 									else {
@@ -1686,6 +1714,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			echo "inserting article_supplementary_files:\n";
 			foreach ($article['supplementary_files'] as &$articleSuppFile) {
 				
+				if (array_key_exists($articleSuppFile['supp_id'], $dataMapping['supp_id'])) {
+					echo "\nThe article supplementary file #" . $articleSuppFile['supp_id'] . " was already imported.";
+					echo "\nIts new id is " . $dataMapping['supp_id'][$articleSuppFile['supp_id']] . "\n";
+					continue; // go to the next article supplementary file
+				}
+				
 				validateData('article_supplementary_file', $articleSuppFile); //from helperFunctions.php
 				
 				$articleSuppFileOk = false;
@@ -1794,6 +1828,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			foreach ($article['comments'] as &$articleComment) {
 				
+				if (array_key_exists($articleComment['comment_id'], $dataMapping['comment_id'])) {
+					echo "\nThe article_comment #" . $articleComment['comment_id'] . " was already imported.\n";
+					echo "Its new id is " . $dataMapping['comment_id'][$dataMapping['comment_id']];
+					continue; // go to the next article_comment
+				}
+				
 				validateData('article_comment', $articleComment); //from helperFunctions.php
 				
 				$articleIdOk = false;
@@ -1885,6 +1925,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			echo "\ninserting article galleys...\n";
 			
 			foreach ($article['galleys'] as &$articleGalley) {
+				
+				if (array_key_exists($articleGalley['galley_id'], $dataMapping['galley_id'])) {
+					echo "\nThe article galley #" . $articleGalley['galley_id'] . " was already imported.\n";
+					echo "Its new id is " . $dataMapping['galley_id'][$articleGalley['galley_id']];
+					continue; // go to the next article galley
+				}
 				
 				validateData('article_galley', $articleGalley); //from helperFunctions.php
 				
@@ -2120,6 +2166,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			echo "\ninserting edit_decisions:\n";
 			foreach ($article['edit_decisions'] as &$editDecision) {
 						
+				if (array_key_exists($editDecision['edit_decision_id'], $dataMapping['edit_decision_id'])) {
+					echo "\nThe edit decision #" . $editDecision['edit_decision_id'] . " was already imported\n";
+					echo "Its new id is " . $dataMapping['edit_decision_id'][$editDecision['edit_decision_id']];
+					continue; // go to the next edit decision
+				}
+				
 				$articleIdOk = false;
 				$editorIdOk = false;
 				$editDecisionOk = false;
@@ -2201,6 +2253,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			if (array_key_exists('edit_assignments', $article)) { if (!empty($article['edit_assignments']) && $article['edit_assignments'] != null) {
 			echo "\ninserting edit_assignments:\n";
 			foreach ($article['edit_assignments'] as &$editAssignment) {
+				
+				if (array_key_exists($editAssignment['edit_id'], $dataMapping['edit_id'])) {
+					echo "\nThe edit assignment #" . $editAssignment['edit_id'] . " was already imported\n";
+					echo "Its new id is " . $dataMapping['edit_id'][$editAssignment['edit_id']];
+					continue; // go to the next edit decision
+				}
 				
 				validateData('edit_assignment', $editAssignment); //from helperFunctions.php
 						
@@ -2287,6 +2345,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			echo "\ninserting article_search_objects:\n";
 				
 			foreach ($article['search_objects'] as &$searchObj) {
+				
+				if (array_key_exists($searchObj['object_id'], $dataMapping['object_id'])) {
+					echo "\nThe search object #" . $searchObj['object_id'] . " was already imported\n";
+					echo "Its new id is " . $dataMapping['object_id'][$searchObj['object_id']];
+					continue; // go to the next edit decision
+				}
+				
 				$searchObjOk = false;
 				
 				$searchObj['article_new_id'] = $article['article_new_id'];
@@ -2503,53 +2568,65 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if ($reviewerIdOk && $reviewFormIdOk && $reviewerFileIdOk) {
 					
-					$arr = array();
-					$arr['data'] = $revAssign;
-					$arr['params'] = array(
-						array('name' => ':revAssign_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_reviewerId', 'attr' => 'reviewer_new_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_competingInterests', 'attr' => 'competing_interests', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_regretMessage', 'attr' => 'regret_message', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_recommendation', 'attr' => 'recommendation', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_dateAssigned', 'attr' => 'date_assigned', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_dateNotified', 'attr' => 'date_notified', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_dateConfirmed', 'attr' => 'date_confirmed', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_dateCompleted', 'attr' => 'date_completed', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_dateAcknowledged', 'attr' => 'date_acknowledged', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_dateDue', 'attr' => 'date_due', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_reminderAuto', 'attr' => 'reminder_was_automatic', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_declined', 'attr' => 'declined', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_replaced', 'attr' => 'replaced', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_cancelled', 'attr' => 'cancelled', 'type' => PDO::PARAM_STR),
-						array('name' => ':revAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_dateRated', 'attr' => 'date_rated', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_dateReminded', 'attr' => 'date_reminded', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_quality', 'attr' => 'quality', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_reviewRoundId', 'attr' => 'review_round_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_reviewMethod', 'attr' => 'review_method', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_step', 'attr' => 'step', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
-						array('name' => ':revAssign_unconsidered', 'attr' => 'unconsidered', 'type' => PDO::PARAM_INT)
-					);
-					
-					
-					echo "\ninserting review_assignment #" . $revAssign['review_id'] . " ......... "; 
-					
-					if (myExecute('insert', 'review_assignment', $arr, $insertReviewAssignmentSTMT, $errors)) { //from helperFunctions.php
-						echo "Ok\n";
+					if (array_key_exists($revAssign['review_id'], $dataMapping['review_id'])) {
+						$reviewIdOk = true;
+						$revAssign['review_new_id'] = $dataMapping['review_id'][$revAssign['review_id']];
 						
-						if (getNewId('review_assignment', $lastReviewAssignmentsSTMT, $revAssign, $dataMapping, $errors)) { //from helperFunctions.php
-							echo "review new id = " . $revAssign['review_new_id'] . "\n";
-							$reviewIdOk = true;
-						}
+						// the review assignment was imported, so we need to check if it needs to be updated
 						
-					}
+						
+						
+					}//end of the if the review assignment was already imported
 					else {
-						echo "Failed\n";
-					}
+						// insert the review assignment
+						$arr = array();
+						$arr['data'] = $revAssign;
+						$arr['params'] = array(
+							array('name' => ':revAssign_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_reviewerId', 'attr' => 'reviewer_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_competingInterests', 'attr' => 'competing_interests', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_regretMessage', 'attr' => 'regret_message', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_recommendation', 'attr' => 'recommendation', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_dateAssigned', 'attr' => 'date_assigned', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_dateNotified', 'attr' => 'date_notified', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_dateConfirmed', 'attr' => 'date_confirmed', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_dateCompleted', 'attr' => 'date_completed', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_dateAcknowledged', 'attr' => 'date_acknowledged', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_dateDue', 'attr' => 'date_due', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_reminderAuto', 'attr' => 'reminder_was_automatic', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_declined', 'attr' => 'declined', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_replaced', 'attr' => 'replaced', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_cancelled', 'attr' => 'cancelled', 'type' => PDO::PARAM_STR),
+							array('name' => ':revAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_dateRated', 'attr' => 'date_rated', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_dateReminded', 'attr' => 'date_reminded', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_quality', 'attr' => 'quality', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_reviewRoundId', 'attr' => 'review_round_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_reviewMethod', 'attr' => 'review_method', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_step', 'attr' => 'step', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':revAssign_unconsidered', 'attr' => 'unconsidered', 'type' => PDO::PARAM_INT)
+						);
+						
+						
+						echo "\ninserting review_assignment #" . $revAssign['review_id'] . " ......... "; 
+						
+						if (myExecute('insert', 'review_assignment', $arr, $insertReviewAssignmentSTMT, $errors)) { //from helperFunctions.php
+							echo "Ok\n";
+							
+							if (getNewId('review_assignment', $lastReviewAssignmentsSTMT, $revAssign, $dataMapping, $errors)) { //from helperFunctions.php
+								echo "review new id = " . $revAssign['review_new_id'] . "\n";
+								$reviewIdOk = true;
+							}
+							
+						}
+						else {
+							echo "Failed\n";
+						}
+					}//end of the else block to insert the review_assignment
 					
 				}
 				else {
@@ -2676,7 +2753,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	//////////////////////  END OF THE INSERT STAGE  ////////////////////////////////////////////////////////////////////////////////
 	
-	if ($insertedArticles > 0) {
+	if ($numInsertedArticles > 0) {
 	///////////////////// BEGINNING OF THE UPDATE STAGE  ///////////////////////////////////////////////////////////////////////////
 	
 	$updateArticleSTMT = $conn->prepare('UPDATE articles SET submission_file_id = :updateArticle_submissionFileId, revised_file_id = :updateArticle_revisedFileId, 
@@ -2891,12 +2968,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	////////////////////  END OF THE UPDATE STAGE  /////////////////////////////////////////////////////////////////////////////////
 	
-	}// closing the if insertedArticles > 0
+	}// closing the if numInsertedArticles > 0
 	
 	$returnData = array();
 	$returnData['errors'] = $errors;
 	$returnData['insertedUsers'] = $insertedUsers;
-	$returnData['numInsertedRecords'] = array('articles' => $insertedArticles);
+	$returnData['numInsertedRecords'] = array('articles' => $numInsertedArticles);
 	
 	return $returnData;
 }
