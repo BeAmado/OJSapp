@@ -346,7 +346,7 @@ $tables['review_assignment']['attributes'] = array('review_id', 'submission_id',
 'date_completed', 'date_acknowledged', 'date_due', 'last_modified', 'reminder_was_automatic', 'declined', 'replaced', 'cancelled', 'reviewer_file_id', 'date_rated', 'date_reminded',
 'quality', 'round', 'review_form_id', 'regret_message', 'date_response_due', 'review_method', 'step', 'review_round_id', 'stage_id', 'unconsidered');
 $tables['review_assignment']['primary_keys'] = array('review_id');
-$tables['review_assignment']['foreign_keys'] = array('submission_id', 'reviewer_id', 'review_form_id', 'reviewer_file_id');
+$tables['review_assignment']['foreign_keys'] = array('submission_id', 'reviewer_id', 'review_form_id', 'reviewer_file_id', 'review_round_id');
 $tables['review_assignment']['properties'] = array();
 $tables['review_assignment']['properties']['review_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
 $tables['review_assignment']['properties']['submission_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
