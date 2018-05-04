@@ -1269,7 +1269,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			$articleAlreadyImported = true;
 			
 			echo "\nThe article #" . $article['article_id'] . " was already imported.\n";
-			echo "Its new id is #" . $article['article_new_id'] . "\n";
+			echo "    Its new id is #" . $article['article_new_id'] . "\n";
 		}
 		
 		//validateData('article', $article); //from helperFunctions.php
@@ -1625,6 +1625,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$checkRevisedFileSTMT->bindParam(':checkRev_fileId', $articleFile['file_new_id'], PDO::PARAM_INT);
 						$checkRevisedFileSTMT->bindParam(':checkRev_revision', $articleFile['revision'], PDO::PARAM_INT);
 						
+						
+						$checkError = array('article_file' => $articleFile);
+						
 						if ($checkRevisedFileSTMT->execute()) {
 							
 							if ($fetchedArticleFile = $checkRevisedFileSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -1635,7 +1638,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								$args['notCompare'] = ['file_name','original_file_name', 'source_file_id'];
 								
 								
-								if (same2($articleFile, $fetchedArticleFile, $args)) {
+								if (same2($articleFile, $fetchedArticleFile, $args) > 0) { // from helperFunctions.php function #16
 									// does not need to update
 								}
 								else { // update the article_file
@@ -1702,11 +1705,19 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								}
 								
 							}// end of the if to insert the revised file
+							else {
+								$checkError['error'] = 'Did not fetch the article file which is not a revised file';
+							}
 							
 						}// end of the if checkRevisedFileSTMT executed
 						else {
 							//checkRevisedFileSTMT did not execute
-							//TREAT THE ERROR
+							$checkError['error'] = 'The checkRevisedFileSTMT did not execute';
+							$checkError['stmtError'] = $checkRevisedFileSTMT->errorInfo();
+						}
+						
+						if (array_key_exists('error', $checkError)) {
+							array_push($errors['article_file']['check'], $checkError);
 						}
 						
 					}
@@ -2429,7 +2440,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (array_key_exists($searchObj['object_id'], $dataMapping['object_id'])) {
 					echo "\nThe search object #" . $searchObj['object_id'] . " was already imported\n";
-					echo "Its new id is " . $dataMapping['object_id'][$searchObj['object_id']];
+					echo "    Its new id is " . $dataMapping['object_id'][$searchObj['object_id']];
 					continue; // go to the next edit decision
 				}
 				
@@ -2598,13 +2609,20 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				if (array_key_exists($revRound['review_round_id'], $dataMapping['review_round_id'])) {
 					$revRound['review_round_new_id'] = $dataMapping['review_round_id'][$revRound['review_round_id']];
 					
+					echo "\n    The review_round #" . $revRound['review_round_id'] . " was already imported.\n";
+					echo "        Its new id is #" . $revRound['review_round_new_id'] . "\n";
+					
 					//check if needs to update the review_round
 					$checkRevRoundSTMT->bindParam(':checkRevRound_reviewRoundId', $revRound['review_round_new_id']);
+					
+					$checkError = array('review_round' => $revRound);
+					
 					if ($checkRevRoundSTMT->execute()) {
 						if ($fetchedRevRound = $checkRevRoundSTMT->fetch(PDO::FETCH_ASSOC)) {
 							$compareArgs = array('type' => 'review_round');
-							if (same2($fetchedRevRound, $revRound)) {
+							if (same2($fetchedRevRound, $revRound) > 0) { //from helperFunctions.php function #16
 								// does not need to update
+								echo "    It is already up to date\n";
 							}
 							else { //////// update the review_round /////////////////////////
 								
@@ -2634,12 +2652,17 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						}
 						else {
 							// did not fetch the review round
-							//TREAT THE ERROR
+							$checkError['error'] = 'Did not fetch the review_round';
 						}
 					}
 					else {
 						// did not execute the checkRevRoundSTMT
-						//TREAT THE ERROR
+						$checkError['error'] = 'The checkRevRoundSTMT did not execute';
+						$checkError['stmtError'] = $checkRevRoundSTMT->errorInfo();
+					}
+					
+					if (array_key_exists('error', $checkError)) {
+						array_push($errors['review_round']['check'], $checkError);
 					}
 					
 				}//end of the if the review_roundId is in the dataMapping
@@ -2662,7 +2685,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$numInsertions['review_rounds']++;
 						
 						if (getNewId('review_round', $lastReviewRoundsSTMT, $revRound, $dataMapping, $errors)) { //from helperFunctions.php
-							echo "    review round new id = " . $revRound['review_round_new_id'] . "\n";
+							echo "        review round new id = " . $revRound['review_round_new_id'] . "\n";
 							//$reviewIdOk = true;
 						}
 					}
@@ -2777,8 +2800,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$reviewIdOk = true;
 						$revAssign['review_new_id'] = $dataMapping['review_id'][$revAssign['review_id']];
 						
-						// the review assignment was imported, so we need to check if it needs to be updated
+						echo "\n    The review_assignment #" . $revAssign['review_id'] . " was already imported.\n";
+						echo "        Its new id is #" . $revAssign['review_new_id'] . " \n";
 						
+						// the review assignment was imported, so we need to check if it needs to be updated
+						$checkError = array('review_assignment' => $revAssign);
 						
 						$checkRevAssignSTMT->bindParam(':checkRevAssign_reviewId', $revAssign['review_new_id']);
 						if ($checkRevAssignSTMT->execute()) {
@@ -2786,6 +2812,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								$compareArgs = array('type' => 'review_assignment');
 								if (same2($revAssign, $fetchedRevAssign, $compareArgs) > 0) { // from helperFunctions.php function #16
 									$revAssign['DNU'] = true;
+									echo "    It is already up to date\n";
 								}
 								else {
 									//update the review assignment
@@ -2822,7 +2849,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									);
 									
 									
-									echo "\nupdating review_assignment #" . $revAssign['review_new_id'] . " ......... "; 
+									echo '    updating review_assignment #' . $revAssign['review_new_id'] . ' ......... '; 
 									
 									if (myExecute('update', 'review_assignment', $arr, $updtRevAssignSTMT, $errors)) { //from helperFunctions.php
 										echo "Ok\n";
@@ -2838,12 +2865,17 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							}//end of the if fetched the review assignment	
 							else {
 								// did not fetch any review assignment from the database
-								//TREAT THE ERROR
+								$checkError['error'] = 'Did not fetch the review_assignment';
 							}
 						}//end of the if checkRevAssignSTMT executed
 						else {
 							// the checkRevAssignSTMT did not execute
-							//TREAT THE ERROR
+							$checkError['error'] = 'The checkRevAssignSTMT did not execute';
+							$checkError['stmtError'] = $checkRevAssignSTMT->errorInfo();
+						}
+						
+						if (array_key_exists('error', $checkError)) {
+							array_push($errors['review_assignment']['check'], $checkError);
 						}
 						
 					}//end of the if the review assignment was already imported
@@ -2882,7 +2914,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						);
 						
 						
-						echo "\ninserting review_assignment #" . $revAssign['review_id'] . " ......... "; 
+						echo "\n    inserting review_assignment #" . $revAssign['review_id'] . " ......... "; 
 						
 						if (myExecute('insert', 'review_assignment', $arr, $insertReviewAssignmentSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
@@ -2890,7 +2922,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							$numInsertions['review_assignments'];
 							
 							if (getNewId('review_assignment', $lastReviewAssignmentsSTMT, $revAssign, $dataMapping, $errors)) { //from helperFunctions.php
-								echo "review new id = " . $revAssign['review_new_id'] . "\n";
+								echo "        review new id = " . $revAssign['review_new_id'] . "\n";
 								$reviewIdOk = true;
 							}
 							
@@ -2928,31 +2960,65 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						if ($reviewFormElementIdOk) {
 							
-							echo '        inserting review_form_response with review_form_element_id #' . $revFormResponse['review_form_element_new_id'] . ' and review_id #' . 
-							$revFormResponse['review_new_id'] . ' .................';
+							/*
+							$updtReviewFormResponseSTMT = $conn->prepare('UPDATE review_form_responses 
+		SET response_type = :updtRevFormResp_responseType, response_value = :updtRevFormResp_reponseValue
+		WHERE review_form_element_id = :updtRevFormResp_reviewFormElementId AND review_id = :updtRevFormResp_reviewId');
+	
+	$checkRevFormRespSTMT = $conn->prepare('SELECT * FROM review_form_responses WHERE 
+		review_form_element_id = :checkRevFormResp_reviewFormElementId AND review_id = :checkRevFormResp_reviewId');
+							*/
 							
-							validateData('review_form_response', $revFormResponse); //from helperFunctions.php
+							//check if the review_form_response alreay exists and if needs to be updated
+							$checkRevFormRespSTMT->bindParam(':checkRevFormResp_reviewFormElementId', $revFormResponse['review_form_element_new_id'], PDO::PARAM_INT);
+							$checkRevFormRespSTMT->bindParam(':checkRevFormResp_reviewId', $revFormResponse['review_new_id'], PDO::PARAM_INT);
 							
-							$arr = array();
-							$arr['data'] = $revFormResponse;
-							$arr['params'] = array(
-								array('name' => ':response_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
-								array('name' => ':reponse_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT),
-								array('name' => ':response_responseType', 'attr' => 'response_type', 'type' => PDO::PARAM_STR),
-								array('name' => ':response_reponseValue', 'attr' => 'response_value', 'type' => PDO::PARAM_STR)
-							);
+							$checkError = array('review_form_response' => $revFormResponse);
 							
-							if (myExecute('insert', 'review_form_response', $arr, $insertReviewFormResponseSTMT, $errors)) {  //from helperFunctions.php
-								echo "Ok\n";
-								
-								$numInsertions['review_form_responses']++;
-								
+							if ($checkRevFormRespSTMT->execute()) {
+								if ($fetchedRevFormResponse = $checkRevFormResponseSTMT->fetch(PDO::FETCH_ASSOC)) {
+									
+									//STILL WORKING ON IT
+									
+									
+								}//end of the if fetched the review_form_response
+								else { ///////////////////  insert the review_form_response ///////////////////////////
+									echo '        inserting review_form_response with review_form_element_id #' . $revFormResponse['review_form_element_new_id'] . ' and review_id #' . 
+									$revFormResponse['review_new_id'] . ' .................';
+									
+									validateData('review_form_response', $revFormResponse); //from helperFunctions.php
+									
+									$arr = array();
+									$arr['data'] = $revFormResponse;
+									$arr['params'] = array(
+										array('name' => ':response_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':reponse_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':response_responseType', 'attr' => 'response_type', 'type' => PDO::PARAM_STR),
+										array('name' => ':response_reponseValue', 'attr' => 'response_value', 'type' => PDO::PARAM_STR)
+									);
+									
+									if (myExecute('insert', 'review_form_response', $arr, $insertReviewFormResponseSTMT, $errors)) {  //from helperFunctions.php
+										echo "Ok\n";
+										
+										$numInsertions['review_form_responses']++;
+										
+									}
+									else {
+										echo "Failed\n";
+									}
+								}////////////// end of the else block to insert the review_form_response //////////////
 							}
 							else {
-								echo "Failed\n";
+								$checkError['error'] = 'The checkRevFormResponseSTMT did not execute';
+								$checkError['stmtError'] = $checkRevFormResponseSTMT->errorInfo();
 							}
 							
-						}
+							if (array_key_exists('error', $checkError)) {
+								array_push($errors['review_form_response']['check'], $checkError);
+							}
+							
+							
+						}//end of the if reviewFormElementIdOk
 						
 					}//end of the foreach review_form_response
 					unset($revFormResponse);

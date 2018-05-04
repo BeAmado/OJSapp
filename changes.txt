@@ -1,8 +1,8 @@
 helperFunctions.php - asks for confirmation when choosing a journal
 xml2db.php - adding functionalities:
-	update articles - DONE, including the error treatment
+	update articles - DONE
 	update article files - DONE
 	update review_assignments - DONE
 	update review_rounds - DONE
+	update review_form_responses - WORKING ON IT
 	update review_forms - DONE
-still need to treat the error that might be generated in each one
