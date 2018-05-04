@@ -1211,11 +1211,49 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		'user' => array('insert' => array(), 'update' => array())
 	);	
 	
+	$numInsertions = array(
+		'articles' => 0,
+		'article_settings' => 0,
+		'article_files' => 0,
+		'article_supplementary_files' => 0,
+		'article_supp_file_settings' => 0,
+		'article_notes' => 0,
+		'article_comments' => 0,
+		'article_galleys' => 0,
+		'article_galley_settings' => 0,
+		'article_xml_galleys' => 0,
+		'article_html_galley_images' => 0,
+		'article_search_objects' => 0,
+		'article_search_object_keywords' => 0,
+		'article_search_keyword_list' => 0,
+		'edit_assignments' => 0,
+		'edit_decisions' => 0,
+		'authors' => 0,
+		'author_settings' => 0,
+		'review_assignments' => 0,
+		'review_form_responses' => 0,
+		'review_rounds' => 0,
+	);  
+	
+	$numUpdates = array(
+		'articles' => 0,
+		'article_files' => 0,
+		'article_supplementary_files' => 0,
+		'review_assignments' => 0,
+		'review_form_responses' => 0,
+		'review_rounds' => 0
+	);
+	
 	$numInsertedArticles = 0;
 	$numUpdatedArticles = 0;
 	$numInsertedArticleFiles = 0;
 	$numUpdatedArticleFiles = 0;
 	$numInsertedSuppFiles = 0;
+	$numInsertedArticleComments = 0;
+	$numInsertedArticleGalleys = 0;
+	$numInsertedSearchObjects = 0;
+	$numInsertedEditAssignments = 0;
+	
 	
 	///////////////////  BEGINNING OF THE INSERT STAGE  //////////////////////////////////////////////////////////////////////////
 	
@@ -1226,9 +1264,12 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		$articleAlreadyImported = false;
 		
 		if (array_key_exists($article['article_id'], $dataMapping['article_id'])) {
-			echo "\narticle #" . $article['article_id'] . " was already imported.\n";
+			
 			$article['article_new_id'] = $dataMapping['article_id'][$article['article_id']];
 			$articleAlreadyImported = true;
+			
+			echo "\nThe article #" . $article['article_id'] . " was already imported.\n";
+			echo "Its new id is #" . $article['article_new_id'] . "\n";
 		}
 		
 		//validateData('article', $article); //from helperFunctions.php
@@ -1322,6 +1363,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				//check if need to update the article
 				$checkArticleSTMT->bindParam(':checkArticle_articleId', $article['article_new_id'], PDO::PARAM_INT);
+				
+				$checkError = array('article' => $article);
+				
 				if ($checkArticleSTMT->execute()) {
 					
 					if ($fetchedArticle = $checkArticleSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -1355,9 +1399,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$args['compare'] = 'almost all';
 						$args['notCompare'] = ['submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id'];
 						
-						if (same2($article, $fetchedArticle, $args)) {
+						if (same2($article, $fetchedArticle, $args) > 0) { //from helperFunctions.php function #16
 							
-							if (!$updateArticle) $article['DNU'] = true; // DNU means Do Not Update
+							if (!$updateArticle) {
+								$article['DNU'] = true; // DNU means Do Not Update
+							}
 							
 						}//end of the if same2
 						else { //update the article
@@ -1388,7 +1434,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors)) { //from helperFunctions.php
 								echo "Ok\n";
-								$numUpdatedArticles++;
+								$numUpdates['articles']++;
 							}
 							else {
 								echo "Failed\n";
@@ -1396,11 +1442,20 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 						}
 					}//end of the if fetched the article
+					else {
+						// did not fetch the article
+						$checkError['error'] = 'Did not fetch the article';
+					}
 					
 				}//end of the if checkArticleSTMT executed
 				else {
 					//checkArticleSTMT did not execute
-					//TREAT THE ERROR
+					$checkError['error'] = 'The checkArticleSTMT did not execute';
+					$checkError['stmtError'] = $checkArticleSTMT->errorInfo();
+				}
+				
+				if (array_key_exists('error', $checkError)) {
+					array_push($errors['article']['check'], $checkError);
 				}
 				
 			}
@@ -1433,7 +1488,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (myExecute('insert', 'article', $arr, $insertArticleSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
-					$numInsertedArticles++;
+					$numInsertions['articles']++;
 					
 					$args = array();
 					$args['compare'] = 'almost all';
@@ -1483,6 +1538,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (myExecute('insert', 'article_settings', $arr, $insertArticleSettingsSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
+					$numInsertions['article_settings']++;
 				}
 				else {
 					echo "Failed\n";
@@ -1522,6 +1578,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 				if (myExecute('insert', 'author', $arr, $insertAuthorSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
+					
+					$numInsertions['authors']++;
 					
 					$args = array();
 					$args['compare'] = ['email' => 'email'];
@@ -1600,6 +1658,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									
 									if (myExecute('update', 'article_file', $arr, $updtArticleFileSTMT, $errors)) { //from helperFunctions.php
 										echo "Ok\n";
+										$numUpdates['article_files']++;
 									}
 									else {
 										echo "Failed\n";
@@ -1632,10 +1691,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									array('name' => ':fileRev_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
 								);
 								
-								echo '    inserting article file #' . $articleFile['file_id']. ' revision ' . $articleFile['revision'] .'............ ';
+								echo '    inserting article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .'............ ';
 								
 								if (myExecute('insert', 'article_file', $arr, $insertArticleFileRevisedSTMT, $errors)) { //from helperFunctions.php
 									echo "Ok\n";
+									$numInsertions['article_file']++;
 								}
 								else {
 									echo "Failed\n";
@@ -1674,6 +1734,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						if (myExecute('insert', 'article_file', $arr, $insertArticleFileSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
+							
+							$numInsertions['article_files']++;
+							
 							$args = array();
 							$args['compare'] = 'almost all';
 							$args['notCompare'] = ['file_name','original_file_name', 'source_file_id'];
@@ -1749,6 +1812,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					if (myExecute('insert', 'article_supplementary_file', $arr, $insertArticleSuppFileSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
+						
+						$numInsertions['article_supplementary_files']++;
+						
 						if (getNewId('article_supplementary_file', $lastArticleSuppFilesSTMT, $articleSuppFile, $dataMapping, $errors)) { //from helperFunctions.php
 							echo "    new id = " . $articleSuppFile['supp_new_id'] . "\n\n";
 							$articleSuppFileOk = true;
@@ -1796,6 +1862,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						if (myExecute('insert', 'article_supp_file_settings', $arr, $insertArticleSuppFileSettingSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
+							$numInsertions['article_supp_file_settings']++;
 						}
 						else {
 							echo "Failed\n";
@@ -1887,6 +1954,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					if (myExecute('insert', 'article_comment', $arr, $insertArticleCommentSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
+						
+						$numInsertions['article_comments']++;
+						
 						if (getNewId('article_comment', $lastArticleCommentsSTMT, $articleComment, $dataMapping, $errors)) { //from helperFunctions.php
 							echo "    new id = " . $articleComment['comment_new_id'] . "\n\n";
 							$articleCommentOk = true;
@@ -1985,6 +2055,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					if (myExecute('insert', 'article_galley', $arr, $insertArticleGalleySTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
+						
+						$numInsertions['article_galleys']++;
+						
 						if (getNewId('article_galley', $lastArticleGalleysSTMT, $articleGalley, $dataMapping, $errors)) { //from helperFunctions.php
 							echo "    new id = " . $articleGalley['galley_new_id'] . "\n\n";
 							$articleGalleyOk = true;
@@ -2026,6 +2099,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						if (myExecute('insert', 'article_galley_settings', $arr, $insertArticleGalleySettingSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
+							$numInsertions['article_galley_settings']++;
 						}
 						else {
 							echo "Failed\n";
@@ -2072,6 +2146,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							if (myExecute('insert', 'article_xml_galley', $arr, $insertArticleXmlGalleySTMT, $errors)) { //from helperFunctions.php
 								echo "Ok\n";
+								
+								$numInsertions['article_xml_galleys']++;
+								
 								if (getNewId('article_xml_galley', $lastArticleXmlGalleysSTMT, $xmlGalley, $dataMapping, $errors)) { //from helperFunctions.php
 									echo "    new id = " . $articleGalley['xml_galley_new_id'] . "\n\n";
 									$xmlGalleyOk = true;
@@ -2124,6 +2201,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							if (myExecute('insert', 'article_html_galley_image', $arr, $insertArticleHtmlGalleyImageSTMT, $errors)) { //from helperFunctions.php
 								echo "Ok\n";
+								
+								$numInsertions['article_html_galley_images']++;
+								
 							}
 							else {
 								echo "Failed\n";
@@ -2224,6 +2304,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					if (myExecute('insert', 'edit_decision', $arr, $insertEditDecisionSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
+						
+						$numInsertions['edit_decisions']++; // increment the number of inserted edit_decisions
+						
 						if (getNewId('edit_decision', $lastEditDecisionsSTMT, $editDecision, $dataMapping, $errors)) { //from helperFunctions.php
 							echo "    new id = " . $editDecision['edit_decision_new_id'] . "\n\n";
 							$editDecisionOk = true;
@@ -2314,6 +2397,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					
 					if (myExecute('insert', 'edit_assignment', $arr, $insertEditAssignmentSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
+						
+						$numInsertions['edit_assignments']++; // increment the number of inserted edit_assignments
+						
 						if (getNewId('edit_assignment', $lastEditAssignmentsSTMT, $editAssignment, $dataMapping, $errors)) { //from helperFunctions.php
 							echo "    new id = " . $editAssignment['edit_new_id'] . "\n\n";
 							$editAssignmentOk = true;
@@ -2366,6 +2452,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (myExecute('insert', 'article_search_object', $arr, $insertArticleSearchObjectSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
+					
+					$numInsertions['article_search_objects']++; // increment the number of inserted article_search_objects
+					
 					if (getNewId('article_search_object', $lastArticleSearchObjectsSTMT, $searchObj, $dataMapping, $errors)) { //from helperFunctions.php
 						echo "    new id = " . $searchObj['object_new_id'] . "\n\n";
 						$searchObjOk = true;
@@ -2411,6 +2500,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 										
 										if (myExecute('insert', 'article_search_keyword_list', $arr, $insertArticleSearchKeywordListSTMT, $errors)) { //from helperFunctions.php
 											echo "Ok\n";
+											
+											$numInsertions['article_search_keyword_list']++;
+											
 											if (getNewId('article_search_keyword_list', $lastArticleSearchKeywordListsSTMT, $keyword, $dataMapping, $errors)) { //from helperFunctions.php
 												echo "        new id = " . $keyword['keyword_new_id'] . "\n\n";
 												//$keywordIdOk = true;
@@ -2459,6 +2551,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								
 								if (myExecute('insert', 'article_search_object_keyword', $arr, $insertArticleSearchObjectKeywordSTMT, $errors)) {  //from helperFunctions.php
 									echo "Ok\n";
+									
+									$numInsertions['article_search_object_keywords']++;
+									
 								}
 								else {
 									echo "Failed\n";
@@ -2498,33 +2593,83 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			foreach ($article['review_rounds'] as &$revRound) {
 				
 				$revRound['submission_new_id'] = $article['article_new_id'];
-				
 				validateData('review_round', $revRound); //from helperFunctions.php
 				
-				echo '    inserting review_round #' . $revRound['review_round_id'] . ' .................';
+				if (array_key_exists($revRound['review_round_id'], $dataMapping['review_round_id'])) {
+					$revRound['review_round_new_id'] = $dataMapping['review_round_id'][$revRound['review_round_id']];
+					
+					//check if needs to update the review_round
+					$checkRevRoundSTMT->bindParam(':checkRevRound_reviewRoundId', $revRound['review_round_new_id']);
+					if ($checkRevRoundSTMT->execute()) {
+						if ($fetchedRevRound = $checkRevRoundSTMT->fetch(PDO::FETCH_ASSOC)) {
+							$compareArgs = array('type' => 'review_round');
+							if (same2($fetchedRevRound, $revRound)) {
+								// does not need to update
+							}
+							else { //////// update the review_round /////////////////////////
+								
+								echo '    updating review_round #' . $revRound['review_round_new_id'] . ' .................';
 				
-				$arr = array();
-				$arr['data'] = $revRound;
-				$arr['params'] = array(
-					array('name' => ':revRound_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
-					array('name' => ':revRound_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
-					array('name' => ':revRound_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
-					array('name' => ':revRound_reviewRevision', 'attr' => 'review_revision', 'type' => PDO::PARAM_INT),
-					array('name' => ':revRound_status', 'attr' => 'status', 'type' => PDO::PARAM_INT)
-				);
-				
-				if (myExecute('insert', 'review_round', $arr, $insertReviewRoundSTMT, $errors)) {  //from helperFunctions.php
-					echo "Ok\n";
-					if (getNewId('review_round', $lastReviewRoundsSTMT, $revRound, $dataMapping, $errors)) { //from helperFunctions.php
-						echo "    review round new id = " . $revRound['review_round_new_id'] . "\n";
-						//$reviewIdOk = true;
+								$arr = array();
+								$arr['data'] = $revRound;
+								$arr['params'] = array(
+									array('name' => ':updtRevRound_reviewRoundId', 'attr' => 'review_round_new_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevRound_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevRound_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevRound_reviewRevision', 'attr' => 'review_revision', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevRound_status', 'attr' => 'status', 'type' => PDO::PARAM_INT)
+								);
+								
+								if (myExecute('update', 'review_round', $arr, $updtRevRoundSTMT, $errors)) {  //from helperFunctions.php
+									echo "Ok\n";
+									
+									$numUpdates['review_rounds']++;
+									
+								}
+								else {
+									echo "Failed\n";
+								}
+								
+							}//// end of the else block to update the review_round //////////
+						}
+						else {
+							// did not fetch the review round
+							//TREAT THE ERROR
+						}
 					}
-				}
-				else {
-					echo "Failed\n";
-				}
+					else {
+						// did not execute the checkRevRoundSTMT
+						//TREAT THE ERROR
+					}
+					
+				}//end of the if the review_roundId is in the dataMapping
+				else { /// insert the review_round ////////////////////////
+					echo '    inserting review_round #' . $revRound['review_round_id'] . ' .................';
 				
-				
+					$arr = array();
+					$arr['data'] = $revRound;
+					$arr['params'] = array(
+						array('name' => ':revRound_submissionId', 'attr' => 'submission_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revRound_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':revRound_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+						array('name' => ':revRound_reviewRevision', 'attr' => 'review_revision', 'type' => PDO::PARAM_INT),
+						array('name' => ':revRound_status', 'attr' => 'status', 'type' => PDO::PARAM_INT)
+					);
+					
+					if (myExecute('insert', 'review_round', $arr, $insertReviewRoundSTMT, $errors)) {  //from helperFunctions.php
+						echo "Ok\n";
+						
+						$numInsertions['review_rounds']++;
+						
+						if (getNewId('review_round', $lastReviewRoundsSTMT, $revRound, $dataMapping, $errors)) { //from helperFunctions.php
+							echo "    review round new id = " . $revRound['review_round_new_id'] . "\n";
+							//$reviewIdOk = true;
+						}
+					}
+					else {
+						echo "Failed\n";
+					}
+				} //// end of the else block to insert the review_round
 				
 			}//end of the foreach review_round
 			unset($revRound);
@@ -2545,6 +2690,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				$reviewerIdOk = false;
 				$reviewFormIdOk = false;
 				$reviewerFileIdOk = false;
+				$reviewRoundIdOk = false;
 				
 				$reviewIdOk = false; // variable to control if the review_form_response can be inserted
 				
@@ -2554,6 +2700,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				$revAssign['submission_new_id'] = $article['article_new_id'];
 				
+				////////////////// check the reviewer_file_id /////////////////////////////////////////////////////////////////////////////////////
 				if ($revAssign['reviewer_file_id'] === null) {
 					$reviewerFileIdOk = true;
 				}
@@ -2563,12 +2710,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						$reviewerFileIdOk = true;
 					}
 					else {
-						$error['reviewer_file_id'] = ['reviewer_file_id' => $revAssign['reviewer_file_id'], 'error' => 'reviewer_file_id not in dataMapping.'];
+						$error['reviewer_file_id'] = ['reviewer_file_id' => $revAssign['reviewer_file_id'], 'error' => 'this reviewer_file_id not in the dataMapping.'];
 						//echo "\nreviewer_file_id not ok\n";
 					}
 				}
+				///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				
-				
+				/////////////////// check the reviewer_id //////////////////////////////////////////////////////////////////////////////////////////////
 				if (array_key_exists($revAssign['reviewer_id'], $dataMapping['reviewer_id'])) {
 					$revAssign['reviewer_new_id'] = $dataMapping['reviewer_id'][$revAssign['reviewer_id']];
 					$reviewerIdOk = true;
@@ -2592,7 +2740,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						//echo "\nreviewer_id not ok\n";
 					}
 				}
+				//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 				
+				/////////////////// check the review_form_id /////////////////////////////////////////////////////
 				if ($revAssign['review_form_id'] === null) {
 					$revAssign['review_form_new_id'] = null;
 					$reviewFormIdOk = true;
@@ -2602,11 +2752,26 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$reviewFormIdOk = true;
 				}
 				else {
-					$error['review_form_id'] = array('review_form_id' => $revAssign['review_form_id'], 'error' => 'review_form_id not in dataMapping.');
+					$error['review_form_id'] = array('review_form_id' => $revAssign['review_form_id'], 'error' => 'this review_form_id not in the dataMapping.');
 					//echo "\nreview_form_id not ok\n";
 				}
+				///////////////////////////////////////////////////////////////////////////////////////////////////
 				
-				if ($reviewerIdOk && $reviewFormIdOk && $reviewerFileIdOk) {
+				//////////// check the review_round_id  /////////////////////////////////////
+				if ($revAssign['review_round_id'] === null) {
+					$revAssign['review_round_new_id'] = null;
+					$reviewRoundIdOk = true;
+				}
+				else if (array_key_exists($revAssign['review_round_id'], $dataMapping['review_round_id'])) {
+					$revAssign['review_round_new_id'] = $dataMapping['review_round_id'][$revAssign['review_round_id']];
+					$reviewRoundIdOk = true;
+				}
+				else {
+					$error['review_round_id'] = array('review_round_id' => $revAssign['review_round_id'], 'error' => 'this review_round_id is not in the dataMapping.');
+				}
+				/////////////////////////////////////////////////////////////////////////////
+				
+				if ($reviewerIdOk && $reviewFormIdOk && $reviewerFileIdOk && $reviewRoundIdOk) {
 					
 					if (array_key_exists($revAssign['review_id'], $dataMapping['review_id'])) {
 						$reviewIdOk = true;
@@ -2646,7 +2811,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 										array('name' => ':updtRevAssign_dateRated', 'attr' => 'date_rated', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_dateReminded', 'attr' => 'date_reminded', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_quality', 'attr' => 'quality', 'type' => PDO::PARAM_INT),
-										array('name' => ':updtRevAssign_reviewRoundId', 'attr' => 'review_round_id', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtRevAssign_reviewRoundId', 'attr' => 'review_round_new_id', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_stageId', 'attr' => 'stage_id', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_reviewMethod', 'attr' => 'review_method', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
@@ -2661,6 +2826,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									
 									if (myExecute('update', 'review_assignment', $arr, $updtRevAssignSTMT, $errors)) { //from helperFunctions.php
 										echo "Ok\n";
+										
+										$numUpdates['review_assignments']++;
+										
 									}
 									else {
 										echo "Failed\n";
@@ -2719,6 +2887,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						if (myExecute('insert', 'review_assignment', $arr, $insertReviewAssignmentSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
 							
+							$numInsertions['review_assignments'];
+							
 							if (getNewId('review_assignment', $lastReviewAssignmentsSTMT, $revAssign, $dataMapping, $errors)) { //from helperFunctions.php
 								echo "review new id = " . $revAssign['review_new_id'] . "\n";
 								$reviewIdOk = true;
@@ -2774,6 +2944,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							
 							if (myExecute('insert', 'review_form_response', $arr, $insertReviewFormResponseSTMT, $errors)) {  //from helperFunctions.php
 								echo "Ok\n";
+								
+								$numInsertions['review_form_responses']++;
+								
 							}
 							else {
 								echo "Failed\n";
@@ -2810,7 +2983,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	//////////////////////  END OF THE INSERT STAGE  ////////////////////////////////////////////////////////////////////////////////
 	
-	if ($numInsertedArticles > 0) {
+	if ($numInsertions['articles'] > 0) {
 	///////////////////// BEGINNING OF THE UPDATE STAGE  ///////////////////////////////////////////////////////////////////////////
 	
 	$updateArticleSTMT = $conn->prepare('UPDATE articles SET submission_file_id = :updateArticle_submissionFileId, revised_file_id = :updateArticle_revisedFileId, 
@@ -2819,9 +2992,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$updateArticleFileSTMT = $conn->prepare('UPDATE article_files SET source_file_id = :updateFile_sourceFileId, file_name = :updateFile_fileName, 
 		original_file_name = :updateFile_originalFileName WHERE file_id = :updateFile_fileId AND revision = :updateFile_revision');
 	
-	$updateRevAssignSTMT = $conn->prepare('UPDATE review_assignments SET 
+	/*$updateRevAssignSTMT = $conn->prepare('UPDATE review_assignments SET 
 		reviewer_file_id = :updateRevAssign_reviewerFileId, review_round_id = :updateRevAssign_reviewRoundId 
-		WHERE review_id = :updateRevAssign_reviewId');
+		WHERE review_id = :updateRevAssign_reviewId');*/
 	
 	//loop through every article to update data to the correct ones in the database
 	foreach($unpubArticles as &$article) {
@@ -2875,6 +3048,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			if (myExecute('update', 'article', $arr, $updateArticleSTMT, $errors)) { //from helperFunctions.php
 				echo "Ok\n";
+				
+				$numUpdates['articles']++;
+				
 			}
 			else {
 				echo "Failed\n";
@@ -2964,6 +3140,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (myExecute('update', 'article_file', $arr, $updateArticleFileSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
+					
+					$numUpdates['article_files']++;
 				}
 				else {
 					echo "Failed\n";
@@ -2975,7 +3153,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		}//closing the if article_files exist
 		
 		//update reviewer file id
-		if (array_key_exists('review_assignments', $article)) { if (!empty($article['review_assignments']) && $article['review_assignments'] != null) {
+		/*if (array_key_exists('review_assignments', $article)) { if (!empty($article['review_assignments']) && $article['review_assignments'] != null) {
 		foreach($article['review_assignments'] as &$revAssign) { 
 			
 			if (array_key_exists('DNU', $revAssign)) { if ($revAssign['DNU']) {
@@ -3031,17 +3209,34 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		unset($revAssign);
 		}//closing the if review_assignments is empty
 		}//closing the if review_assignments exist
+		///////////// end of update review_assignments
+		*/
 	}//end of the foreach unpubArticles
 	unset($article);
 	
 	////////////////////  END OF THE UPDATE STAGE  /////////////////////////////////////////////////////////////////////////////////
 	
-	}// closing the if numInsertedArticles > 0
+	}// closing the if numInsertions['articles'] > 0
 	
-	$returnData = array();
-	$returnData['errors'] = $errors;
+	$returnData = array(
+		'errors' => $errors, 
+		'insertedUsers' => $insertedUsers, 
+		'numInsertedRecords' => $numInsertions, 
+		'numUpdatedRecords' => $numUpdates
+	);
+	
+	/*$returnData['errors'] = $errors;
 	$returnData['insertedUsers'] = $insertedUsers;
-	$returnData['numInsertedRecords'] = array('articles' => $numInsertedArticles);
+	$returnData['numInsertedRecords'] = array(
+		'articles' => $numInsertedArticles, 
+		'article_files' => $numInsertedArticleFiles, 
+		'article_supplementary_files' => $numInsertedSuppFiles
+	);
+	$returnData['numUpdatedRecords'] = array(
+		'articles' => $numUpdatedArticles, 
+		'article_files' => $numUpdatedArticleFiles
+	);*/
+	
 	
 	return $returnData;
 }
@@ -3511,6 +3706,14 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 		 VALUES (:rfSettings_reviewFormId, :rfSettings_locale, :rfSettings_settingName, :rfSettings_settingValue, :rfSettings_settingType)'
 	);
 	
+	$checkReviewFormSTMT = $conn->prepare('SELECT * FROM review_forms WHERE review_form_id = :checkRevForm_reviewFormId');
+	
+	$updtReviewFormSTMT = $conn->prepare('UPDATE review_forms SET 
+		seq = :updtReviewForm_seq, is_active = :updtReviewForm_isActive
+		WHERE review_form_id = :updtReviewForm_reviewFormId'
+	);
+	
+	// review_form_elements
 	$insertReviewFormElementSTMT = $conn->prepare(
 		'INSERT INTO review_form_elements (review_form_id, seq, element_type, required, included)
 		 VALUES (:rfElement_reviewFormId, :rfElement_seq, :rfElement_elementType, :rfElement_required, :rfElement_included)'
@@ -3521,6 +3724,15 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 	$insertReviewFormElementSettingsSTMT = $conn->prepare(
 		'INSERT INTO review_form_element_settings (review_form_element_id, locale, setting_name, setting_value, setting_type) 
 		 VALUES (:rfElemSettings_reviewFormElementId, :rfElemSettings_locale, :rfElemSettings_settingName, :rfElemSettings_settingValue, :rfElemSettings_settingType)'
+	);
+	
+	$checkRevFormElemSTMT = $conn->prepare('SELECT * FROM review_form_elements WHERE review_form_element_id = :checkRevFormElem_reviewFormElementId');
+	
+	$updtRevFormElemSTMT = $conn->prepare(
+		'UPDATE review_form_elements SET
+		seq = :updtRevFormElem_seq, element_type = :updtRevFormElem_elementType,
+		required = :updtRevFormElem_required, included = :updtRevFormElem_included
+		WHERE review_form_element = :updtRevFormElem_reviewFormElementId'
 	);
 	
 	//////////////////////////////////////////////////////////////////////////////////////
@@ -3535,50 +3747,118 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 	}
 	
 	$errors = array(
-		'review_form' => array('insert' => array(), 'update' => array()),
+		'review_form' => array('insert' => array(), 'update' => array(), 'check' => array()),
 		'review_form_settings' => array('insert' => array(), 'update' => array()),
-		'review_form_element' => array('insert' => array(), 'update' => array()),
+		'review_form_element' => array('insert' => array(), 'update' => array(), 'check' => array()),
 		'review_form_element_settings' => array('insert' => array(), 'update' => array() )
 	);
 	
 	$reviewForms = xmlToArray($review_forms_node, true); //from helperFunctions.php
 	
-	$numInsertedReviewForms = 0;
+	$numInsertions = array(
+		'review_forms' => 0,
+		'review_form_settings' => 0,
+		'review_form_elements' => 0,
+		'review_form_element_settings' => 0
+	);
+	
+	$numUpdates = array(
+		'review_forms' => 0, 
+		'review_form_elements' => 0
+	);
 	
 	foreach ($reviewForms as &$revForm) {
 		
-		if (array_key_exists($revForm['review_form_id'], $dataMapping['review_form_id'])) {
-			echo "\nreview_form #" . $revForm['review_form_id'] . " was already imported.\n";
-			continue; // go to the next review_form
-		}
-		
 		$reviewFormOk = false;
-		$revForm['assoc_new_id'] = $journalNewId;
-		
 		validateData('review_form', $revForm); //from helperFunctions.php
 		
-		$arr = array();
-		$arr['data'] = $revForm;
-		$arr['params'] = array(
-			array('name' => ':assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
-			array('name' => ':seq', 'attr' => 'seq'),
-			array('name' => ':isActive', 'attr' => 'is_active', 'type' => PDO::PARAM_INT),
-			array('name' => ':assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT)
-		);
-		
-		echo '    inserting review_form #' . $revForm['review_form_id']. '............ ';
-		
-		if (myExecute('insert', 'review_form', $arr, $insertReviewFormSTMT, $errors)) { //from helperFunctions.php
-			echo "Ok\n";
-			if (getNewId('review_form', $lastReviewFormsSTMT, $revForm, $dataMapping, $errors)) { //from helperFunctions.php
-				echo "    new id = " . $revForm['review_form_new_id'] . "\n\n";
-				$reviewFormOk = true;
-				$numInsertedReviewForms++;
+		if (array_key_exists($revForm['review_form_id'], $dataMapping['review_form_id'])) {
+			
+			$reviewFormOk = true;
+			$revForm['review_form_new_id'] = $dataMapping['review_form_id'][$revForm['review_form_id']];
+			echo "\nThe review_form #" . $revForm['review_form_id'] . " was already imported.\n";
+			echo "Its new id is #" . $revForm['review_form_new_id'] . "\n";
+			
+			$checkError = array('review_form' => $revForm);
+			
+			//check if need to update the review_form
+			$checkReviewFormSTMT->bindParam(':checkRevForm_reviewFormId', $revForm['review_form_new_id'], PDO::PARAM_INT);
+			if ($checkReviewFormSTMT->execute()) {
+				
+				if ($fetchedRevForm = $checkReviewFormSTMT->fetch(PDO::FETCH_ASSOC)) {
+					$compareArgs = array('type' => 'review_form');
+					if (same2($fetchedRevForm, $revForm, $compareArgs) > 0) { // from helperFunctions.php function #16
+						// do not need to update
+						echo "It is already up to date\n";
+					}
+					else { ///// update the review_form /////////////////////////
+						
+						$arr = array();
+						$arr['data'] = $revForm;
+						$arr['params'] = array(
+							array('name' => ':updtRevForm_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtRevForm_seq', 'attr' => 'seq'),
+							array('name' => ':updtRevForm_isActive', 'attr' => 'is_active', 'type' => PDO::PARAM_INT)
+						);
+						
+						echo '    updating review_form #' . $revForm['review_form_new_id']. '............ ';
+						
+						if (myExecute('update', 'review_form', $arr, $updtReviewFormSTMT, $errors)) { //from helperFunctions.php
+							echo "Ok\n";
+							$numUpdates['review_forms']++;
+						}
+						else {
+							echo "Failed\n";
+						}
+						
+					}//// end of the else block to update the review_form ///////
+				}
+				else {
+					// did not fetch the review_form
+					$checkError['error'] = 'Did not fetch the review_form';
+				}
+				
+			}//end of the if checkReviewFormSTMT executed
+			else {
+				// the checkReviewFormSTMT did not execute
+				$checkError['error'] = 'The checkReviewFormSTMT did not execute';
+				$checkError['stmtError'] = $checkReviewFormSTMT->errorInfo();
 			}
-		}
-		else {
-			echo "Failed\n";
-		}
+			
+			if (array_key_exists('error', $checkError)) {
+				array_push($errors['review_form']['check'], $checkError);
+			}
+			
+		}// end of the if review_form_id in the dataMapping
+		else { ///// insert the review_form
+			$reviewFormOk = false;
+			$revForm['assoc_new_id'] = $journalNewId;
+			
+			$arr = array();
+			$arr['data'] = $revForm;
+			$arr['params'] = array(
+				array('name' => ':assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':seq', 'attr' => 'seq'),
+				array('name' => ':isActive', 'attr' => 'is_active', 'type' => PDO::PARAM_INT),
+				array('name' => ':assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT)
+			);
+			
+			echo '    inserting review_form #' . $revForm['review_form_id']. '............ ';
+			
+			if (myExecute('insert', 'review_form', $arr, $insertReviewFormSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n";
+				$numInsertions['review_forms']++;
+				if (getNewId('review_form', $lastReviewFormsSTMT, $revForm, $dataMapping, $errors)) { //from helperFunctions.php
+					echo "    new id = " . $revForm['review_form_new_id'] . "\n\n";
+					$reviewFormOk = true;
+				}
+			}
+			else {
+				echo "Failed\n";
+			}
+		}///// end of the else block to insert the review_form
+		
+		
 		
 		if ($reviewFormOk) {
 			////////// insert the review_form settings ///////////////////////////////
@@ -3602,6 +3882,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 					
 					if (myExecute('insert', 'review_form_settings', $arr, $insertReviewFormSettingsSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
+						$numInsertions['review_form_settings']++;
 					}
 					else {
 						echo "Failed\n";
@@ -3626,29 +3907,94 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 				validateData('review_form_element', $element); 
 				
 				$element['review_form_new_id'] = $revForm['review_form_new_id'];
-				echo '    inserting review form element #'. $element['review_form_element_id'] . ' .........';
 				
-				$arr = array();
-				$arr['data'] = $element;
-				$arr['params'] = array(
-					array('name' => ':rfElement_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
-					array('name' => ':rfElement_seq', 'attr' => 'seq'),
-					array('name' => ':rfElement_required', 'attr' => 'required', 'type' => PDO::PARAM_INT),
-					array('name' => ':rfElement_included', 'attr' => 'included', 'type' => PDO::PARAM_INT),
-					array('name' => ':rfElement_elementType', 'attr' => 'element_type', 'type' => PDO::PARAM_INT)
-				);
-	
-				if (myExecute('insert', 'review_form_element', $arr, $insertReviewFormElementSTMT, $errors)) { //from helperFunctions.php
-					echo "Ok\n";
-					if (getNewId('review_form_element', $lastReviewFormElementsSTMT, $element, $dataMapping, $errors)) { //from helperFunctions.php
-						echo "    new id = " . $element['review_form_element_new_id'] . "\n\n";
-						$reviewFormElementOk = true;
+				if (array_key_exists($element['review_form_element_id'], $dataMapping['review_form_element_id'])) {
+					
+					$element['review_form_element_new_id'] = $dataMapping['review_form_element_id'][$element['review_form_element_id']];
+					
+					echo "\nThe review_form_element #" . $element['review_form_element_id'] . " was already imported\n";
+					echo "\nIts new id is #" . $element['review_form_element_id'] . "\n" ;
+					
+					
+					//check if needs to update the review_form_element /////////
+					$checkRevFormElemSTMT->bindParam(':checkRevFormElem_reviewFormElementId', $element['review_form_element_new_id'], PDO::PARAM_INT);
+					
+					$checkError = array('review_form_element' => $element);
+					
+					if ($checkRevFormElemSTMT->execute()) {
+						if ($fetchedElement = $checkRevFormElemSTMT->fetch(PDO::FETCH_ASSOC)) {
+							$compareArgs = array('type' => 'review_form_element');
+							if (same2($fetchedElement, $element, $compareArgs) > 0) { //from helperFunctions.php function #16
+								//does not need to update
+								echo "It is already up to date\n";
+							}
+							else { ////// update the review_form_element  /////////////////////////////
+								
+								echo '    updating review form element #'. $element['review_form_element_new_id'] . ' .........';
+					
+								$arr = array();
+								$arr['data'] = $element;
+								$arr['params'] = array(
+									array('name' => ':updtRevFormElem_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevFormElem_seq', 'attr' => 'seq'),
+									array('name' => ':updtRevFormElem_required', 'attr' => 'required', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevFormElem_included', 'attr' => 'included', 'type' => PDO::PARAM_INT),
+									array('name' => ':updtRevFormElem_elementType', 'attr' => 'element_type', 'type' => PDO::PARAM_INT)
+								);
+					
+								if (myExecute('update', 'review_form_element', $arr, $updtRevFormElementSTMT, $errors)) { //from helperFunctions.php
+									echo "Ok\n";
+									$numUpdates['review_form_elements']++;
+								}
+								else {
+									echo "Failed\n";
+								}
+								
+							}/// end of the else block to update the review_form_element //////////////
+						}
+						else {
+							//did not fetch the review_form_element
+							$checkError['error'] = 'Did not fetch the review_form_element';
+						}
 					}
-				}
-				else {
-					echo "Failed\n";
-				}
+					else {
+						// did not execute the checkRevFormElemSTMT
+						$checkError['error'] = 'The checkRevFormElemSTMT did not execute';
+						$checkError['stmtError'] = $checkRevFormElemSTMT->errorInfo();
+					}
+					
+					if (array_key_exists('error', $checkError)) {
+						array_push($errors['review_form_element']['check'], $checkError);
+					}
+	
+				}//end of the if review_form_element_id in the dataMapping
+				else { ////////// insert the review_form_element //////////////////////////
+					
+					echo '    inserting review form element #'. $element['review_form_element_id'] . ' .........';
+					
+					$arr = array();
+					$arr['data'] = $element;
+					$arr['params'] = array(
+						array('name' => ':rfElement_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
+						array('name' => ':rfElement_seq', 'attr' => 'seq'),
+						array('name' => ':rfElement_required', 'attr' => 'required', 'type' => PDO::PARAM_INT),
+						array('name' => ':rfElement_included', 'attr' => 'included', 'type' => PDO::PARAM_INT),
+						array('name' => ':rfElement_elementType', 'attr' => 'element_type', 'type' => PDO::PARAM_INT)
+					);
+		
+					if (myExecute('insert', 'review_form_element', $arr, $insertReviewFormElementSTMT, $errors)) { //from helperFunctions.php
+						echo "Ok\n";
+						$numInsertions['review_form_element']++;
+						if (getNewId('review_form_element', $lastReviewFormElementsSTMT, $element, $dataMapping, $errors)) { //from helperFunctions.php
+							echo "    new id = " . $element['review_form_element_new_id'] . "\n\n";
+							$reviewFormElementOk = true;
+						}
+					}
+					else {
+						echo "Failed\n";
+					}
 				
+				}//// end of the else block to insert the review_form_element  ////////////
 				
 				if ($reviewFormElementOk) {
 					////////// insert the review_form settings ///////////////////////////////
@@ -3672,6 +4018,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 						
 						if (myExecute('insert', 'review_form_element_settings', $arr, $insertReviewFormElementSettingsSTMT, $errors)) { //from helperFunctions.php
 							echo "Ok\n";
+							$numInsertions['review_form_element_settings']++;
 						}
 						else {
 							echo "Failed\n";
@@ -3697,9 +4044,9 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 	}//end of the foreach reviewForm	
 	unset($revForm);
 	
-	$returnData = array();
-	$returnData['errors'] = $errors;
-	$returnData['numInsertedRecords'] = array('reviewForms' => $numInsertedReviewForms);
+	$returnData = array('errors' => $errors, 'numInsertedRecords' => $numInsertions, 'numUpdatedRecords' => $numUpdates);
+	/*$returnData['errors'] = $errors;
+	$returnData['numInsertedRecords'] = array('reviewForms' => $numInsertedReviewForms);*/
 	
 	return $returnData;
 	
