@@ -4,5 +4,7 @@ xml2db.php - adding functionalities:
 	update article files - DONE
 	update review_assignments - DONE
 	update review_rounds - DONE
-	update review_form_responses - WORKING ON IT
+	update review_form_responses - DONE
 	update review_forms - DONE
+
+now I have to make the updateSection function check if the section needs to be updated

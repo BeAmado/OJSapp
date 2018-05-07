@@ -196,9 +196,11 @@ function chooseJournal($conn) {
 			echo $journal["journal_id"] . " - " . $journal["path"] . "\n";
 		}
 		
+		//print_r($journals);
+		
 		$journalId = readline("\nEnter the id of the journal wanted: ");
 		echo "\n";
-		$userResponse = strtolower(readline('You chose ' . $journals[$journalId] . '. Do you confirm your choice? (y/N) : '));
+		$userResponse = strtolower(readline('You chose ' . $journals[$journalId]['path'] . '. Do you confirm your choice? (y/N) : '));
 	} while ($userResponse !== 'y' && $userResponse !== 'yes');
 	
 	return getJournalFromArray($journals, $journalId);

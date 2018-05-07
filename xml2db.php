@@ -238,18 +238,19 @@ function getSectionById($conn, $sectionId) {
 /**
 description here
 */
-function getSectionByAbbrev($conn, $journalId, $abbrev, $fetchSettings = false) {
+function getSectionByAbbrev($conn, $journalId, $abbrev, $locale, $fetchSettings = false) {
 	
 	$getSection = $conn->prepare('SELECT * FROM sections WHERE section_id = :sectionId');
 	$getSettings = $conn->prepare('SELECT * FROM section_settings WHERE section_id = :settings_sectionId');
 	
 	
 	$abbrevSTMT = $conn->prepare('SELECT * FROM section_settings WHERE 
-		setting_name="abbrev" AND setting_value=:abbrev AND section_id IN (
+		setting_name="abbrev" AND setting_value=:abbrev AND locale=:locale AND section_id IN (
 			SELECT section_id FROM sections WHERE journal_id=:journalId
 		)');
 	
 	$abbrevSTMT->bindParam(':abbrev', $abbrev, PDO::PARAM_STR);
+	$abbrevSTMT->bindParam(':locale', $locale, PDO::PARAM_STR);
 	$abbrevSTMT->bindParam(':journalId', $journalId, PDO::PARAM_STR);
 	
 	if ($abbrevSTMT->execute()) { // I	
@@ -349,14 +350,14 @@ function getSectionBySetting($conn, $journalId, $locale, $settingName, $settingV
 			return $section;
 			
 		}// IV - closing the if getSection fetch
-		/*else {
+		else {
 			echo "\ngetSection did not fetch\n";
-		}*/
+		}
 		}// III - closing the if getSection execute
-		/*else {
+		else {
 			echo "\nDid not execute the getSection\n";
 			print_r($getSection->errorInfo());
-		}*/
+		}
 		
 	}// II - closing the if stmt fetch
 	/*else {
@@ -544,6 +545,8 @@ function to update or insert new data to the section already in the database
 */
 function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 	
+	validateData('section', $section);
+	
 	$reviewFormNewId = null;
 	$results = array('section' => null, 'section_settings' => null);
 	
@@ -626,6 +629,10 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 			
 			if ($setting['setting_value'] !== '' && $setting['setting_value'] !== null) {
 				
+				//fill the selectSectionSettingSTMT
+				$selectSectionSettingSTMT->bindParam(':selectSetting_locale', $setting['locale'], PDO::PARAM_STR);
+				$selectSectionSettingSTMT->bindParam(':selectSetting_settingName', $setting['setting_name'], PDO::PARAM_STR);
+				
 				if ($selectSectionSettingSTMT->execute()) {
 					if ($dbSectionSetting = $selectSectionSettingSTMT->fetch(PDO::FETCH_ASSOC)) {
 						
@@ -637,7 +644,7 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 							$updateSectionSettingSTMT->bindParam(':updateSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
 							
 							if ($updateSectionSettingSTMT->execute()) {
-								if ($updateSectionSettinSTMT->rowCount() > 0) {
+								if ($updateSectionSettingSTMT->rowCount() > 0) {
 									$result = 'success';
 									$message = 'Successfully updated the section #' . $sectionNewId . ' ' . $setting['setting_name'];
 								}
@@ -666,7 +673,7 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 						$insertSectionSettingSTMT->bindParam(':insertSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
 						
 						if ($insertSectionSettingSTMT->execute()) {
-							if ($updateSectionSettinSTMT->rowCount() > 0) {
+							if ($updateSectionSettingSTMT->rowCount() > 0) {
 								$result = 'success';
 								$message = 'Successfully inserted the section #' . $sectionNewId . ' ' . $setting['setting_name'];
 							}
@@ -684,12 +691,12 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 					
 				}//end of the if selectSectionSetting executed
 				else {
-					$result = 'error'
+					$result = 'error';
 					$message = 'Did not execute the statement to select the section #' . $sectionNewId . ' ' . $setting['setting_name'];
 					$errorInfo = $insertSectionSettingSTMT->errorInfo();
 				}
 				
-				$resultArray = array('result' => $result, 'message' => $message, 'errorInfo' => $errorInfo, 'data' => $data)
+				$resultArray = array('result' => $result, 'message' => $message, 'errorInfo' => $errorInfo, 'data' => $data);
 				array_push($results['section_settings'], $resultArray);
 			
 			}// closing the if setting value not null nor empty string
@@ -780,6 +787,7 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 				//updating the section
 				$updateResult = updateSection($conn, $section, $mappedId, $dataMapping);
 				echo "Section update results: " ; //TREAT BETTER show the results
+				print_r($updateResult);
 				
 				continue; // go to the next section
 			}
@@ -2948,6 +2956,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						$revFormResponse['review_new_id'] = $revAssign['review_new_id'];
 						
+						validateData('review_form_response', $revFormResponse); //from helperFunctions.php
+						
 						$reviewFormElementIdOk = false;
 						
 						if (array_key_exists($revFormResponse['review_form_element_id'], $dataMapping['review_form_element_id'])) {
@@ -2960,15 +2970,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						
 						if ($reviewFormElementIdOk) {
 							
-							/*
-							$updtReviewFormResponseSTMT = $conn->prepare('UPDATE review_form_responses 
-		SET response_type = :updtRevFormResp_responseType, response_value = :updtRevFormResp_reponseValue
-		WHERE review_form_element_id = :updtRevFormResp_reviewFormElementId AND review_id = :updtRevFormResp_reviewId');
-	
-	$checkRevFormRespSTMT = $conn->prepare('SELECT * FROM review_form_responses WHERE 
-		review_form_element_id = :checkRevFormResp_reviewFormElementId AND review_id = :checkRevFormResp_reviewId');
-							*/
-							
 							//check if the review_form_response alreay exists and if needs to be updated
 							$checkRevFormRespSTMT->bindParam(':checkRevFormResp_reviewFormElementId', $revFormResponse['review_form_element_new_id'], PDO::PARAM_INT);
 							$checkRevFormRespSTMT->bindParam(':checkRevFormResp_reviewId', $revFormResponse['review_new_id'], PDO::PARAM_INT);
@@ -2978,8 +2979,38 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							if ($checkRevFormRespSTMT->execute()) {
 								if ($fetchedRevFormResponse = $checkRevFormResponseSTMT->fetch(PDO::FETCH_ASSOC)) {
 									
-									//STILL WORKING ON IT
+									$compareArgs = array('type' => 'review_form_response');
+									if (same2($fetchedRevFormResponse, $revFormResponse) > 0) { //from helperFunctions.php function #16
+										//the review_form_response doe not need to be updated
+										echo "\n    the review_form_response with review_id #" . $revFormResponse['review_new_id'] . " and review_form_element_id #" .
+										$revFormResponse['review_form_element_new_id'] . " is already up to date.\n";
+									}
+									else { /////// update the review_form_response  ////////////////////////////////////////////////
+										echo "\n";
+										echo '    updating the review_form_response with review_id #' . $revFormResponse['review_new_id'] . ' and review_form_element_id #' .
+										$revFormResponse['review_form_element_new_id'] . ' ............';
 									
+										$arr = array();
+										$arr['data'] = $revFormResponse;
+										$arr['params'] = array(
+											array('name' => ':updtRevFormResp_reviewFormElementId', 'attr' => 'review_form_element_new_id', 'type' => PDO::PARAM_INT),
+											array('name' => ':updtRevFormResp_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT),
+											array('name' => ':updtRevFormResp_responseType', 'attr' => 'response_type', 'type' => PDO::PARAM_STR),
+											array('name' => ':updtRevFormResp_reponseValue', 'attr' => 'response_value', 'type' => PDO::PARAM_STR)
+										);
+										
+										if (myExecute('update', 'review_form_response', $arr, $updtReviewFormResponseSTMT, $errors)) {  //from helperFunctions.php
+											echo "Ok\n";
+											
+											$numUpdates['review_form_responses']++;
+											
+										}
+										else {
+											echo "Failed\n";
+										}
+										
+										
+									}// end of the else block to update the review_form_response ///////////////////////////////////
 									
 								}//end of the if fetched the review_form_response
 								else { ///////////////////  insert the review_form_response ///////////////////////////
@@ -4050,7 +4081,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 		
 					if (myExecute('insert', 'review_form_element', $arr, $insertReviewFormElementSTMT, $errors)) { //from helperFunctions.php
 						echo "Ok\n";
-						$numInsertions['review_form_element']++;
+						$numInsertions['review_form_elements']++;
 						if (getNewId('review_form_element', $lastReviewFormElementsSTMT, $element, $dataMapping, $errors)) { //from helperFunctions.php
 							echo "    new id = " . $element['review_form_element_new_id'] . "\n\n";
 							$reviewFormElementOk = true;

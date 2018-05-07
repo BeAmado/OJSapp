@@ -438,10 +438,11 @@ function mapJournalSections($sectionsFilename, $conn = null, $journal = null) {
 		if ($name === 'abbrev') {
 			
 			$abbrev = $setting->getElementsByTagName('setting_value')->item(0)->nodeValue;
+			$locale = $setting->getElementsByTagName('locale')->item(0)->nodeValue;
 			$sectionOldId = $setting->getElementsByTagName('section_id')->item(0)->nodeValue;
 			
 			if (!array_key_exists($sectionOldId, $sectionMapping['section_id'])) {
-				$section = getSectionByAbbrev($conn, $journal['journal_id'], $abbrev); // from xml2db.php function #02.5
+				$section = getSectionByAbbrev($conn, $journal['journal_id'], $abbrev, $locale); // from xml2db.php function #02.5
 				if (is_array($section)) {
 					$sectionMapping['section_id'][$sectionOldId] = $section['section_id'];
 				}
@@ -1235,7 +1236,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 		$dataMapping = getDataMapping($journal['path'], $mappingsFilename); //from this script function #03
 		if (!is_array($dataMapping)) {
 			if ($type === 'sections') {
-				$dataMapping = mapJournalSections($sectionsFilename, $conn, $journal);
+				$dataMapping = mapJournalSections($dataFilename, $conn, $journal);
 			}
 			else {
 				$dataMapping = array();
