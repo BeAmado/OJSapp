@@ -285,20 +285,18 @@ function getSectionByAbbrev($conn, $journalId, $abbrev, $locale, $fetchSettings 
 			echo "\ngetSection did not fetch\n";
 		}*/
 		}// III - closing the if getSection execute
-		/*else {
-			echo "\nDid not execute the getSection\n";
-			print_r($getSection->errorInfo());
-		}*/
+		else {
+			return array('error' => 'Did not execute the getSection', 'errorInfo' => $getSection->errorInfo());
+		}
 		
 	}// II - closing the if abbrevSTMT fetch
 	/*else {
 		echo "\nabbrevSTMT did not fetch\n";
 	}*/
 	}// I - closing the if abbrevSTMT execute
-	/*else {
-		echo "\nDid not execute the abbrevSTMT\n";
-		print_r($abbrevSTMT->errorInfo());
-	}*/
+	else {
+		return array('error' => 'Did not execute the abbrevSTMT', 'errorInfo' => $abbrevSTMT->errorInfo());
+	}
 	
 	return false;
 }
@@ -341,7 +339,7 @@ function getSectionBySetting($conn, $journalId, $locale, $settingName, $settingV
 				}
 				} // V - closing the if getSettings execute
 				else {
-					echo "\nDid not execute the getSettings\n";
+					return array('error' => 'Did not execute the getSettings', 'errorInfo' => $getSettings->errorInfo());
 				}
 				
 				$section['settings'] = $settings;
@@ -350,13 +348,13 @@ function getSectionBySetting($conn, $journalId, $locale, $settingName, $settingV
 			return $section;
 			
 		}// IV - closing the if getSection fetch
-		else {
+		/*else {
 			echo "\ngetSection did not fetch\n";
-		}
+		}*/
 		}// III - closing the if getSection execute
 		else {
-			echo "\nDid not execute the getSection\n";
-			print_r($getSection->errorInfo());
+			$error = 'Did not execute the getSection';
+			return array('error' => $error, 'errorInfo' => $getSection->errorInfo());
 		}
 		
 	}// II - closing the if stmt fetch
@@ -364,10 +362,9 @@ function getSectionBySetting($conn, $journalId, $locale, $settingName, $settingV
 		echo "\nstmt did not fetch\n";
 	}*/
 	}// I - closing the if stmt execute
-	/*else {
-		echo "\nDid not execute the stmt\n";
-		print_r($stmt->errorInfo());
-	}*/
+	else {
+		return array('error' => 'Did not execute the stmt', 'errorInfo' => $stmt->errorInfo());
+	}
 	
 	return false;
 }
@@ -545,6 +542,29 @@ function to update or insert new data to the section already in the database
 */
 function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 	
+	//search if the section_id exists
+	$searchSectionSTMT = $conn->prepare('SELECT * FROM sections WHERE section_id = :search_sectionId');
+	$searchSectionSTMT->bindParam(':search_sectionId', $sectionNewId);
+	if ($searchSectionSTMT->execute()) {
+		if ($searchSectionSTMT->columnCount() == 0) {
+			return array(
+				'result' => 'error', 
+				'message' => 'Did not find the section #' . $sectionNewId,
+				'section' => $section
+			);
+		}
+	}
+	else {
+		//did not execute the searchSectionSTMT
+		return array(
+			'result' => 'error',
+			'message' => 'Did not execute the statement to search for the section',
+			'errorInfo' => $searchSectionSTMT->errorInfo(),
+			'sectionNewId' => $sectionNewId
+		);
+	}
+	
+	
 	validateData('section', $section);
 	
 	$reviewFormNewId = null;
@@ -559,12 +579,12 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 		}
 	}
 	
+	
 	$updateSectionSTMT = $conn->prepare('UPDATE sections SET review_form_id = :updateSection_reviewFormId, seq = :updateSection_seq, 
 		editor_restricted = :updateSection_editorRestricted, meta_indexed = :updateSection_metaIndexed, meta_reviewed = :updateSection_metaReviewed, 
 		abstracts_not_required = :updateSection_abstractsNotRequired, hide_title = :updateSection_hideTitle, hide_author = :updateSection_hideAuthor, 
 		hide_about = :updateSection_hideAbout, disable_comments = :updateSection_disableComments, abstract_word_count = :updateSection_abstractWordCount
 		WHERE section_id = :updateSection_sectionId');
-	
 	
 	$updateSectionSTMT->bindParam(':updateSection_reviewFormId', $reviewFormNewId, PDO::PARAM_INT);
 	$updateSectionSTMT->bindParam(':updateSection_seq', $section['seq']);
@@ -584,23 +604,36 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 	$errorInfo = null;
 	$data = $section;
 	
+	$numSectionErrors = 0;
+	$numSettingErrors = 0;
+	$numSectionUpdates = 0;
+	$numSectionSettingUpdates = 0;
+	$numSectionSettingInsertions = 0;
+	
 	if ($updateSectionSTMT->execute()) {
 		if ($updateSectionSTMT->rowCount() > 0) {
 			$result = 'success';
 			$message = 'Successfully updated the section #' . $sectionNewId;
+			$numSectionUpdates++;
 		}
 		else {
-			$result = 'error';
-			$message = 'Did not update the section #' . $sectionNewId;
+			$result = 'notUpdate';
+			$message = 'The section #' . $sectionNewId . ' is already up to date';
 		}
 	}
 	else {
 		$result = 'error';
 		$message = 'Did not execute the statement to update the section #' . $sectionNewId;
 		$errorInfo = $updateSectionSTMT->errorInfo();
+		$numSectionErrors++;
 	}
 	
-	$results['section'] = array('result' => $result, 'message' => $message, 'errorInfo' => $errorInfo, 'data' => $section);
+	$results['section'] = array(
+		'result' => $result, 
+		'message' => $message, 
+		'errorInfo' => $errorInfo, 
+		'data' => $section
+	);
 	
 	if (array_key_exists('settings', $section)) { 
 	if (!empty($section['settings'])) {
@@ -625,7 +658,6 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 			$message = '';
 			$result = '';
 			$errorInfo = null;
-			$data = $setting;
 			
 			if ($setting['setting_value'] !== '' && $setting['setting_value'] !== null) {
 				
@@ -647,16 +679,19 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 								if ($updateSectionSettingSTMT->rowCount() > 0) {
 									$result = 'success';
 									$message = 'Successfully updated the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+									$numSectionSettingUpdates++;
 								}
 								else {
 									$result = 'error';
 									$message = 'Did not update the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+									$numSettingErrors++;
 								}
 							}
 							else {
 								$result = 'error';
 								$message = 'Did not execute the statement to update the section setting';
 								$errorInfo = $updateSectionSettingSTMT->errorInfo();
+								$numSettingErrors++;
 							}
 						}
 						//else {
@@ -673,19 +708,22 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 						$insertSectionSettingSTMT->bindParam(':insertSetting_settingType', $setting['setting_type'], PDO::PARAM_STR);
 						
 						if ($insertSectionSettingSTMT->execute()) {
-							if ($updateSectionSettingSTMT->rowCount() > 0) {
+							if ($insertSectionSettingSTMT->rowCount() > 0) {
 								$result = 'success';
 								$message = 'Successfully inserted the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+								$numSectionSettingInsertions++;
 							}
 							else {
 								$result = 'error';
 								$message = 'Did not insert the section #' . $sectionNewId . ' ' . $setting['setting_name'];
+								$numSettingErrors++;
 							}
 						}
 						else {
 							$result = 'error';
 							$message = 'Did not execute the statement to insert the section setting';
 							$errorInfo = $insertSectionSettingSTMT->errorInfo();
+							$numSettingErrors++;
 						}
 					}
 					
@@ -693,10 +731,16 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 				else {
 					$result = 'error';
 					$message = 'Did not execute the statement to select the section #' . $sectionNewId . ' ' . $setting['setting_name'];
-					$errorInfo = $insertSectionSettingSTMT->errorInfo();
+					$errorInfo = $selectSectionSettingSTMT->errorInfo();
+					$numSettingErrors++;
 				}
 				
-				$resultArray = array('result' => $result, 'message' => $message, 'errorInfo' => $errorInfo, 'data' => $data);
+				$resultArray = array(
+					'result' => $result, 
+					'message' => $message, 
+					'errorInfo' => $errorInfo, 
+					'data' => $setting
+				);
 				array_push($results['section_settings'], $resultArray);
 			
 			}// closing the if setting value not null nor empty string
@@ -704,6 +748,13 @@ function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 		
 	}//closing the if section settings not empty	
 	}//closing the if section settings exists
+	
+	$results['numSettingErrors'] = $numSettingErrors;
+	$results['numSectionErrors'] = $numSectionErrors;
+	$results['totalErrors'] = $numSectionErrors + $numSettingErrors;
+	
+	$results['numUpdates'] = array('section' => $numSectionUpdates, 'section_settings' => $numSectionSettingUpdates);
+	$results['numInsertions'] = array('section_settings' => $numSectionSettingInsertions);
 	
 	return $results;
 	
@@ -748,11 +799,6 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 	$insertSectionSettingsSTMT = $conn->prepare('INSERT INTO section_settings (section_id, locale, setting_name, setting_value, setting_type) VALUES (:sectionSettings_sectionId,
 	:sectionSettings_locale, :sectionSettings_settingName, :sectionSettings_settingValue, :sectionSettings_settingType)');
 	
-	/*$updateSectionSTMT = $conn->prepare('UPDATE sections SET journal_id = :updateSection_journalId, review_form_id = :updateSection_reviewFormId, seq = :updateSection_seq, 
-	editor_restricted = :updateSection_editorRestricted, meta_indexed = :updateSection_metaIndexed, meta_reviewed = :updateSection_metaReviewed, 
-	abstracts_not_required = :updateSection_abstractsNotRequired, hide_title = :updateSection_hideTitle, hide_author = :updateSection_hideAuthor, 
-	hide_about = :updateSection_hideAbout, disable_comments = :updateSection_disableComments, abstract_word_count = :updateSection_abstractWordCount');*/
-	
 	$sections_node = null;
 	
 	if ($xml->nodeName === 'sections') {
@@ -769,7 +815,10 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 	
 	$sections = xmlToArray($sections_node, true); //from helperFunctions.php
 	
-	$numInsertedSections = 0;
+	$numInsertions = array('sections' => 0, 'section_settings' => 0);
+	$numUpdates = array('sections' => 0, 'section_settings' => 0);
+	
+	$updatesLog = array();
 	
 	foreach ($sections as &$section) {
 		
@@ -781,13 +830,38 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 				//the section was not imported
 			}
 			else {
-				echo "\nsection #" . $section['section_id'] . " was already imported.\n";
-				//echo "Its new id is '" . $mappedId . "'\n";
+				echo "\nThe section #" . $section['section_id'] . " was already imported.\n";
+				echo "Its new id is '$mappedId' \n";
 				
 				//updating the section
-				$updateResult = updateSection($conn, $section, $mappedId, $dataMapping);
-				echo "Section update results: " ; //TREAT BETTER show the results
-				print_r($updateResult);
+				echo "    updating the section ......... ";
+				$updateResults = updateSection($conn, $section, $mappedId, $dataMapping);
+				echo $updateResults['section']['result'] . "\n";
+				
+				array_push($updatesLog, $updateResults); //store the updateResults in a log of the updates
+				
+				if ($updateResults['totalErrors'] > 0) { //log the errors if there were any
+					
+					//if there was an error in the section update step
+					if ($updateResults['numSectionErrors'] > 0) {
+						array_push($errors['section']['update'], $updateResults['section']);
+					}
+					
+					//if there were errors in the section_settings update step
+					if ($updateResults['numSettingErrors'] > 0) {
+						foreach ($updateResults['section_settings'] as $result) {
+							if ($result['result'] === 'error') {
+								array_push($errors['section_settings']['update'], $result);
+							}
+						}// end of the foreach updateResults
+					}//end of the if numSettingErrors > 0
+					
+				}//end of the if totalErrors > 0
+				
+				
+				$numInsertions['section_settings'] += $updateResults['numInsertions']['section_settings'];
+				$numUpdates['section_settings'] += $updateResults['numUpdates']['section_settings'];
+				$numUpdates['section'] += $updateResults['numUpdates']['section'];
 				
 				continue; // go to the next section
 			}
@@ -813,12 +887,41 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 					//map the section
 					if (is_array($fetchedSection)) { if (array_key_exists('section_id', $fetchedSection)) {
 						
-						
-						//updating the section
-						$updateResult = updateSection($conn, $section, $fetchedSection['section_id'], $dataMapping);
-						echo "Section update results: " ; //TREAT BETTER show the results
-						
+						//mapping the section_id
 						$dataMapping['section_id'][$section['section_id']] = $fetchedSection['section_id'];
+
+						///////////////// updating the section ////////////////////////////////////
+						echo '    updating the section #' . $fetchedSection['section_id']. ' ......... ';
+						$updateResults = updateSection($conn, $section, $fetchedSection['section_id'], $dataMapping);
+						echo $updateResults['section']['result'] . "\n";
+						
+						array_push($updatesLog, $updateResults); //store the updateResults in a log of the updates
+						
+						if ($updateResults['totalErrors'] > 0) { //log the errors if there were any
+							
+							//if there was an error in the section update step
+							if ($updateResults['numSectionErrors'] > 0) {
+								array_push($errors['section']['update'], $updateResults['section']);
+							}
+							
+							//if there were errors in the section_settings update step
+							if ($updateResults['numSettingErrors'] > 0) {
+								foreach ($updateResults['section_settings'] as $result) {
+									if ($result['result'] === 'error') {
+										array_push($errors['section_settings']['update'], $result);
+									}
+								}// end of the foreach updateResults
+							}//end of the if numSettingErrors > 0
+							
+						}//end of the if totalErrors > 0
+						
+						
+						$numInsertions['section_settings'] += $updateResults['numInsertions']['section_settings'];
+						$numUpdates['section_settings'] += $updateResults['numUpdates']['section_settings'];
+						$numUpdates['section'] += $updateResults['numUpdates']['section'];
+						
+						/////////////////// end of updating the section ////////////////////////////
+						
 					}}
 					
 					continue; // go to the next section
@@ -829,6 +932,7 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 		}
 		///////////////////////////////////////////////////////////////////////////////////////
 		
+		/// from now on is just the regular section insertion 
 		
 		$section['journal_new_id'] = $journalNewId;
 		
@@ -863,7 +967,7 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 		
 		if (myExecute('insert', 'section', $arr, $insertSectionSTMT, $errors)) { //from helperFunctions.php
 			echo "Ok\n";
-			$numInsertedSections++;
+			$numInsertions['sections']++;
 			if (getNewId('section', $lastSectionsSTMT, $section, $dataMapping, $errors)) { //from helperFunctions.php
 				echo "    new id = " . $section['section_new_id'] . "\n\n";
 				$sectionOk = true;
@@ -893,6 +997,7 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 				
 				if (myExecute('insert', 'section_settings', $arr, $insertSectionSettingsSTMT, $errors)) { //from helperFunctions.php
 					echo "Ok\n";
+					$numInsertions['section_settings']++;
 				}
 				else {
 					echo "Failed\n";
@@ -906,11 +1011,12 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 	unset($section);
 	
 	
-	$returnData = array();
-	$returnData['errors'] = $errors;
-	$returnData['numInsertedRecords'] = array('sections' => $numInsertedSections);
-	//$returnData['dataMapping']  = $dataMapping;
-	
+	$returnData = array(
+		'errors' => $errors, 
+		'numInsertedRecords' => $numInsertions, 
+		'numUpdatedRecords' => $numUpdates
+	);
+
 	return $returnData;
 	
 }
@@ -1023,7 +1129,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$insertArticleFileRevisedSTMT = $conn->prepare('INSERT INTO article_files 
 		(file_id, revision, source_revision, article_id, file_name, file_type, file_size, 
 		original_file_name, file_stage, viewable, date_uploaded, date_modified, round, assoc_id) 
-		VALUES (:fileRev_articleId, :fileRev_revision, :fileRev_sourceRevision, :fileRev_articleId, :fileRev_fileName, :fileRev_fileType, :fileRev_fileSize, 
+		VALUES (:fileRev_fileId, :fileRev_revision, :fileRev_sourceRevision, :fileRev_articleId, :fileRev_fileName, :fileRev_fileType, :fileRev_fileSize, 
 		:fileRev_originalFileName, :fileRev_fileStage, :fileRev_viewable, :fileRev_dateUploaded, :fileRev_dateModified, :fileRev_round, :fileRev_assocId)');
 	
 	$checkRevisedFileSTMT = $conn->prepare('SELECT * FROM article_files WHERE file_id = :checkRev_fileId AND revision = :checkRev_revision');
@@ -1702,11 +1808,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									array('name' => ':fileRev_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
 								);
 								
-								echo '    inserting article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .'............ ';
+								echo '    inserting article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .' ............ ';
 								
 								if (myExecute('insert', 'article_file', $arr, $insertArticleFileRevisedSTMT, $errors)) { //from helperFunctions.php
 									echo "Ok\n";
-									$numInsertions['article_file']++;
+									$numInsertions['article_files']++;
 								}
 								else {
 									echo "Failed\n";
@@ -2977,7 +3083,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							$checkError = array('review_form_response' => $revFormResponse);
 							
 							if ($checkRevFormRespSTMT->execute()) {
-								if ($fetchedRevFormResponse = $checkRevFormResponseSTMT->fetch(PDO::FETCH_ASSOC)) {
+								if ($fetchedRevFormResponse = $checkRevFormRespSTMT->fetch(PDO::FETCH_ASSOC)) {
 									
 									$compareArgs = array('type' => 'review_form_response');
 									if (same2($fetchedRevFormResponse, $revFormResponse) > 0) { //from helperFunctions.php function #16
@@ -3734,6 +3840,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								array('name' => ':memberships_aboutDisplayed', 'attr' => 'about_displayed', 'type' => PDO::PARAM_STR),
 								array('name' => ':memberships_seq', 'attr' => 'seq')
 							);
+							
+							echo "\nInserting user #" . $membership['user_new_id'] . " as a member of the group #" . $membership['group_new_id'] . " ...........";
 							
 							if (myExecute('insert', 'group_membership', $arr, $insertGroupMembershipSTMT, $errors)) { //from helperFunctions.php
 								echo "Ok\n";
@@ -4610,7 +4718,7 @@ function insertPluginSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args 
 				echo "Yes\n";
 				/////////////// update the plugin setting if necessary //////////////////////
 				
-				if ($checkPlugin['setting_value'] != $plugin['setting_value']) {
+				if ($checkedPlugin['setting_value'] != $plugin['setting_value']) {
 					//update the plugin setting value
 					$arr = array();
 					$arr['data'] = $plugin;
