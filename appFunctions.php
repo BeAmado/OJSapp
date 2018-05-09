@@ -1369,6 +1369,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 		}
 	}
 	
+	//the inserted records
 	if (is_array($returnedData['numInsertedRecords'])) {
 		foreach ($returnedData['numInsertedRecords'] as $item => $number) {
 			if ($number > 0) {
@@ -1391,6 +1392,31 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 	else {
 		echo "\nDid not import any new $PrintableType.\n";
 	}
+	
+	//the updated records
+	if (is_array($returnedData['numUpdatedRecords'])) {
+		foreach ($returnedData['numUpdatedRecords'] as $item => $number) {
+			if ($number > 0) {
+				$saveDataMappingXml = true;
+				echo "\nUpdated $number $item";
+			}
+			else {
+				echo "\nDid not update any $item";
+			}
+		}
+	}
+	else if ($returnedData['numUpdatedRecords'] > 0) {
+		
+		//only save the dataMappings if at least one article or new user was inserted
+		
+		echo "\nUpdated " . $returnedData['numUpdatedRecords'] . " $printableType.";
+		$saveDataMappingXml = true;
+		
+	}
+	else {
+		echo "\nDid not update any $PrintableType.\n";
+	}
+	
 	
 	if ($saveDataMappingXml) {
 		return ($returnValue !== null) ? $returnValue : 1;

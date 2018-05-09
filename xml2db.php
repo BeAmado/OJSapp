@@ -834,7 +834,7 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 				echo "Its new id is '$mappedId' \n";
 				
 				//updating the section
-				echo "    updating the section ......... ";
+				echo '    updating the section ......... ';
 				$updateResults = updateSection($conn, $section, $mappedId, $dataMapping);
 				echo $updateResults['section']['result'] . "\n";
 				
@@ -1091,7 +1091,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	$updtArticleSTMT = $conn->prepare(
 		'UPDATE articles
-		SET language = :updtArticle_language, comments_to_ed = :updtArticle_commentsToEd, last_modified = :updtArticle_lastModified, 
+		SET language = :updtArticle_language, comments_to_ed = :updtArticle_commentsToEd, date_submitted = :updtArticle_dateSubmitted, last_modified = :updtArticle_lastModified, 
 		date_status_modified = :updtArticle_dateStatusModified, status = :updtArticle_status, submission_progress = :updtArticle_submissionProgress, 
 		current_round = :updtArticle_currentRound, pages = :updtArticle_pages, fast_tracked = :updtArticle_fastTracked, hide_author = :updtArticle_hideAuthor, 
 		comments_status = :updtArticle_commentsStatus, locale = :updtArticle_locale, citations = :updtArticle_citations
@@ -1105,6 +1105,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	$insertArticleSettingsSTMT = $conn->prepare('INSERT INTO article_settings (article_id, locale, setting_name, setting_value, setting_type) VALUES (:articleSettings_articleId,
 		:articleSettings_locale, :articleSettings_settingName, :articleSettings_settingValue, :articleSettings_settingType)');
+	
+	$checkArticleSettingSTMT = $conn->prepare('SELECT * FROM article_settings WHERE 
+		article_id = :checkArticleSetting_articleId AND locale = :checkArticleSetting_locale AND setting_name = :checkArticleSetting_settingName');
+	
+	$updtArticleSettingSTMT = $conn->prepare('UPDATE article_settings 
+		SET setting_value = :updtArticleSetting_settingValue, setting_type = :updtArticleSetting_settingType
+		WHERE article_id = :updtArticleSetting_articleId AND locale = :updtArticleSetting_locale AND setting_name = :updtArticleSetting_settingName');
 	
 	//////////////  the article authors  ///////////////////////////////////////////////////////////////
 	//see if the author is already registered
@@ -1301,28 +1308,28 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	if (!array_key_exists('original_file_name', $dataMapping)) $dataMapping['original_file_name'] = array();
 		
 	$errors = array(
-		'article' => array('insert' => array(), 'update' => array()),
-		'article_settings' => array('insert' => array(), 'update' => array()),
+		'article' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_settings' => array('insert' => array(), 'update' => array(), 'check' => array()),
 		'article_file' => array('insert' => array(), 'update' => array(), 'check' => array()),
-		'article_supplementary_file' => array('insert' => array(), 'update' => array()),
-		'article_supp_file_settings' => array('insert' => array(), 'update' => array()),
-		'article_note' => array('insert' => array(), 'update' => array()),
-		'article_comment' => array('insert' => array(), 'update' => array()),
-		'article_galley' => array('insert' => array(), 'update' => array()),
-		'article_galley_settings' => array('insert' => array(), 'update' => array()),
-		'article_xml_galley' => array('insert' => array(), 'update' => array()),
-		'article_html_galley_image' => array('insert' => array(), 'update' => array()),
-		'article_search_object' => array('insert' => array(), 'update' => array()),
-		'article_search_object_keyword' => array('insert' => array(), 'update' => array()),
-		'article_search_keyword_list' => array('insert' => array(), 'update' => array()),
-		'edit_assignment' => array('insert' => array(), 'update' => array()),
-		'edit_decision' => array('insert' => array(), 'update' => array()),
-		'author' => array('insert' => array(), 'update' => array()),
-		'author_settings' => array('insert' => array(), 'update' => array()),
-		'review_assignment' => array('insert' => array(), 'update' => array()),
-		'review_form_response' => array('insert' => array(), 'update' => array()),
-		'review_round' => array('insert' => array(), 'update' => array()),
-		'user' => array('insert' => array(), 'update' => array())
+		'article_supplementary_file' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_supp_file_settings' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_note' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_comment' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_galley' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_galley_settings' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_xml_galley' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_html_galley_image' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_search_object' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_search_object_keyword' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'article_search_keyword_list' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'edit_assignment' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'edit_decision' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'author' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'author_settings' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'review_assignment' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'review_form_response' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'review_round' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'user' => array('insert' => array(), 'update' => array(), 'check' => array())
 	);	
 	
 	$numInsertions = array(
@@ -1376,6 +1383,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	foreach($unpubArticles as &$article) {
 		
 		$articleAlreadyImported = false;
+		$articleOk = false;
 		
 		if (array_key_exists($article['article_id'], $dataMapping['article_id'])) {
 			
@@ -1384,6 +1392,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			echo "\nThe article #" . $article['article_id'] . " was already imported.\n";
 			echo "    Its new id is #" . $article['article_new_id'] . "\n";
+			
+			$articleOk = true;
 		}
 		
 		//validateData('article', $article); //from helperFunctions.php
@@ -1393,7 +1403,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		$userOk = false;
 		$sectionOk = false;
 		
-		$articleOk = false;
+		
 		$articleFileOk = false;
 		$articleSuppFileOk = false;
 		
@@ -1543,7 +1553,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								array('name' => ':updtArticle_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
 							);
 							
-							
 							echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
 							
 							if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors)) { //from helperFunctions.php
@@ -1552,6 +1561,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							}
 							else {
 								echo "Failed\n";
+								$articleOk = false;
 							}
 							
 						}
@@ -1638,25 +1648,74 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				validateData('article_settings', $articleSetting); //from helperFunctions.php
 				
 				$articleSetting['article_new_id'] = $article['article_new_id'];
-				echo '    inserting '. $articleSetting['setting_name'] . ' with locale ' . $articleSetting['locale'] . ' .........'; 
 				
-				$arr = array();
-				$arr['data'] = $articleSetting;
-				$arr['params'] = array(
-					array('name' => ':articleSettings_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
-					array('name' => ':articleSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
-					array('name' => ':articleSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
-					array('name' => ':articleSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
-					array('name' => ':articleSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
-				);
+				//check if the articleSetting exists and if need to be updated
+				$checkArticleSettingSTMT->bindParam(':checkArticleSetting_articleId', $articleSetting['article_new_id'], PDO::PARAM_INT);
+				$checkArticleSettingSTMT->bindParam(':checkArticleSetting_locale', $articleSetting['locale'], PDO::PARAM_STR);
+				$checkArticleSettingSTMT->bindParam(':checkArticleSetting_settingName', $articleSetting['setting_name'], PDO::PARAM_STR);
 				
-				if (myExecute('insert', 'article_settings', $arr, $insertArticleSettingsSTMT, $errors)) { //from helperFunctions.php
-					echo "Ok\n";
-					$numInsertions['article_settings']++;
+				$checkError = array('article_setting' => $articleSetting);
+				
+				if ($checkArticleSettingSTMT->execute()) {
+					if ($checkArticleSettingSTMT->columnCount() > 0) {
+						// update the article_setting //////////////////
+						
+						echo '    updating '. $articleSetting['setting_name'] . ' with locale ' . $articleSetting['locale'] . ' .........'; 
+				
+						$arr = array();
+						$arr['data'] = $articleSetting;
+						$arr['params'] = array(
+							array('name' => ':updtArticleSetting_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticleSetting_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticleSetting_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticleSetting_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticleSetting_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+						);
+						
+						
+						if (myExecute('update', 'article_settings', $arr, $updtArticleSettingSTMT, $errors)) { //from helperFunctions.php
+							echo " Ok\n";
+							$numUpdates['article_settings']++;
+						}
+						else {
+							echo " Up to date\n";
+						}
+						
+					}// end of the if to update the article_setting ////
+					else {
+						//the setting does not exist
+						/////////////// insert the article_setting /////////////////////////////////////
+						echo '    inserting '. $articleSetting['setting_name'] . ' with locale ' . $articleSetting['locale'] . ' .........'; 
+				
+						$arr = array();
+						$arr['data'] = $articleSetting;
+						$arr['params'] = array(
+							array('name' => ':articleSettings_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':articleSettings_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+							array('name' => ':articleSettings_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+							array('name' => ':articleSettings_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+							array('name' => ':articleSettings_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
+						);
+						
+						if (myExecute('insert', 'article_settings', $arr, $insertArticleSettingsSTMT, $errors)) { //from helperFunctions.php
+							echo "Ok\n";
+							$numInsertions['article_settings']++;
+						}
+						else {
+							echo "Failed\n";
+						}
+					}//////// end of the else block to insert the article_setting ////////////////////
 				}
 				else {
-					echo "Failed\n";
+					//checkArticleSettingSTMT did not execute
+					$checkError['error'] = 'The checkArticleSettingSTMT did not execute';
+					$checkError['stmtError'] = $checkArticleSettingSTMT->errorInfo();
 				}
+				
+				if (array_key_exists('error', $checkError)) {
+					array_push($errors['article']['check'], $checkError);
+				}
+				
 			}//end of foreach article settings
 			unset($articleSetting);
 			}// closing the if count settings > 0
@@ -1668,6 +1727,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			/////////////// insert author ///////////////////////////////////////
 			echo "\ninserting authors:\n";
 			foreach ($article['authors'] as $author) {
+				
+				if (array_key_exists($author['author_id'], $dataMapping['author_id'])) {
+					echo "\nThe author #" . $author['author_id'] . " was already imported.";
+					echo "\nIts new id is " . $dataMapping['author_id'][$author['author_id']] . "\n";
+					continue; // go to the next author
+				}
+				
 				$authorOk = false;
 				$author['submission_new_id'] = $article['article_new_id'];
 				
@@ -3269,6 +3335,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				continue; // go to the next article file
 			}}
 			
+			if (!array_key_exists('article_new_id', $articleFile)) {
+				$articleFile['article_new_id'] = $article['article_new_id'];
+			}
+			
 			$articleFile['source_file_new_id'] = null;
 			$articleFile['file_new_name'] = null;
 			$articleFile['original_file_new_name'] = null;
@@ -4001,10 +4071,11 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 						$arr = array();
 						$arr['data'] = $revForm;
 						$arr['params'] = array(
-							array('name' => ':updtRevForm_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
-							array('name' => ':updtRevForm_seq', 'attr' => 'seq'),
-							array('name' => ':updtRevForm_isActive', 'attr' => 'is_active', 'type' => PDO::PARAM_INT)
+							array('name' => ':updtReviewForm_reviewFormId', 'attr' => 'review_form_new_id', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtReviewForm_seq', 'attr' => 'seq'),
+							array('name' => ':updtReviewForm_isActive', 'attr' => 'is_active', 'type' => PDO::PARAM_INT)
 						);
+						
 						
 						echo '    updating review_form #' . $revForm['review_form_new_id']. '............ ';
 						
@@ -4017,6 +4088,8 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 						}
 						
 					}//// end of the else block to update the review_form ///////
+					
+					continue; // go to the next review_form
 				}
 				else {
 					// did not fetch the review_form
@@ -4132,6 +4205,7 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 							if (same2($fetchedElement, $element, $compareArgs) > 0) { //from helperFunctions.php function #16
 								//does not need to update
 								echo "It is already up to date\n";
+								
 							}
 							else { ////// update the review_form_element  /////////////////////////////
 								
@@ -4156,6 +4230,8 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 								}
 								
 							}/// end of the else block to update the review_form_element //////////////
+							
+							continue; // go to the next review_form_element
 						}
 						else {
 							//did not fetch the review_form_element
