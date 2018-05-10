@@ -23,6 +23,14 @@ FUNCTIONS IN DEFINED IN THIS SCRIPT:
 13) insertIssueOrders
 14) insertCitationsAndReferrals
 
+#############################################################################
+FUNCTIONS TO UPDATE DATA ALREADY IMPORTED TO GENERATE THE CORRECT STATISTICS
+
+updatePublishedArticles
+updateIssues
+updateUsers
+#############################################################################
+
 Developed in 2017-2018 by Bernardo Amado
 
 */

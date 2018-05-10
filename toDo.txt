@@ -1,0 +1,4 @@
+get the data to correctly update:
+	published_articles (date_submitted, review_assigns, edit_decisions, etc)
+	users (mainly the date_registered)
+	issues (yet to see if really needed)

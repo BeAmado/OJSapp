@@ -57,6 +57,13 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
 	$rolesSTMT->bindParam(':roles_journalId', $journal['journal_id'], PDO::PARAM_INT);
 	
+	$InterestsSTMT = $conn->prepare(
+		'SELECT t.setting_value AS interest 
+		FROM user_interests AS u_int
+		INNER JOIN controlled_vocab_entry_settings AS t
+			ON u_int.controlled_vocab_entry_id = t.controlled_vocab_entry_id
+		WHERE u_int.user_id = :interest_userId');
+	
 	
 	/////////////  set the user info /////////////////////////////////////
 					
@@ -106,6 +113,18 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 				$error['rolesError'] = $rolesSTMT->errorInfo();
 			}
 			
+			//fetching the user interests
+			$interestsSTMT->bindParam(':interests_userId', $user['user_id'], PDO::PARAM_INT);
+			if ($interestsSTMT->execute()) {
+				if ($interests = $interestsSTMT->fetchAll(PDO::FETCH_ASSOC)) {
+					processCollation($interests, 'controlled_vocab_entry_settings', $collations);
+					$user['interests'] = $interests;
+				}
+			}
+			else {
+				$errorOccurred = true;
+				$error['interestsError'] = $interestsSTMT->errorInfo();
+			}
 			
 			if ($errorOccurred) {
 				$error['user'] = $user;
