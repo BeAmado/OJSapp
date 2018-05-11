@@ -964,6 +964,7 @@ function myMain() {
 		'review forms' => false, 
 		'sections' => false, 
 		'unpublished articles' => false, 
+		'published articles' => false,
 		'announcements' => false, 
 		'groups' => false,
 		'articles history' => false,
@@ -1062,7 +1063,7 @@ function getData($type, $conn = null, $journal = null, $collations) {
 		$verbose = true;
 	}
 	
-	if ($type === 'unpublished_articles') {
+	if ((strpos($type, 'articles') !== false) && (strpos($type, 'history') === false)) {
 		$resp = readline('Do you want to export the keywords? (y/N) : ');
 		if ($resp === 'y' || $resp === 'Y') {
 			$getKeywords = true;
@@ -1087,7 +1088,11 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			break;
 			
 		case 'unpublished_articles':
-			$returnedData = fetchUnpublishedArticles($conn, $journal, $args);
+			$returnedData = fetchArticles($conn, $journal, 'unpublished', $args);
+			break;
+			
+		case 'published_articles':
+			$returnedData = fetchArticles($conn, $journal, 'published', $args);
 			break;
 			
 		case 'announcements':
@@ -1137,7 +1142,13 @@ function getData($type, $conn = null, $journal = null, $collations) {
 		
 	}
 	
-	$data = $returnedData[$type];
+	if ((strpos($type, 'articles') !== false) && (strpos($type, 'history') === false)) {
+		$data = $returnedData['articles'];
+	}
+	else {
+		$data = $returnedData[$type];
+	}
+	
 	
 	if (!is_array($data)) {
 		echo "\nCould not fetch $type.\n";

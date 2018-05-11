@@ -1030,6 +1030,94 @@ function insertSections(&$xml, $conn, &$dataMapping, $journalNewId, $args = null
 }
 
 
+// #05.99)
+function updatePublishedArticle(&$article, $conn, &$dataMapping, $journalNewId, $args = null) {
+	$title = null;
+	//get the article title to search in the database
+	if (array_key_exists('title', $article)) {
+		$title = $article['title'];
+	}
+	else if (array_key_exists('settings', $article)) {
+		foreach ($article['settings'] as $setting) {
+			if ($setting['setting_name'] === 'title') {
+				$title = $setting['setting_value'];
+			}
+		}
+	}
+	
+	if ($title === null) {
+		return false;
+	}
+	
+	$stmt = $conn->prepare(
+		'SELECT set.*, art.*, pub_art.* 
+		 FROM article_settings AS set
+		 INNER JOIN articles AS art 
+		 	ON art.article_id = set.article_id
+		 INNER JOIN published_articles AS pub_art
+		 	ON pub_art.article_id = art.article_id
+		 WHERE 
+		 	set.setting_name = "title" AND 
+		 	set.setting_value = :settingValue AND
+		 	art.journal_id = :journalId'
+	);
+	
+	$stmt->bindParam(':settingValue', $title, PDO::PARAM_STR);
+	$stmt->bindParam(':journalId', $journalNewId, PDO::PARAM_INT);
+	
+	$updateArticleSTMT = $conn->prepare(
+		'UPDATE articles SET date_submitted = :dateSubmitted, last_modified = :lastModified, date_status_modified = :dateStatusModified
+		 WHERE article_id = :articleId'
+	);
+	
+	if ($stmt->execute()) {
+		if ($fetchedArticle = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			
+			//map the article_id 
+			if (!array_key_exists($article['article_id'], $dataMapping['article_id'])) {
+				$dataMapping['article_id'][$article['article_id']] = $fetchedArticle['article_id'];
+			}
+			
+			//map the published_article_id
+			if (!array_key_exists('published_article_id', $dataMapping)) {
+				$dataMapping['published_article_id'] = array();
+			}
+			
+			if (!array_key_exists($article['published_article_id'], $dataMapping['published_article_id'])) {
+				$dataMapping['published_article_id'][$article['published_article_id']] = $fetchedArticle['published_article_id'];
+			}
+			
+			//map the issue_id
+			if (!array_key_exists('issue_id', $dataMapping)) {
+				$dataMapping['issue_id'] = array();
+			}
+			
+			if (!array_key_exists($article['issue_id'], $dataMapping['issue_id'])) {
+				$dataMapping['issue_id'][$article['issue_id']] = $fetchedArticle['issue_id'];
+			}
+			
+			
+			$updateArticleSTMT->bindParam(':dateSubmitted', $article['date_submitted'], PDO::PARAM_STR);
+			$updateArticleSTMT->bindParam(':lastModified', $article['last_modified'], PDO::PARAM_STR);
+			$updateArticleSTMT->bindParam(':dateStatusModified', $article['date_status_modified'], PDO::PARAM_STR);
+			$updateArticleSTMT->bindParam(':articleId', $fetchedArticle['article_id'], PDO::PARAM_INT);
+			
+			if ($updateArticleSTMT->execute()) {
+				return true;
+			}
+			else {
+				//updateArticleSTMT did not execute
+				//treat the error
+			}
+		}
+	}
+	else {
+		//did not execute the statement to fetch the article
+		//treat the error
+	}
+	
+}// end of the function updateArticle
+
 // #06)
 function insertUnpublishedArticles(&$xml, $conn, &$dataMapping, $journal, $args = null) {
 	

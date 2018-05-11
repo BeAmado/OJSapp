@@ -57,12 +57,12 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
 	$rolesSTMT->bindParam(':roles_journalId', $journal['journal_id'], PDO::PARAM_INT);
 	
-	$InterestsSTMT = $conn->prepare(
+	$interestsSTMT = $conn->prepare(
 		'SELECT t.setting_value AS interest 
 		FROM user_interests AS u_int
 		INNER JOIN controlled_vocab_entry_settings AS t
 			ON u_int.controlled_vocab_entry_id = t.controlled_vocab_entry_id
-		WHERE u_int.user_id = :interest_userId');
+		WHERE u_int.user_id = :interests_userId');
 	
 	
 	/////////////  set the user info /////////////////////////////////////
@@ -240,9 +240,9 @@ function fetchSections($conn, $journal = null, $args = null) {
 
 // #02)
 /**
-fetch the unpublished articles of the specified journal
+fetch the articles of the specified journal, being published, unpublished or both
 */
-function fetchUnpublishedArticles($conn, $journal, $args = null) {
+function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 	
 	$getKeywords = false;
 	$verbose = false;
@@ -275,17 +275,45 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 		return false;
 	}
 	
-	$unpubArt = array();
+	$articles = array();
+	
+	$stmt = null;
+	
+	switch ($type) {
+		case 'published': {
+			$stmt = $conn->prepare(
+				'SELECT art.*, pub_art.* 
+				 FROM published_articles AS pub_art
+				 INNER JOIN articles AS art
+				 	ON art.article_id = pub_art.article_id
+				 WHERE art.journal_id = :journalId'
+			);
+		}	break;
+			
+		case 'unpublished': {
+			$stmt = $conn->prepare(
+			'SELECT * FROM articles WHERE article_id IN (
+				SELECT article_id FROM articles WHERE article_id NOT IN (
+					SELECT article_id FROM published_articles
+				) AND date_submitted > :limitDate AND journal_id = :journalId
+			)');
+			$stmt->bindParam(':limitDate', $limitDate, PDO::PARAM_STR);
+		}	break;
+			
+		case 'both': {
+			$stmt = $conn->prepare(
+				'SELECT art.*, pub_art.* 
+				 FROM articles AS art
+				 LEFT JOIN published_articles AS pub_art
+				 	ON pub_art.article_id = art.article_id
+				 WHERE art.journal_id = :journalId'
+			);
+		}	break;
+	}
 
-	$stmt = $conn->prepare(
-	'SELECT * FROM articles WHERE article_id IN (
-		SELECT article_id FROM articles WHERE article_id NOT IN (
-			SELECT article_id FROM published_articles
-		) AND date_submitted > :limitDate AND journal_id = :journalId
-	)');
+	
 	
 	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_INT);
-	$stmt->bindParam(':limitDate', $limitDate, PDO::PARAM_STR);
 	
 	//////////////////// PART 1 /////////////////////////////////////////////
 	//////// informations needed to identify the user and the section ///////
@@ -293,6 +321,14 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
 	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
 	$rolesSTMT->bindParam(':roles_journalId', $journalId, PDO::PARAM_INT);
+	$interestsSTMT = $conn->prepare(
+		'SELECT t.setting_value AS interest 
+		FROM user_interests AS u_int
+		INNER JOIN controlled_vocab_entry_settings AS t
+			ON u_int.controlled_vocab_entry_id = t.controlled_vocab_entry_id
+		WHERE u_int.user_id = :interests_userId'
+	);
+	
 	$sectionSTMT = $conn->prepare('SELECT section_id, setting_name, setting_value, locale FROM section_settings WHERE section_id = :sectionId AND setting_name IN ("title", "abbrev")');
 	/////////////////////////////////////////////////////////////////////////
 	
@@ -435,6 +471,19 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 				else {
 					$errorOccurred = true;
 					$error['rolesError'] = $rolesSTMT->errorInfo();
+				}
+				
+				//fetching the user interests
+				$interestsSTMT->bindParam(':interests_userId', $user['user_id'], PDO::PARAM_INT);
+				if ($interestsSTMT->execute()) {
+					if ($interests = $interestsSTMT->fetchAll(PDO::FETCH_ASSOC)) {
+						processCollation($interests, 'controlled_vocab_entry_settings', $collations);
+						$user['interests'] = $interests;
+					}
+				}
+				else {
+					$errorOccurred = true;
+					$error['interestsError'] = $interestsSTMT->errorInfo();
 				}
 				
 				$article['user'] = $user;
@@ -937,15 +986,15 @@ function fetchUnpublishedArticles($conn, $journal, $args = null) {
 			///////////  END OF PART 6  //////////////////////////////////////////////////////////////////////////
 			
 			//PUT ALL THE ARTICLE INFORMATIONS ON THE ARRAY OF UNPUBLISHED ARTICLES
-			array_push($unpubArt, $article);
+			array_push($articles, $article);
 			$numArticles++;
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	echo "\nFetched $numArticles unpublished articles.\n";
+	echo "\nFetched $numArticles articles.\n";
 	
-	return array('unpublished_articles' => $unpubArt, 'numArticles' => $numArticles, 'errors' => $errors, 'numErrors' => $numErrors);
+	return array('articles' => $articles, 'numArticles' => $numArticles, 'errors' => $errors, 'numErrors' => $numErrors);
 	
 }
 ////////// END OF fetchUnpublishedArticles  ///////////////////////////////////////////

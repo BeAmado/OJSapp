@@ -154,9 +154,11 @@ function search4Numbers($numbers, $arr) {
 	for($i = 0; $i < count($arr); $i++) {
 		$pos = $i;
 		for($j = 0; $j < $size; $j++) {
+			if (array_key_exists(($i + $j), $arr)) {
 			if ($arr[$i + $j] !== $numbers[$j]) {
 				$pos = -1;
 				break; //breaking out of the inner loop with the $j control
+			}
 			}
 		}
 		if ($pos > -1) break; //breaking out of the inner loop with the $i control
