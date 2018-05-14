@@ -51,6 +51,31 @@ function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$
 	$insertUserSTMT = &$stmts['insertUserSTMT'];
 	$lastUsersSTMT = &$stmts['lastUsersSTMT'];
 	
+	if (!array_key_exists('insertUserSettingSTMT', $stmts)) {
+		$stmts['insertUserSettingSTMT'] = $conn->prepare(
+			'INSERT INTO user_settings (user_id, locale, setting_name, setting_value, setting_type, assoc_id, assoc_type)
+			VALUES (:userSetting_userId, :userSetting_locale, :userSetting_settingName, :userSetting_settingValue, :userSetting_settingType,
+			:userSetting_assocId, :userSetting_assocType)'
+		);
+	}
+	
+	if (!array_key_exists('insertUserRoleSTMT', $stmts)) {
+		$stmts['insertUserRoleSTMT'] = $conn->prepare(
+			'INSERT INTO roles (journal_id, user_id, role_id)
+			VALUES (:userRole_journalId, :userRole_userId, :userRole_roleId)'
+		);
+	}
+	
+	if (!array_key_exists('insertUserInterestSTMT', $stmts)) {
+		$stmts['insertUserInterestSTMT'] = $conn->prepare(
+			'INSERT INTO user_interests (controlled_vocab_entry_id, user_id) VALUES (:insertInterest_controlledVocabEntryId, :insertInterest_userId)'
+		);
+	}
+	
+	$insertUserSettingSTMT = &$stmts['insertUserSettingSTMT'];
+	$insertUserRoleSTMT = &$stmts['insertUserRoleSTMT'];
+	$insertUserInterestSTMT = &$stmts['insertUserInterestSTMT'];
+	
 	$type = $elem['type'];
 	$data = $elem['data'];
 	
@@ -3798,6 +3823,19 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 :insertUser_disabledReason, :insertUser_authStr, :insertUser_suffix, :insertUser_billingAddress, :insertUser_inlineHelp)');
 	
 	$lastUsersSTMT = $conn->prepare("SELECT * FROM users ORDER BY user_id DESC LIMIT $limit");
+	
+	$insertUserSettingSTMT = $conn->prepare(
+		'INSERT INTO user_settings (user_id, locale, setting_name, setting_value, setting_type, assoc_id, assoc_type)
+		VALUES (:userSetting_userId, :userSetting_locale, :userSetting_settingName, :userSetting_settingValue, :userSetting_settingType,
+		:userSetting_assocId, :userSetting_assocType)'
+	);
+	
+	$insertUserRoleSTMT = $conn->prepare(
+		'INSERT INTO roles (journal_id, user_id, role_id)
+		VALUES (:userRole_journalId, :userRole_userId, :userRole_roleId)'
+	);
+	
+	$insertUserInterestSTMT = $conn->prepare('INSERT INTO user_interests');
 	
 	$userStatements = array('userSTMT' => &$userSTMT, 'checkUsernameSTMT' => &$checkUsernameSTMT, 'insertUserSTMT' => &$insertUserSTMT, 'lastUsersSTMT' => &$lastUsersSTMT);
 	

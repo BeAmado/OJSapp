@@ -1243,3 +1243,17 @@ this function maps the articles already published
 function mapPublishedArticles($conn, &$dataMapping, &$publishedArticles, $journal) {
 	
 }
+
+// #31)
+/**
+returns the controlled_vocab_id from the table controlled_vocabs where the symbolic is 'interest'
+*/
+function getInterestId($conn) {
+	$stmt = $conn->prepare('SELECT * FROM controlled_vocabs WHERE symbolic = "interest"');
+	if ($stmt->execute()) {
+		if ($resp = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			return $resp['controlled_vocab_id'];
+		}
+	}
+	return false;
+}

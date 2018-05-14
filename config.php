@@ -82,6 +82,10 @@ $tables = array(
 	'role' => array(),
 	'user' => array(), 
 	'user_settings' => array(),
+	'user_interest' => array(),
+	'controlled_vocab' => array(),
+	'controlled_vocab_entry' => array(),
+	'controlled_vocab_entry_settings' => array(),
 	'section' => array(),
 	//'section_editor' => array(),
 	'section_settings' => array(),
@@ -493,13 +497,56 @@ $tables['user_settings']['attributes'] = array('user_id', 'locale', 'setting_nam
 $tables['user_settings']['primary_keys'] = array();
 $tables['user_settings']['foreign_keys'] = array('user_id');
 $tables['user_settings']['properties'] = array();
-$tables['user_settings']['properties']['user_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
+$tables['user_settings']['properties']['user_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => '');
 $tables['user_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '');
-$tables['user_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
+$tables['user_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => 'setting name', 'extra' => '');
 $tables['user_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
+$tables['user_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '');
 $tables['user_settings']['properties']['assoc_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => 0, 'extra' => '');
 $tables['user_settings']['properties']['assoc_type'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => 0, 'extra' => '');
+
+
+$tables['controlled_vocab']['attributes'] = array('controlled_vocab_id', 'symbolic', 'assoc_type', 'assoc_id');
+$tables['controlled_vocab']['primary_keys'] = array('controlled_vocab_id');
+$tables['controlled_vocab']['foreign_keys'] = array();
+$tables['controlled_vocab']['properties'] = array(
+	'controlled_vocab_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+	'symbolic' => array('type' => 'varchar(64)', 'null' => 'no', 'key' => 'mul', 'default' => '', 'extra' => ''),
+	'assoc_type' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+	'assoc_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '')
+);
+
+
+$tables['controlled_vocab_entry']['attributes'] = array('controlled_vocab_entry_id', 'controlled_vocab_id', 'seq');
+$tables['controlled_vocab_entry']['primary_keys'] = array('controlled_vocab_entry_id');
+$tables['controlled_vocab_entry']['foreign_keys'] = array('controlled_vocab_id');
+$tables['controlled_vocab_entry']['properties'] = array(
+	'controlled_vocab_entry_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment')
+	'controlled_vocab_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+	'seq' => array('type' => 'double', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+);
+
+
+$tables['controlled_vocab_entry_settings']['attributes'] = array('controlled_vocab_entry_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
+$tables['controlled_vocab_entry_settings']['primary_keys'] = array('controlled_vocab_entry_id', 'locale', 'setting_name');
+$tables['controlled_vocab_entry_settings']['foreign_keys'] = array();
+$tables['controlled_vocab_entry_settings']['properties'] = array(
+	'controlled_vocab_entry_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+	'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+	'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+	'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '')
+);
+
+
+$tables['user_interest']['attributes'] = array('user_id', 'controlled_vocab_entry_id');
+$tables['user_interest']['primary_keys'] = array('user_id', 'controlled_vocab_entry_id');
+$tables['user_interest']['foreign_keys'] = array();
+$tables['user_interest']['properties'] = array(
+	'user_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'controlled_vocab_entry_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+);
+
 
 
 $tables['section']['attributes'] = array('section_id', 'journal_id', 'review_form_id', 'seq', 'editor_restricted', 'meta_indexed', 'meta_reviewed', 'abstracts_not_required',

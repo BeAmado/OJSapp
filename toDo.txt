@@ -1,4 +1,4 @@
-get the data to correctly update:
-	published_articles (date_submitted, review_assigns, edit_decisions, etc)
-	users (mainly the date_registered)
-	issues (yet to see if really needed)
+modify the function insertUnpublishedArticles to insertArticles
+and make it insert the published_articles related data
+
+make a file to store the statements and statement queries
