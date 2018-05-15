@@ -1144,7 +1144,7 @@ function updatePublishedArticle(&$article, $conn, &$dataMapping, $journalNewId, 
 }// end of the function updateArticle
 
 // #06)
-function insertUnpublishedArticles(&$xml, $conn, &$dataMapping, $journal, $args = null) {
+function insertArticles(&$xml, $conn, &$dataMapping, $journal, $type = 'both', $args = null) {
 	
 	$journalNewPath = null;
 	$journalNewId = null;
@@ -1217,6 +1217,21 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		current_round = :updtArticle_currentRound, pages = :updtArticle_pages, fast_tracked = :updtArticle_fastTracked, hide_author = :updtArticle_hideAuthor, 
 		comments_status = :updtArticle_commentsStatus, locale = :updtArticle_locale, citations = :updtArticle_citations
 		WHERE article_id = :updtArticle_articleId'
+	);
+	
+	$updateArticleDatesSTMT = $conn->prepare('UPDATE articles SET
+		date_status_modified = :updateArticleDates_dateStatusModified, date_submitted = :updateArticleDates_dateSubmitted,
+		last_modified = :updateArticleDates_lastModified WHERE article_id = :updateArticleDates_articleId');
+	
+	$fetchPublishedArticleBySettingSTMT = $conn->prepare(
+		'SELECT art.*, sett.*, pub.* 
+		 FROM article_settings AS sett
+		 INNER JOIN articles AS art
+		 	ON art.article_id = sett.article_id
+		 INNER JOIN published_articles AS pub
+		 	ON pub.article_id = sett.article_id
+		  WHERE art.journal_id = :publishedArticle_journalId AND sett.locale = :publishedArticle_locale AND
+		       sett.setting_name = :publishedArticle_settingName AND sett.setting_value = :publishedArticle_settingValue'
 	);
 	
 	$checkArticleSTMT = $conn->prepare('SELECT * FROM articles WHERE article_id = :checkArticle_articleId');
@@ -1383,16 +1398,29 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	$unpublished_articles = null;
+	$articlesXml = null;
 	
-	if ($xml->nodeName === 'unpublished_articles') {
-		$unpublished_articles = $xml;
+	if (strpos($xml->nodeName, 'articles') !== false) {
+		$articlesXml = $xml;
 	}
 	else {
-		$unpublished_articles = $xml->getElementsByTagName('unpublished_articles')->item(0);
+		switch ($type) {
+			case 'published':
+				$articlesXml = $xml->getElementsByTagName('published_articles')->item(0);
+				break;
+				
+			case 'unpublished':
+				$articlesXml = $xml->getElementsByTagName('unpublished_articles')->item(0);
+				break;
+				
+			default:
+				$articlesXml = $xml->getElementsByTagName('articles')->item(0);
+				break;
+		}
+			
 	}
 	
-	$unpubArticles = xmlToArray($unpublished_articles, true); //array with the unpublished articles
+	$articles = xmlToArray($articlesXml, true); //array with the articles
 	
 	$insertedUsers = array();
 	
@@ -1401,7 +1429,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	}
 	
 	if (!array_key_exists('journal_id', $dataMapping)) {
-		$journalOldId = $unpublished_articles->getAttribute('journal_original_id');
+		$journalOldId = $articlesXml->getAttribute('journal_original_id');
 		$dataMapping['journal_id'] = array($journalOldId => $journalNewId);
 	}
 	
@@ -1427,6 +1455,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	if (!array_key_exists('xml_galley_id', $dataMapping)) $dataMapping['xml_galley_id'] = array();
 	if (!array_key_exists('file_name', $dataMapping)) $dataMapping['file_name'] = array();
 	if (!array_key_exists('original_file_name', $dataMapping)) $dataMapping['original_file_name'] = array();
+	if (!array_key_exists('published_article_id', $dataMapping)) $dataMapping['published_article_id'] = array();
 		
 	$errors = array(
 		'article' => array('insert' => array(), 'update' => array(), 'check' => array()),
@@ -1501,7 +1530,13 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	//loop through every article to insert the preliminary data in the database
 	//and map the id's in the old database to the id's in the new one
-	foreach($unpubArticles as &$article) {
+	foreach($articles as &$article) {
+		
+		// set if the article is published or unpublished
+		$published = false;
+		if (array_key_exists('published_article_id', $article)) {
+			$published = true;
+		}
 		
 		$articleAlreadyImported = false;
 		$articleOk = false;
@@ -1531,6 +1566,81 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		$articleSettings = null;
 		$articleFile = null;
 		$articleSuppFile = null;
+		
+		if ($published) {
+			
+			if (array_key_exists($article['published_article_id'], $dataMapping['published_article_id'])) {
+				$article['DNU'] = true; // means do not update the article
+			}
+			else {
+				// update the published articles and map the published_article_id
+			
+				//search the published article by title
+				$titles = null;
+				if (array_key_exists('settings', $article)) { if (!empty($article['settings'])) {
+					
+					$titles = getArticleTitles($article['settings']); // from helperFunctions.php function #32
+					
+				}// end of the setting not empty
+				}// end of the if article settings exist
+				
+				if ($titles === null) {
+					//article has no setting
+					//treat the error
+				}
+				
+				$fetchedTheArticle = false;
+				$fetchedArticle = null;
+				
+				$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_journalId', $journalNewId, PDO::PARAM_INT);
+				$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_settingName', 'title', PDO::PARAM_STR);
+				
+				foreach ($titles as $title) {
+					
+					$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_locale', $title['locale'], PDO::PARAM_STR);
+					$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_settingValue', $title['title'], PDO::PARAM_STR);
+					if ($fetchPublishedArticleBySettingSTMT->execute()) {
+						
+						$numMatches = $fetchPublishedArticleBySettingSTMT->columnCount();
+						
+						if ($numMatches == 1) {
+							//found the right one
+							if ($fetchedArticle = $fetchPublishedArticleBySettingSTMT->fetch(PDO::FETCH_ASSOC)) {
+								$fetchedTheArticle = true;
+								break; // breaking out of the foreach titles
+							}
+						}
+						else if ($numMatches > 1) {
+							//found multiple articles with that title
+						}
+						else if ($numMatches == 0) {
+							//that is probably an error of charset
+							//if not, then something is really wrong
+						}
+						
+					}
+					else {
+						//the fetchPublishedArticleBySettingSTMT did not execute
+						//treat the error
+					}
+				}//end of the foreach titles
+				
+				if ($fetchedTheArticle) {
+					
+				}
+				else {
+					//did not fetch the article
+					//treat the error
+				}
+				
+				//// end of the block to update the published article ////////////////
+			}//end of the else pub_id not in dataMapping
+			
+			//////////// end of the block to process the published articles /////////////
+			
+		}// end of the if published
+		
+		else { // the article is unpublished
 		
 		$error = array('article_id' => $article['article_id']);
 		
@@ -1755,6 +1865,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		else {
 			array_push($errors['article']['insert'], $error);
 		}
+		
+		
+		/////////end of the unpublished_articles ////////////
+		}
+		
 		
 		//if the article has been correctly inserted
 		if ($articleOk) {
@@ -3382,12 +3497,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$updateArticleFileSTMT = $conn->prepare('UPDATE article_files SET source_file_id = :updateFile_sourceFileId, file_name = :updateFile_fileName, 
 		original_file_name = :updateFile_originalFileName WHERE file_id = :updateFile_fileId AND revision = :updateFile_revision');
 	
-	/*$updateRevAssignSTMT = $conn->prepare('UPDATE review_assignments SET 
-		reviewer_file_id = :updateRevAssign_reviewerFileId, review_round_id = :updateRevAssign_reviewRoundId 
-		WHERE review_id = :updateRevAssign_reviewId');*/
-	
 	//loop through every article to update data to the correct ones in the database
-	foreach($unpubArticles as &$article) {
+	foreach($articles as &$article) {
 		
 		if (array_key_exists('DNU', $article)) { if ($article['DNU']) {
 			//DNU means Do Not Update
@@ -3546,66 +3657,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		}//closing the if article_files is empty
 		}//closing the if article_files exist
 		
-		//update reviewer file id
-		/*if (array_key_exists('review_assignments', $article)) { if (!empty($article['review_assignments']) && $article['review_assignments'] != null) {
-		foreach($article['review_assignments'] as &$revAssign) { 
-			
-			if (array_key_exists('DNU', $revAssign)) { if ($revAssign['DNU']) {
-				//DNU means Do Not Update
-				continue; // go to the next review assignment
-			}}
-			
-			//updatting article
-			$revAssignOk = true;
-			
-			$revAssign['reviewer_file_new_id'] = null;
-			$revAssign['review_round_new_id'] = null;
-			
-			if ($revAssign['reviewer_file_id'] !== null && $revAssign['reviewer_file_id'] !== '' && array_key_exists($revAssign['reviewer_file_id'], $dataMapping['file_id'])) {
-				$revAssign['reviewer_file_new_id'] = $dataMapping['file_id'][$revAssign['reviewer_file_id']];
-			}
-			else {
-				$revAssignOk = false;
-			}
-			
-			if ($revAssign['review_round_id'] !== null && $revAssign['review_round_id'] !== '') {
-				if (array_key_exists($revAssign['review_round_id'], $dataMapping['review_round_id'])) {
-					$revAssign['review_round_new_id'] = $dataMapping['review_round_id'][$dataMapping['review_round_id']];
-				}
-			}
-			
-			
-			if (!array_key_exists('review_new_id', $revAssign)) {
-				$revAssignOk = false;
-			}
-			
-			if ($revAssignOk) {
-				$arr = array();
-				$arr['data'] = $revAssign;
-				$arr['params'] = array(
-					array('name' => ':updateRevAssign_reviewerFileId', 'attr' => 'reviewer_file_new_id', 'type' => PDO::PARAM_INT),
-					array('name' => ':updateRevAssign_reviewRoundId', 'attr' => 'review_round_new_id', 'type' => PDO::PARAM_INT),
-					array('name' => ':updateRevAssign_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT)
-				);
-				
-				echo "\nupdating review_assignment #" . $revAssign['review_new_id'] . " ......... "; 
-				
-				if (myExecute('update', 'review_assignment', $arr, $updateRevAssignSTMT, $errors)) { //from helperFunctions.php
-					echo "Ok\n";
-				}
-				else {
-					echo "Failed\n";
-				}
-			}// closing the if revAssignOk
-			
-		}
-		//end of the foreach review_assignment
-		unset($revAssign);
-		}//closing the if review_assignments is empty
-		}//closing the if review_assignments exist
-		///////////// end of update review_assignments
-		*/
-	}//end of the foreach unpubArticles
+	}//end of the foreach articles
 	unset($article);
 	
 	////////////////////  END OF THE UPDATE STAGE  /////////////////////////////////////////////////////////////////////////////////
@@ -3618,19 +3670,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		'numInsertedRecords' => $numInsertions, 
 		'numUpdatedRecords' => $numUpdates
 	);
-	
-	/*$returnData['errors'] = $errors;
-	$returnData['insertedUsers'] = $insertedUsers;
-	$returnData['numInsertedRecords'] = array(
-		'articles' => $numInsertedArticles, 
-		'article_files' => $numInsertedArticleFiles, 
-		'article_supplementary_files' => $numInsertedSuppFiles
-	);
-	$returnData['numUpdatedRecords'] = array(
-		'articles' => $numUpdatedArticles, 
-		'article_files' => $numUpdatedArticleFiles
-	);*/
-	
 	
 	return $returnData;
 }

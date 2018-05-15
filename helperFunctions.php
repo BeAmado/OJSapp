@@ -1257,3 +1257,19 @@ function getInterestId($conn) {
 	}
 	return false;
 }
+
+// #32)
+function getArticleTitles($articleSettings) {
+	$titles = array();
+	foreach ($articleSettings as $setting) {
+		if ($setting['setting_name'] === 'title') {
+			$title = array(
+				'locale' => $setting['locale'],
+				'title' => $setting['setting_value']
+			);
+			array_push($titles, $title);
+		}
+	}
+	
+	return $titles;
+}
