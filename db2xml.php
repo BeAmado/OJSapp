@@ -291,13 +291,20 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 		}	break;
 			
 		case 'unpublished': {
-			$stmt = $conn->prepare(
+			/*$stmt = $conn->prepare(
 			'SELECT * FROM articles WHERE article_id IN (
 				SELECT article_id FROM articles WHERE article_id NOT IN (
 					SELECT article_id FROM published_articles
 				) AND date_submitted > :limitDate AND journal_id = :journalId
+			)');*/
+			// get all unpublished articles independently of their submission dates
+			$stmt = $conn->prepare(
+			'SELECT * FROM articles WHERE article_id IN (
+				SELECT article_id FROM articles WHERE article_id NOT IN (
+					SELECT article_id FROM published_articles
+				) AND journal_id = :journalId
 			)');
-			$stmt->bindParam(':limitDate', $limitDate, PDO::PARAM_STR);
+			//$stmt->bindParam(':limitDate', $limitDate, PDO::PARAM_STR);
 		}	break;
 			
 		case 'both': {
@@ -2216,3 +2223,54 @@ function fetchIssueOrders($conn, $journalId, $args) {
 	return array('issue_orders' => $issues, 'errors' => $errors);
 }
 //end of fetchIssueOrders
+
+
+/**
+fetch the user registrationDates
+
+$conn, $journalId, $args)
+
+*/
+function fetchUserRegistrationDates($conn, $journal = null, $args = null, $dataMapping = null) {
+	
+	if ($journal === null) {
+		$journal = chooseJournal($conn); //from helperFunctions.php
+	}
+	
+	if ($dataMapping === null) {
+		include_once('appFunctions.php');
+		$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	}
+	
+	$verbose = false;
+	if (is_array($args)) {
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];
+		}
+	}
+	
+	
+	//first make the ids vector to filter only the users of the specified journal
+	$userIdsArray = array_keys($dataMapping['user_id']);
+	$userIdsSTR = getIdsSTR($userIdsArray); // from helperFunctions
+	
+	$stmt = $conn->prepare('SELECT user_id, date_registered FROM users WHERE user_id IN ' . $userIdsSTR);
+	$registrations = array();
+	
+	if ($stmt->execute()) {
+		$registrations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+	}
+	else {
+		return array(
+			'error' => 'The statement did not execute',
+			'userIdsSTR' => $userIdsSTR,
+			'errorInfo' => $stmt->errorInfo()
+		);
+	}
+	
+	if ($verbose) {
+		echo "\n\nFetched " . count($registrations) . " user registration dates\n\n";
+	}
+	
+	return array('user_registration_dates' => $registrations);
+}

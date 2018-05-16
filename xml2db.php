@@ -42,7 +42,7 @@ include_once('helperFunctions.php');
 /**
 function description here
 */
-function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$stmts) {
+function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$stmts, &$conn) {
 	
 	$userOk = false;
 	
@@ -223,6 +223,9 @@ function processUser(&$user, $elem, &$dataMapping, &$errors, &$insertedUsers, &$
 	unset($checkUsernameSTMT);
 	unset($insertUserSTMT);
 	unset($lastUsersSTMT);
+	unset($insertUserSettingSTMT);
+	unset($insertUserRoleSTMT);
+	unset($insertUserInterestSTMT);
 	
 	if (array_key_exists('userSTMT', $error) || array_key_exists('checkUsernameSTMT', $error)) {
 		array_push($errors, $error);
@@ -576,10 +579,11 @@ function to update or insert new data to the section already in the database
 function updateSection($conn, &$section, $sectionNewId, &$dataMapping) {
 	
 	//search if the section_id exists
-	$searchSectionSTMT = $conn->prepare('SELECT * FROM sections WHERE section_id = :search_sectionId');
+	$searchSectionSTMT = $conn->prepare('SELECT COUNT(*) AS count FROM sections WHERE section_id = :search_sectionId');
+	
 	$searchSectionSTMT->bindParam(':search_sectionId', $sectionNewId);
 	if ($searchSectionSTMT->execute()) {
-		if ($searchSectionSTMT->columnCount() == 0) {
+		if ($searchSectionSTMT->fetchColumn() == 0) {
 			return array(
 				'result' => 'error', 
 				'message' => 'Did not find the section #' . $sectionNewId,
@@ -1234,6 +1238,17 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		       sett.setting_name = :publishedArticle_settingName AND sett.setting_value = :publishedArticle_settingValue'
 	);
 	
+	$countPublishedArticlesSTMT = $conn->prepare(
+		'SELECT COUNT(*) AS count
+		 FROM article_settings AS sett
+		 INNER JOIN articles AS art
+		 	ON art.article_id = sett.article_id
+		 INNER JOIN published_articles AS pub
+		 	ON pub.article_id = sett.article_id
+		  WHERE art.journal_id = :countPublishedArticle_journalId AND sett.locale = :countPublishedArticle_locale AND
+		       sett.setting_name = :countPublishedArticle_settingName AND sett.setting_value = :countPublishedArticle_settingValue'
+	);
+	
 	$checkArticleSTMT = $conn->prepare('SELECT * FROM articles WHERE article_id = :checkArticle_articleId');
 	
 	//get the inserted article_id
@@ -1242,7 +1257,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	$insertArticleSettingsSTMT = $conn->prepare('INSERT INTO article_settings (article_id, locale, setting_name, setting_value, setting_type) VALUES (:articleSettings_articleId,
 		:articleSettings_locale, :articleSettings_settingName, :articleSettings_settingValue, :articleSettings_settingType)');
 	
-	$checkArticleSettingSTMT = $conn->prepare('SELECT * FROM article_settings WHERE 
+	$checkArticleSettingSTMT = $conn->prepare('SELECT COUNT(*) AS count FROM article_settings WHERE 
 		article_id = :checkArticleSetting_articleId AND locale = :checkArticleSetting_locale AND setting_name = :checkArticleSetting_settingName');
 	
 	$updtArticleSettingSTMT = $conn->prepare('UPDATE article_settings 
@@ -1515,16 +1530,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		'review_rounds' => 0
 	);
 	
-	$numInsertedArticles = 0;
-	$numUpdatedArticles = 0;
-	$numInsertedArticleFiles = 0;
-	$numUpdatedArticleFiles = 0;
-	$numInsertedSuppFiles = 0;
-	$numInsertedArticleComments = 0;
-	$numInsertedArticleGalleys = 0;
-	$numInsertedSearchObjects = 0;
-	$numInsertedEditAssignments = 0;
-	
 	
 	///////////////////  BEGINNING OF THE INSERT STAGE  //////////////////////////////////////////////////////////////////////////
 	
@@ -1574,6 +1579,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			}
 			else {
 				// update the published articles and map the published_article_id
+				
+				$error = array(
+					'published_article_id' => $article['published_article_id'], 
+					'article_id' => $article['article_id']
+				);
 			
 				//search the published article by title
 				$titles = null;
@@ -1586,51 +1596,167 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if ($titles === null) {
 					//article has no setting
-					//treat the error
+					$error['error'] = 'The article has no setting';
 				}
 				
 				$fetchedTheArticle = false;
 				$fetchedArticle = null;
 				
+				$settingName = 'title';
+				
 				$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_journalId', $journalNewId, PDO::PARAM_INT);
-				$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_settingName', 'title', PDO::PARAM_STR);
+				$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_settingName', $settingName, PDO::PARAM_STR);
+				$countPublishedArticlesSTMT->bindParam(':countPublishedArticle_journalId', $journalNewId, PDO::PARAM_INT);
+				$countPublishedArticlesSTMT->bindParam(':countPublishedArticle_settingName', $settingName, PDO::PARAM_STR);
 				
 				foreach ($titles as $title) {
 					
-					$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_locale', $title['locale'], PDO::PARAM_STR);
-					$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_settingValue', $title['title'], PDO::PARAM_STR);
-					if ($fetchPublishedArticleBySettingSTMT->execute()) {
-						
-						$numMatches = $fetchPublishedArticleBySettingSTMT->columnCount();
+					
+					$countPublishedArticlesSTMT->bindParam(':countPublishedArticle_locale', $title['locale'], PDO::PARAM_STR);
+					$countPublishedArticlesSTMT->bindParam(':countPublishedArticle_settingValue', $title['title'], PDO::PARAM_STR);
+					
+					if ($countPublishedArticlesSTMT->execute()) {
+						$numMatches = $countPublishedArticlesSTMT->fetchColumn();
 						
 						if ($numMatches == 1) {
 							//found the right one
-							if ($fetchedArticle = $fetchPublishedArticleBySettingSTMT->fetch(PDO::FETCH_ASSOC)) {
-								$fetchedTheArticle = true;
-								break; // breaking out of the foreach titles
+							
+							$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_locale', $title['locale'], PDO::PARAM_STR);
+							$fetchPublishedArticleBySettingSTMT->bindParam(':publishedArticle_settingValue', $title['title'], PDO::PARAM_STR);
+							if ($fetchPublishedArticleBySettingSTMT->execute()) {
+								if ($fetchedArticle = $fetchPublishedArticleBySettingSTMT->fetch(PDO::FETCH_ASSOC)) {
+									$fetchedTheArticle = true;
+								}
 							}
+							else {
+								//the fetchPublishedArticleBySettingSTMT did not execute
+								$error['error'] = 'The fetchPublishedArticleBySettingSTMT did not execute';
+								$error['errorInfo'] = $fetchPublishedArticleBySettingSTMT->errorInfo();
+							}
+							
+							break; // breaking out of the foreach titles
+							
 						}
 						else if ($numMatches > 1) {
 							//found multiple articles with that title
+							$error['error'] = 'Found ' . $numMatches . ' articles with title "' . $title['title'] . '"';
 						}
 						else if ($numMatches == 0) {
 							//that is probably an error of charset
 							//if not, then something is really wrong
+							$error['error'] = 'Did not find the article with title "' . $title['title'] . '" in the database';
 						}
 						
-					}
+					}//end of the if countPublishedArticlesSTMT executed
 					else {
-						//the fetchPublishedArticleBySettingSTMT did not execute
-						//treat the error
+						$error['error'] = 'countPublishedArticlesSTMT did not execute';
+						$error['errorInfo'] = $countPublishedArticlesSTMT->errorInfo();
 					}
+					
+					
 				}//end of the foreach titles
 				
 				if ($fetchedTheArticle) {
+					//update the article 
 					
-				}
-				else {
+					if (!array_key_exists('issue_id', $dataMapping)) $dataMapping['issue_id'] = array();
+					if (!array_key_exists($article['issue_id'], $dataMapping['issue_id'])) {
+						$dataMapping['issue_id'][$article['issue_id']] = $fetchedArticle['issue_id'];
+					}
+					
+					if (!array_key_exists($article['published_article_id'], $dataMapping['published_article_id'])) {
+						$dataMapping['published_article_id'][$article['published_article_id']] = $fetchedArticle['published_article_id'];
+					}
+					
+					if (!array_key_exists($article['article_id'], $dataMapping['article_id'])) {
+						$dataMapping['article_id'][$article['article_id']] = $fetchedArticle['article_id'];
+					}
+					
+					$article['article_new_id'] = $fetchedArticle['article_id'];
+					
+					$articleOk = true;
+					$updateArticle = false;
+						
+						//update the article if at least one of the file_ids is not mapped, which would mean the file_id changed
+						
+					if ($article['submission_file_id'] != null && $article['submission_file_id'] != '') {
+						if (!array_key_exists($fetchedArticle['submission_file_id'], $dataMapping['file_id'])) {
+							$updateArticle = true;
+						}
+					}
+					if ($article['revised_file_id'] != null && $article['revised_file_id'] != '') {
+						if (!array_key_exists($fetchedArticle['revised_file_id'], $dataMapping['file_id'])) {
+							$updateArticle = true;
+						}
+					}
+					if ($article['review_file_id'] != null && $article['review_file_id'] != '') {
+						if (!array_key_exists($fetchedArticle['review_file_id'], $dataMapping['file_id'])) {
+							$updateArticle = true;
+						}
+					}
+					if ($article['editor_file_id'] != null && $article['editor_file_id'] != '') {
+						if (!array_key_exists($fetchedArticle['editor_file_id'], $dataMapping['file_id'])) {
+							$updateArticle = true;
+						}
+					}
+						
+					$args = array();
+					$args['compare'] = 'almost all';
+					$args['notCompare'] = ['submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id'];
+					
+					if (same2($article, $fetchedArticle, $args) > 0) { //from helperFunctions.php function #16
+						
+						if (!$updateArticle) {
+							$article['DNU'] = true; // DNU means Do Not Update
+						}
+						
+					}//end of the if same2
+					else { //update the article
+						
+						validateData('article', $article);
+						
+						$arr = array();
+						$arr['data'] = $article;
+						$arr['params'] = array(
+							array('name' => ':updtArticle_language', 'attr' => 'language', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_commentsToEd', 'attr' => 'comments_to_ed', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_dateSubmitted', 'attr' => 'date_submitted', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_dateStatusModified', 'attr' => 'date_status_modified', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticle_submissionProgress', 'attr' => 'submission_progress', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticle_currentRound', 'attr' => 'current_round', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticle_pages', 'attr' => 'pages', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_fastTracked', 'attr' => 'fast_tracked', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticle_hideAuthor', 'attr' => 'hide_author', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticle_commentsStatus', 'attr' => 'comments_status', 'type' => PDO::PARAM_INT),
+							array('name' => ':updtArticle_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_citations', 'attr' => 'citations', 'type' => PDO::PARAM_STR),
+							array('name' => ':updtArticle_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+						);
+						
+						echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
+						
+						if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors)) { //from helperFunctions.php
+							echo "Ok\n";
+							$numUpdates['articles']++;
+						}
+						else {
+							echo "Failed\n";
+							$articleOk = false;
+						}
+						
+					}
+					
+					
+				}//end of the if fetchedTheArticle
+				else if (!array_key_exists('error', $error)){
 					//did not fetch the article
-					//treat the error
+					$error['error'] = 'Did not fetch the article';
+				}
+				
+				if (array_key_exists('error', $error)) {
+					array_push($errors['article']['update'], $error);
 				}
 				
 				//// end of the block to update the published article ////////////////
@@ -1640,7 +1766,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 		}// end of the if published
 		
-		else { // the article is unpublished
+		else { // the article is unpublished //////////////////////////////////////////////////
 		
 		$error = array('article_id' => $article['article_id']);
 		
@@ -1650,7 +1776,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		else {
 			// get the user that owns the article to identify on the new journal  ///////////////////
 			if (is_array($article['user'])) {
-				$userOk = processUser($article['user'], array('type' => 'article', 'data' => $article), $dataMapping, $errors, $insertedUsers, $userStatements);
+				$userOk = processUser($article['user'], array('type' => 'article', 'data' => $article), $dataMapping, 
+					$errors, $insertedUsers, $userStatements, $conn);
 			}
 		}
 		
@@ -1893,7 +2020,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				$checkError = array('article_setting' => $articleSetting);
 				
 				if ($checkArticleSettingSTMT->execute()) {
-					if ($checkArticleSettingSTMT->columnCount() > 0) {
+					if ($checkArticleSettingSTMT->fetchColumn() > 0) {
 						// update the article_setting //////////////////
 						
 						echo '    updating '. $articleSetting['setting_name'] . ' with locale ' . $articleSetting['locale'] . ' .........'; 
@@ -2346,7 +2473,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				}
 				else if (is_array($articleComment['author'])){
 					
-					$authorIdOk = processUser($articleComment['author'], array('type' => 'article_comment', 'data' => $articleComment), $dataMapping, $errors, $insertedUsers, $userStatements);
+					$authorIdOk = processUser($articleComment['author'], array('type' => 'article_comment', 'data' => $articleComment), $dataMapping, $errors, 
+						$insertedUsers, $userStatements, $conn);
 					
 					if ($authorIdOk) {
 						
@@ -2700,7 +2828,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$editorIdOk = true;
 				}
 				else if (is_array($editDecision['editor'])) {
-					$editorIdOk = processUser($editDecision['editor'], array('type' => 'edit_decision', 'data' => $editDecision), $dataMapping, $errors, $insertedUsers, $userStatements);
+					$editorIdOk = processUser($editDecision['editor'], array('type' => 'edit_decision', 'data' => $editDecision), $dataMapping, 
+						$errors, $insertedUsers, $userStatements, $conn);
 					
 					if ($editorIdOk) {
 						
@@ -2791,7 +2920,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				}	
 				else if (is_array($editAssignment['editor'])) {
 					
-					$editorIdOk = processUser($editAssignment['editor'], array('type' => 'edit_assignment', 'data' => $editAssignment), $dataMapping, $errors, $insertedUsers, $userStatements);
+					$editorIdOk = processUser($editAssignment['editor'], array('type' => 'edit_assignment', 'data' => $editAssignment), $dataMapping, 
+						$errors, $insertedUsers, $userStatements, $conn);
 					
 					if ($editorIdOk) {
 						
@@ -3166,7 +3296,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$reviewerIdOk = true;
 				}
 				else if (is_array($revAssign['reviewer'])) {
-					$reviewerIdOk = processUser($revAssign['reviewer'], array('type' => 'review_assignment', 'data' => $revAssign), $dataMapping, $errors, $insertedUsers, $userStatements);
+					$reviewerIdOk = processUser($revAssign['reviewer'], array('type' => 'review_assignment', 'data' => $revAssign), $dataMapping, 
+						$errors, $insertedUsers, $userStatements, $conn);
 					
 					if ($reviewerIdOk) {
 						$revAssign['reviewer_new_id'] = $revAssign['reviewer']['user_new_id'];
@@ -4039,7 +4170,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					}
 					else if (is_array($membership['user'])) {
 						//$user = $membership['user'];
-						$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping, $errors, $insertedUsers, $userStatements);
+						$userOk = processUser($membership['user'], array('type' => 'group_membership', 'data' => $membership), $dataMapping,
+							$errors, $insertedUsers, $userStatements, $conn);
+						
 						$membership['user_new_id'] = $membership['user']['user_new_id'];
 					}
 					//////////////////////////////////////////////////////////////
@@ -4639,7 +4772,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			//echo "Passing the sender: \n" . print_r($emailLog['sender'], true) . "\n to processUser\n\n";
 			
-			$senderIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, $errors, $insertedUsers, $userStatements);
+			$senderIdOk = processUser($emailLog['sender'], array('type' => 'email_log', 'data' => $emailLog), $dataMapping, 
+				$errors, $insertedUsers, $userStatements, $conn);
+			
 			$emailLog['sender_new_id'] = $emailLog['sender']['user_new_id'];
 		}
 		/////////////////////////////////////////////////////////////////////////////////////
@@ -4723,7 +4858,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$userIdOk = true;
 				}
 				else if (is_array($emailLogUsers['user'])){
-					$userIdOk = processUser($emailLogUser['user'], array('type' => 'email_log_users', 'data' => $emailLogUser), $dataMapping, $errors, $insertedUsers, $userStatements);
+					$userIdOk = processUser($emailLogUser['user'], array('type' => 'email_log_users', 'data' => $emailLogUser), $dataMapping, 
+						$errors, $insertedUsers, $userStatements, $conn);
 				}
 				/////////////////////////////////////////////////////////////////////////////////////
 				
@@ -4797,7 +4933,9 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			$userIdOk = true;
 		}
 		else if (is_array($eventLog['user'])){
-			$userIdOk = processUser($eventLog['user'], array('type' => 'event_log', 'data' => $eventLog), $dataMapping, $errors, $insertedUsers, $userStatements);
+			$userIdOk = processUser($eventLog['user'], array('type' => 'event_log', 'data' => $eventLog), $dataMapping, 
+				$errors, $insertedUsers, $userStatements, $conn);
+			
 			$eventLog['user_new_id'] = $eventLog['user']['user_new_id'];
 		}
 		////////////////////////////////////////////////////////////////////////////////////////
@@ -5337,3 +5475,66 @@ function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId,
 	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
 }
 // end of insertCitationsAndReferrals
+
+//#15
+function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
+	
+	$user_registration_dates_node = null;
+	
+	if (strpos($xml->nodeName, 'articles') !== false) {
+		$user_registration_dates_node = $xml;
+	}
+	else {
+		$user_registration_dates_node = $xml->getElementsByTagName('user_registration_dates')->item(0);
+	}
+	
+	$registrations = xmlToArray($user_registration_dates_node, true); //from helperFunctions.php
+	
+	$updateUserRegistrationDateSTMT = $conn->prepare(
+		'UPDATE users 
+		 SET date_registered = :updateUserRegistrationDate_dateRegistered 
+		 WHERE user_id = :updateUserRegistrationDate_userId'
+	);
+	
+	$numUpdates = 0;
+	$errors = array(
+		'users' => array('updates' => array())
+	);
+	
+	echo "\n\nUpdating the users registrations dates: \n";
+	
+	foreach ($registrations as $reg) {
+		if (!array_key_exists($reg['user_id'], $dataMapping['user_id'])) {
+			
+			$error = array(
+				'registration' => $reg, 
+				'error' => 'the user_id is not in the dataMapping'
+			);
+			array_push($errors['users']['update'], $error);
+			
+			continue; // go to the next user_registration_date
+		}
+		
+		$userNewId = $dataMapping['user_id'][$reg['user_id']];
+		
+		$updateUserRegistrationDateSTMT->bindParam(':updateUserRegistrationDate_dateRegistered', $reg['date_registered'], PDO::PARAM_STR);
+		$updateUserRegistrationDateSTMT->bindParam(':updateUserRegistrationDate_userId', $reg['user_id'], PDO::PARAM_INT);
+		
+		if ($updateUserRegistrationDateSTMT->execute()) {
+			if ($updateUserRegistrationDateSTMT->rowCount() == 1) {
+				$numUpdates++;
+			}
+		}
+		else {
+			$error = array(
+				'registration' => $reg, 
+				'error' => 'the statement did not execute', 
+				'errorInfo' => $updateUserRegistrationDateSTMT->errorInfo()
+			);
+			array_push($errors['users']['update'], $error);
+		}
+	}
+	
+	return array('errors' => $errors, 'numUpdatedRecords' => $numUpdates);
+	
+}

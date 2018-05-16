@@ -521,7 +521,7 @@ $tables['controlled_vocab_entry']['attributes'] = array('controlled_vocab_entry_
 $tables['controlled_vocab_entry']['primary_keys'] = array('controlled_vocab_entry_id');
 $tables['controlled_vocab_entry']['foreign_keys'] = array('controlled_vocab_id');
 $tables['controlled_vocab_entry']['properties'] = array(
-	'controlled_vocab_entry_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment')
+	'controlled_vocab_entry_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
 	'controlled_vocab_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
 	'seq' => array('type' => 'double', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
 );

@@ -958,14 +958,15 @@ function getTablesInfo($conn = null, $dbName = null) {
 /**
 returns an array with the article ids of the selected journal
 */
-function getArticleIds($conn, $journal) {
+function getArticleIds($conn, $journal, $dataMapping = null) {
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
 	}
 	
-	include_once('appFunctions.php');
-	
-	$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	if ($dataMapping === null) {
+		include_once('appFunctions.php');
+		$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
+	}
 	
 	if (!is_array($dataMapping)) {
 		return null;
@@ -985,6 +986,29 @@ function getArticleIds($conn, $journal) {
 	return $articleIds;
 }
 
+// #27.99)
+/**
+returns a string representing the set of article ids 
+*/
+function getIdsSTR($ids = null) {
+	
+	if (!is_array($ids)) {
+		echo "\nERROR when executing the function 'getIdsSTR'. The argument must be an array. \nInstead it was: \n";
+		var_dump($ids);
+		return false;
+	}
+	
+	$totalIds = count($ids);
+	
+	$idsSTR = '(';
+	for ($i = 0; $i < $totalIds - 1; $i++) {
+		$idsSTR .= $ids[$i] . ', ';
+	}
+	
+	$idsSTR .= $ids[$totalIds - 1] . ')';
+	
+	return $idsSTR;
+}
 
 // #28)
 /**

@@ -122,7 +122,7 @@ $queries['fetchPublishedArticleBySetting'] = array(
 		 	ON pub.article_id = sett.article_id
 		  WHERE art.journal_id = :publishedArticle_journalId AND sett.locale = :publishedArticle_locale AND
 		       sett.setting_name = :publishedArticle_settingName AND sett.setting_value = :publishedArticle_settingValue',
-		 
+		       
 	'params' => array(
 		'journal_id' => ':publishedArticle_journalId',
 		'locale' => ':publishedArticle_locale',
@@ -130,6 +130,24 @@ $queries['fetchPublishedArticleBySetting'] = array(
 		'setting_value' => ':publishedArticle_settingValue'
 	)
 	
+);
+
+$queries['countPublishedArticleBySetting'] = array(
+	'query' => 'SELECT COUNT(*) AS count
+		 FROM article_settings AS sett
+		 INNER JOIN articles AS art
+		 	ON art.article_id = sett.article_id
+		 INNER JOIN published_articles AS pub
+		 	ON pub.article_id = sett.article_id
+		  WHERE art.journal_id = :countPublishedArticle_journalId AND sett.locale = :countPublishedArticle_locale AND
+		       sett.setting_name = :countPublishedArticle_settingName AND sett.setting_value = :countPublishedArticle_settingValue',
+		       
+	'params' => array(
+		'journal_id' => ':countPublishedArticle_journalId',
+		'locale' => ':countPublishedArticle_locale',
+		'setting_name' => ':countPublishedArticle_settingName',
+		'setting_value' => ':countPublishedArticle_settingValue'
+	)
 );
 
 //queries for update

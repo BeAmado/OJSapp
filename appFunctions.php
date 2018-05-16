@@ -846,7 +846,7 @@ function myImport($options, &$xmlFiles, &$conn = null, $journal = null, $args= n
 			
 			if ($result === 1) {
 				$saveDataMappingXml = true;
-				if ($type === "unpublished_articles") {
+				if ($type === 'unpublished_articles' || $type === 'published_articles') {
 					$migrate_files = true;
 				}
 			}
@@ -970,7 +970,8 @@ function myMain() {
 		'articles history' => false,
 		'plugin settings' => false,
 		'issue orders' => false,
-		'citations and referrals' => false
+		'user registration dates' => false,
+		//'citations and referrals' => false
 	);
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
@@ -1123,24 +1124,31 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			$returnedData = fetchCitationsAndReferrals($conn, $journal, $args);
 			break;
 			
+		case 'user_registration_dates':
+			$returnedData = fetchUserRegistrationDates($conn, $journal);
+			break;
+			
 		default:
 			echo "\nUnknown type '$type'\n";
 			return -3;
 	}
 	
-	$numErrors = countErrors($returnedData['errors'], 'exportation'); // from helperFunctions.php function #21
+	if (array_key_exists('errors', $returnedData)) {
+		$numErrors = countErrors($returnedData['errors'], 'exportation'); // from helperFunctions.php function #21
 	
-	if ($numErrors > 0) {
-		echo "\nThere were errors while fetching the $printableType:\n";
-		print_r($returnedData['errors']);
+		if ($numErrors > 0) {
+			echo "\nThere were errors while fetching the $printableType:\n";
+			print_r($returnedData['errors']);
+			
+			$resp = readline("\n\nContinue the execution even with the errors? (y/N): ");
+			
+			if (strtolower($resp) !== 'y' && strtolower($resp) !== 'yes') {
+				return -2;
+			}
+			
+		}//end of the if numErrors > 0
 		
-		$resp = readline("\n\nContinue the execution even with the errors? (y/N): ");
-		
-		if (strtolower($resp) !== 'y' && strtolower($resp) !== 'yes') {
-			return -2;
-		}
-		
-	}
+	}//end of the if the key errors exist
 	
 	if ((strpos($type, 'articles') !== false) && (strpos($type, 'history') === false)) {
 		$data = $returnedData['articles'];
@@ -1266,8 +1274,12 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			$returnedData = insertSections($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
+		case 'published_articles':
+			$returnedData = insertArticles($dataXml, $conn, $dataMapping, $journal, 'published'); // the journal path is used also
+			break;
+			
 		case 'unpublished_articles':
-			$returnedData = insertUnpublishedArticles($dataXml, $conn, $dataMapping, $journal); // the journal path is used also
+			$returnedData = insertArticles($dataXml, $conn, $dataMapping, $journal, 'unpublished'); // the journal path is used also
 			break;
 			
 		case 'announcements':
@@ -1296,6 +1308,10 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			
 		case 'citations_and_referrals':
 			echo "\nTHE OPTION citations and referrals DOES NOT WORK FOR IMPORTATION YET\n";
+			break;
+			
+		case 'user_registration_dates':
+			$returnedData = updateUserRegistrationDates($dataXml, $conn, $dataMapping);
 			break;
 			
 		default:
@@ -1381,52 +1397,56 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 	}
 	
 	//the inserted records
-	if (is_array($returnedData['numInsertedRecords'])) {
-		foreach ($returnedData['numInsertedRecords'] as $item => $number) {
-			if ($number > 0) {
-				$saveDataMappingXml = true;
-				echo "\nImported $number new $item";
-			}
-			else {
-				echo "\nDid not import any new $item";
+	if (array_key_exists('numInsertedRecords', $returnedData)) {
+		if (is_array($returnedData['numInsertedRecords'])) {
+			foreach ($returnedData['numInsertedRecords'] as $item => $number) {
+				if ($number > 0) {
+					$saveDataMappingXml = true;
+					echo "\nImported $number new $item";
+				}
+				else {
+					echo "\nDid not import any new $item";
+				}
 			}
 		}
-	}
-	else if ($returnedData['numInsertedRecords'] > 0) {
-		
-		//only save the dataMappings if at least one article or new user was inserted
-		
-		echo "\nImported " . $returnedData['numInsertedRecords'] . " new $printableType.";
-		$saveDataMappingXml = true;
-		
-	}
-	else {
-		echo "\nDid not import any new $PrintableType.\n";
-	}
+		else if ($returnedData['numInsertedRecords'] > 0) {
+			
+			//only save the dataMappings if at least one article or new user was inserted
+			
+			echo "\nImported " . $returnedData['numInsertedRecords'] . " new $printableType.";
+			$saveDataMappingXml = true;
+			
+		}
+		else {
+			echo "\nDid not import any new $PrintableType.\n";
+		}
+	}//end of the if numInsertedRecords exists
 	
 	//the updated records
-	if (is_array($returnedData['numUpdatedRecords'])) {
-		foreach ($returnedData['numUpdatedRecords'] as $item => $number) {
-			if ($number > 0) {
-				$saveDataMappingXml = true;
-				echo "\nUpdated $number $item";
-			}
-			else {
-				echo "\nDid not update any $item";
+	if (array_key_exists('numUpdatedRecords', $returnedData)) {
+		if (is_array($returnedData['numUpdatedRecords'])) {
+			foreach ($returnedData['numUpdatedRecords'] as $item => $number) {
+				if ($number > 0) {
+					$saveDataMappingXml = true;
+					echo "\nUpdated $number $item";
+				}
+				else {
+					echo "\nDid not update any $item";
+				}
 			}
 		}
-	}
-	else if ($returnedData['numUpdatedRecords'] > 0) {
-		
-		//only save the dataMappings if at least one article or new user was inserted
-		
-		echo "\nUpdated " . $returnedData['numUpdatedRecords'] . " $printableType.";
-		$saveDataMappingXml = true;
-		
-	}
-	else {
-		echo "\nDid not update any $PrintableType.\n";
-	}
+		else if ($returnedData['numUpdatedRecords'] > 0) {
+			
+			//only save the dataMappings if at least one article or new user was inserted
+			
+			echo "\nUpdated " . $returnedData['numUpdatedRecords'] . " $printableType.";
+			$saveDataMappingXml = true;
+			
+		}
+		else {
+			echo "\nDid not update any $PrintableType.\n";
+		}
+	}//end of the if numUpdatedRecords exists
 	
 	
 	if ($saveDataMappingXml) {
