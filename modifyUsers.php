@@ -133,7 +133,7 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn) {
 	
 	$arrInfo['num_users_original']++;
 	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
-	$username = $conn->real_escape_string($username);
+	//$username = $conn->real_escape_string($username);
 	
 	//PRIMEIRO ACERTANDO OS DADOS DOS interests PARA NÃO TER REPETIDO NO MESMO USUÁRIO
 	fixDuplicateInterests($user);
@@ -145,7 +145,7 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn) {
 	if ($user->getElementsByTagName('middle_name')->length == 1)  $middlename = $user->getElementsByTagName('middle_name')->item(0)->nodeValue;
 	$email = $user->getElementsByTagName('email')->item(0)->nodeValue;
 	$new_username = '';
-	$registered = 0;
+	$registered = false;
 	
 	//variável para controlar qual usuário será salvo no username_changes.xml
 	$changeUsername = false;
@@ -167,53 +167,82 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn) {
 		}
 	}*/
 	
-	$stmt = $conn->prepare('SELECT first_name, middle_name, last_name, email, username FROM users WHERE email = :email');
-	$stmt->bindParam(':email', $email, PDO::PARAM_STR);
+	$selectUserDataByEmailSTMT = $conn->prepare('SELECT first_name, middle_name, last_name, email, username FROM users WHERE email = :selectDataByEmail_email');
 	
-	//if ($stmt->execute)
+	$selectUserDataByUsernameSTMT = $conn->prepare('SELECT first_name, middle_name, last_name, email, username FROM users WHERE username = :selectDataByUsername_username');
+	$selectUsernameCountSTMT = $conn->prepare('SELECT COUNT(*) as count FROM users WHERE username = :selectUsernameCount_username');
+	
+	$selectUserDataByEmailSTMT->bindParam(':email', $email, PDO::PARAM_STR);
+	
+	if ($selectUserDataByEmailSTMT->execute()) {
+		
+		if ($userData = $selectUserDataByEmailSTMT->fetch(PDO::FETCH_ASSOC)) {
+			$registered = true;
+			$arrInfo['num_users_registered']++;
+			if ($userData['username'] !== $username) {
+				$changeUsername = true;
+				$new_username = $userData['username'];
+				$arrInfo['num_changed_users_registered']++;
+			}
+		}
+		//SENÃO ENCONTRAR O EMAIL DO USUÁRIO É PORQUE ELE AINDA NÃO ESTÁ NO BANCO DE DADOS E DEVE-SE VERIFICAR SE SEU USERNAME ESTÁ 
+		//DISPONÍVEL, MODIFICANDO-O SE NECESSÁRIO //////////////////////////////////////////////////////////////////////////////////
+		else {
+			
+			//$query = $conn->query("SELECT first_name, middle_name, last_name, email FROM users WHERE username='$username'");
+			$selectUserDataByUsernameSTMT->bindParam(':selectDataByUsername_username', $username, PDO::PARAM_STR);
+			
+			// USERNAME JÁ EM USO ///////////////////
+			/*if ($query->num_rows > 0) {
+				$changeUsername = true;
+				//new xml tags to put in user
+				$registered = 0;
+				$db_user = $query->fetch_object();
+				
+				$num = 2;
+				$name_ok = false;
+				$new_username .= $username . $num;
+				//testando novos username para ver qual pode ser utilizado pelo usuário //////////////////////
+				while (!$name_ok) {
+					$new_query = $conn->query("SELECT COUNT(*) as count FROM users WHERE username='$new_username'");
+					if ($new_query->fetch_row()[0] > 0) {
+						$num++;	
+						$new_username = $username . $num;
+					}
+					else {
+						$name_ok = true;	
+					}
+				}
+				
+				if ($email == $db_user->email) {
+					$arrInfo["num_users_registered"]++;
+					$registered = 1;
+				}
+				else {
+					//só muda o username no xml se o usuário ainda não estiver no banco de dados
+					$user->getElementsByTagName("username")->item(0)->nodeValue = $new_username;
+				}
+			}*/
+			if ($selectUserDataByUsernameSTMT->execute()) {
+				
+			}
+			else {
+				//the selectUserDataByUsernameSTMT did not execute
+				//treat the error
+			}
+			////// FIM DO IF USERNAME JÁ EM USO//////////
+		}
+		//FIM DO ELSE INDICANDO QUE O USUÁRIO AINDA NÃO ESTÁ NO BANCO DE DADOS /////////////////////////////////
+	}
+	else {
+		//the selectUserDataByEmailSTMT did not execute
+		//treat the error
+	}
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	//SENÃO ENCONTRAR O EMAIL DO USUÁRIO É PORQUE ELE AINDA NÃO ESTÁ NO BANCO DE DADOS E DEVE-SE VERIFICAR SE SEU USERNAME ESTÁ 
-	//DISPONÍVEL, MODIFICANDO-O SE NECESSÁRIO //////////////////////////////////////////////////////////////////////////////////
-	else {
-		
-		$query = $conn->query("SELECT first_name, middle_name, last_name, email FROM users WHERE username='$username'");
-		
-		// USERNAME JÁ EM USO ///////////////////
-		if ($query->num_rows > 0) {
-			$changeUsername = true;
-			//new xml tags to put in user
-			$registered = 0;
-			$db_user = $query->fetch_object();
-			
-			$num = 2;
-			$name_ok = false;
-			$new_username .= $username . $num;
-			//testando novos username para ver qual pode ser utilizado pelo usuário //////////////////////
-			while (!$name_ok) {
-				$new_query = $conn->query("SELECT COUNT(*) as count FROM users WHERE username='$new_username'");
-				if ($new_query->fetch_row()[0] > 0) {
-					$num++;	
-					$new_username = $username . $num;
-				}
-				else {
-					$name_ok = true;	
-				}
-			}
-			
-			if ($email == $db_user->email) {
-				$arrInfo["num_users_registered"]++;
-				$registered = 1;
-			}
-			else {
-				//só muda o username no xml se o usuário ainda não estiver no banco de dados
-				$user->getElementsByTagName("username")->item(0)->nodeValue = $new_username;
-			}
-		}
-		////// FIM DO IF USERNAME JÁ EM USO//////////
-	}
-	//FIM DO ELSE INDICANDO QUE O USUÁRIO AINDA NÃO ESTÁ NO BANCO DE DADOS /////////////////////////////////
+	
+	
 	
 	
 	//++++++++++++++++ SE PRECISAR MUDAR O USERNAME +++++++++++++++++++++++++++++++++++++++++++++++++++++
