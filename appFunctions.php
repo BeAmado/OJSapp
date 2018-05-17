@@ -1125,7 +1125,7 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			break;
 			
 		case 'user_registration_dates':
-			$returnedData = fetchUserRegistrationDates($conn, $journal);
+			$returnedData = fetchUserRegistrationDates($conn, $journal, $args);
 			break;
 			
 		default:
@@ -1418,7 +1418,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			
 		}
 		else {
-			echo "\nDid not import any new $PrintableType.\n";
+			echo "\nDid not import any new $printableType.\n";
 		}
 	}//end of the if numInsertedRecords exists
 	
@@ -1444,7 +1444,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			
 		}
 		else {
-			echo "\nDid not update any $PrintableType.\n";
+			echo "\nDid not update any $printableType.\n";
 		}
 	}//end of the if numUpdatedRecords exists
 	

@@ -2254,7 +2254,7 @@ function fetchUserRegistrationDates($conn, $journal = null, $args = null, $dataM
 	$userIdsArray = array_keys($dataMapping['user_id']);
 	$userIdsSTR = getIdsSTR($userIdsArray); // from helperFunctions
 	
-	$stmt = $conn->prepare('SELECT user_id, date_registered FROM users WHERE user_id IN ' . $userIdsSTR);
+	$stmt = $conn->prepare('SELECT user_id, date_registered FROM users WHERE date_registered IS NOT NULL AND user_id IN ' . $userIdsSTR);
 	$registrations = array();
 	
 	if ($stmt->execute()) {
