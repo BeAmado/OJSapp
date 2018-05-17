@@ -2446,7 +2446,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 				if (array_key_exists($articleComment['comment_id'], $dataMapping['comment_id'])) {
 					echo "\nThe article_comment #" . $articleComment['comment_id'] . " was already imported.\n";
-					echo "Its new id is " . $dataMapping['comment_id'][$dataMapping['comment_id']];
+					echo "Its new id is " . $dataMapping['comment_id'][$articleComment['comment_id']];
 					continue; // go to the next article_comment
 				}
 				
