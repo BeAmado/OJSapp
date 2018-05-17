@@ -1,28 +1,28 @@
 <?php
 
-function clearId($id){
-     $LetraProibi = Array(" ",",",".","'","\"","&","|","!","#","$","¨","*","(",")","`","´","<",">",";","=","+","§","{","}","[","]","^","~","?","%");
+/*function clearId($id){
+     $LetraProibi = Array(' ',',','.',"'",'"','&','|','!','#','$','¨','*','(',')','`','´','<','>',';','=','+','§','{','}','[',']','^','~','?','%');
      $special = Array('Á','È','ô','Ç','á','è','Ò','ç','Â','Ë','ò','â','ë','Ø','Ñ','À','Ð','ø','ñ','à','ð','Õ','Å','õ','Ý','å','Í','Ö','ý','Ã','í','ö','ã',
         'Î','Ä','î','Ú','ä','Ì','ú','Æ','ì','Û','æ','Ï','û','ï','Ù','®','É','ù','©','é','Ó','Ü','Þ','Ê','ó','ü','þ','ê','Ô','ß','‘','’','‚','“','”','„');
      $clearspc = Array('a','e','o','c','a','e','o','c','a','e','o','a','e','o','n','a','d','o','n','a','o','o','a','o','y','a','i','o','y','a','i','o','a',
         'i','a','i','u','a','i','u','a','i','u','a','i','u','i','u','','e','u','c','e','o','u','p','e','o','u','b','e','o','b','','','','','','');
      $newId = str_replace($special, $clearspc, $id);
-     $newId = str_replace($LetraProibi, "", trim($newId));
+     $newId = str_replace($LetraProibi, '', trim($newId));
      return strtolower($newId);
-}
+}*/
 
 
 function fixDuplicateInterests(&$user) {
-	$username = $user->getElementsByTagName("username")->item(0)->nodeValue;
+	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
 	$duplicateInterests = 0;
 	$interests = array();
-	$interestsNodes = $user->getElementsByTagName("interests");
-	$in = "";
+	$interestsNodes = $user->getElementsByTagName('interests');
+	$in = '';
 	foreach($interestsNodes as $interest) {
 		array_push($interests, $interest);
 	}
 	foreach($interests as $node) {
-		if (clearId($node->nodeValue) === clearId($in)) {
+		if (htmlentities($node->nodeValue) === htmlentities($in)) {
 			$duplicateInterests++;
 			$node->parentNode->removeChild($node);
 		}
@@ -56,34 +56,34 @@ function fillImportUsersInfo(&$xmlNode, $arr) {
 		/////////////////////////////////////////////////
 	
 	
-	$import_users_info = $xmlNode->createELement("import_users_info"); //NÓ RAIZ DO DOCUMENTO XML
+	$import_users_info = $xmlNode->createELement('import_users_info'); //NÓ RAIZ DO DOCUMENTO XML
 		
 	///////////////////// PREENCHENDO O NÓ JOURNAL //////////////////////////////
-	$exportedJournalNameNode = $xmlNode->createElement("name", $arr["exportedJournalName"]); //CRIA O NÓ NAME DO JOURNAL EXPORTADO
+	$exportedJournalNameNode = $xmlNode->createElement('name', $arr['exportedJournalName']); //CRIA O NÓ NAME DO JOURNAL EXPORTADO
 	
-	$journalNode = $xmlNode->createElement("journal"); //CRIA O NÓ JOURNAL
+	$journalNode = $xmlNode->createElement('journal'); //CRIA O NÓ JOURNAL
 	
 	$journalNode->appendChild($exportedJournalNameNode);
 	/////////////////////////////////////////////////////////////////////////
 	
 	
 	///////////////////////////////// PREENCHENDO O NÓ CHANGED_USERS /////////////////////////////////////////////////////////
-	$changed_usersNode = $xmlNode->createElement("changed_users"); //CRIA O NÓ CHANGED_USERS
+	$changed_usersNode = $xmlNode->createElement('changed_users'); //CRIA O NÓ CHANGED_USERS
 	
-	$num_usersNode = $xmlNode->createElement("number_of_users", $arr["num_user_changes"]);
+	$num_usersNode = $xmlNode->createElement('number_of_users', $arr['num_user_changes']);
 	$changed_usersNode->appendChild($num_usersNode);
 	
-	$num_users_registeredNode = $xmlNode->createElement("changed_users_already_registered", $arr["num_changed_users_registered"]);
+	$num_users_registeredNode = $xmlNode->createElement('changed_users_already_registered', $arr['num_changed_users_registered']);
 	$changed_usersNode->appendChild($num_users_registeredNode);
 	
-	$changed_usersNode->appendChild($arr["users"]);
+	$changed_usersNode->appendChild($arr['users']);
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	/////////////////// CRIANDO OS NÓS PARA GUARDARAS QUANTIDADES DE USUÁRIOS DO ARQUIVO ORIGINAL  ///////////////////
 	
-	$num_users_originalNode = $xmlNode->createElement("num_users_original", $arr["num_users_original"]);
-	$num_users_registeredNode = $xmlNode->createElement("num_users_already_registered", $arr["num_users_registered"]);
+	$num_users_originalNode = $xmlNode->createElement('num_users_original', $arr['num_users_original']);
+	$num_users_registeredNode = $xmlNode->createElement('num_users_already_registered', $arr['num_users_registered']);
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
@@ -101,19 +101,19 @@ function fillImportUsersInfo(&$xmlNode, $arr) {
 
 function addChangedUser(&$changedUsersNode, &$xmlNode, $userInfo) {
 
-	$username_node = $xmlNode->createElement("username");
-	$username_new = $xmlNode->createElement("new", $userInfo["new_username"]);
-	$username_old = $xmlNode->createElement("old", $userInfo["username"]);
+	$username_node = $xmlNode->createElement('username');
+	$username_new = $xmlNode->createElement('new', $userInfo['new_username']);
+	$username_old = $xmlNode->createElement('old', $userInfo['username']);
 	$username_node->appendChild($username_old);
 	$username_node->appendChild($username_new);
 	
-	$firstname_node = $xmlNode->createElement("firstname", $userInfo["firstname"]);
-	$middlename_node = $xmlNode->createElement("middlename", $userInfo["middlename"]);
-	$lastname_node = $xmlNode->createElement("lastname", $userInfo["lastname"]);
-	$registered_node = $xmlNode->createElement("already_registered", $userInfo["registered"]);
-	$email_node = $xmlNode->createElement("email", $userInfo["email"]);
+	$firstname_node = $xmlNode->createElement('firstname', $userInfo['firstname']);
+	$middlename_node = $xmlNode->createElement('middlename', $userInfo['middlename']);
+	$lastname_node = $xmlNode->createElement('lastname', $userInfo['lastname']);
+	$registered_node = $xmlNode->createElement('already_registered', $userInfo['registered']);
+	$email_node = $xmlNode->createElement('email', $userInfo['email']);
 	
-	$user_changed = $xmlNode->createElement("user");
+	$user_changed = $xmlNode->createElement('user');
 	$user_changed->appendChild($firstname_node);
 	$user_changed->appendChild($middlename_node);
 	$user_changed->appendChild($lastname_node);
@@ -129,20 +129,22 @@ function addChangedUser(&$changedUsersNode, &$xmlNode, $userInfo) {
 
 function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn) {
 	
-	$arrInfo["num_users_original"]++;
-	$username = $user->getElementsByTagName("username")->item(0)->nodeValue;
+	exit('STILL TO MAKE WORK PROPERLY\n\n');
+	
+	$arrInfo['num_users_original']++;
+	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
 	$username = $conn->real_escape_string($username);
 	
 	//PRIMEIRO ACERTANDO OS DADOS DOS interests PARA NÃO TER REPETIDO NO MESMO USUÁRIO
 	fixDuplicateInterests($user);
 	////////////////////////////////////////////////////////////////////////////////////
 	
-	$middlename = "";
-	$firstname = $user->getElementsByTagName("first_name")->item(0)->nodeValue;
-	$lastname = $user->getElementsByTagName("last_name")->item(0)->nodeValue;
-	if ($user->getElementsByTagName("middle_name")->length == 1)  $middlename = $user->getElementsByTagName("middle_name")->item(0)->nodeValue;
-	$email = $user->getElementsByTagName("email")->item(0)->nodeValue;
-	$new_username = "";
+	$middlename = '';
+	$firstname = $user->getElementsByTagName('first_name')->item(0)->nodeValue;
+	$lastname = $user->getElementsByTagName('last_name')->item(0)->nodeValue;
+	if ($user->getElementsByTagName('middle_name')->length == 1)  $middlename = $user->getElementsByTagName('middle_name')->item(0)->nodeValue;
+	$email = $user->getElementsByTagName('email')->item(0)->nodeValue;
+	$new_username = '';
 	$registered = 0;
 	
 	//variável para controlar qual usuário será salvo no username_changes.xml
@@ -150,7 +152,7 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn) {
 	
 	
 	//VERIFICANDO PRIMEIRO SE O USUÁRIO JÁ FOI SALVO NO BANCO DE DADOS COM OUTRO USERNAME//////////////////////////
-	$email = $conn->real_escape_string($email);
+	/*$email = $conn->real_escape_string($email);
 	$query = $conn->query("SELECT first_name, middle_name, last_name, email, username FROM users WHERE email='$email'");
 	
 	if ($query->num_rows > 0) {
@@ -163,7 +165,13 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn) {
 			$new_username .= $db_user->username;
 			$arrInfo["num_changed_users_registered"]++;
 		}
-	}
+	}*/
+	
+	$stmt = $conn->prepare('SELECT first_name, middle_name, last_name, email, username FROM users WHERE email = :email');
+	$stmt->bindParam(':email', $email, PDO::PARAM_STR);
+	
+	//if ($stmt->execute)
+	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	//SENÃO ENCONTRAR O EMAIL DO USUÁRIO É PORQUE ELE AINDA NÃO ESTÁ NO BANCO DE DADOS E DEVE-SE VERIFICAR SE SEU USERNAME ESTÁ 
@@ -281,14 +289,18 @@ function modify($filename) {
 		}
 	}
 	
-	$conn = new mysqli($db_host, $db_username, $db_password, $db_name);
+	/*$conn = new mysqli($db_host, $db_username, $db_password, $db_name);
 	
 	if ($conn->connect_errno) {
 		exit("Failed to connect to MySQL: " . $mysqli->connect_error);
 	}
 	else {
 		echo "\nConexão com o banco $db_name realizada com sucesso\n";
-	}
+	}*/
+	
+	require_once('helperFunctions.php');
+	
+	$conn = myConnect($db_host, $db_username, $db_password, $db_name);
 	
 	echo "\nMudando os usernames que já estão em uso no banco de dados $db_name...\n";
 	
@@ -310,8 +322,8 @@ function modify($filename) {
 	}
 	//FIM DO LOOP PARA PERCORRER TODOS OS USUÁRIO DO ARQUIVO//////
 	
-	
-	$conn->close();
+	//FECHA A CONEXÃO
+	$conn = null;
 	
 	// SÓ CRIA OS ARQUIVOS XML SE TIVER QUE FAZER ALTERAÇÃO EM ALGUM USUÁRIO
 	if ($info["num_user_changes"] > 0) {
