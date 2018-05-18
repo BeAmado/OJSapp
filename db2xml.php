@@ -2231,16 +2231,16 @@ fetch the user registrationDates
 $conn, $journalId, $args)
 
 */
-function fetchUserRegistrationDates($conn, $journal = null, $args = null, $dataMapping = null) {
+function fetchUserRegistrationDates($conn, $journal = null, $args = null) {
 	
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
 	}
 	
-	if ($dataMapping === null) {
+	/*if ($dataMapping === null) {
 		include_once('appFunctions.php');
 		$dataMapping = getDataMapping($journal['path']); //from appFunctions.php
-	}
+	}*/
 	
 	$verbose = false;
 	if (is_array($args)) {
@@ -2251,10 +2251,19 @@ function fetchUserRegistrationDates($conn, $journal = null, $args = null, $dataM
 	
 	
 	//first make the ids vector to filter only the users of the specified journal
-	$userIdsArray = array_keys($dataMapping['user_id']);
-	$userIdsSTR = getIdsSTR($userIdsArray); // from helperFunctions
+	/*$userIdsArray = array_keys($dataMapping['user_id']);
+	$userIdsSTR = getIdsSTR($userIdsArray); // from helperFunctions*/
 	
-	$stmt = $conn->prepare('SELECT user_id, date_registered FROM users WHERE date_registered IS NOT NULL AND user_id IN ' . $userIdsSTR);
+	$stmt = $conn->prepare(
+		'SELECT user_id, email, date_registered 
+		 FROM users 
+		 WHERE user_id IN (
+		     SELECT user_id FROM roles WHERE journal_id = :journalId
+		 )'
+	);
+	
+	$stmt->bindParam(':journalId', $journal['journal_id'], PDO::PARAM_INT);
+	
 	$registrations = array();
 	
 	if ($stmt->execute()) {

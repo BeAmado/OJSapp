@@ -1387,7 +1387,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	:revAssign_reviewMethod, :revAssign_round, :revAssign_step, :revAssign_reviewFormId, :revAssign_unconsidered)');
 	
 	$updtRevAssignSTMT = $conn->prepare('UPDATE review_assignments SET
-	competing_interests = :updtRevAssign_competingInterests, regret_message = :updtRevAssign_regretMessage, recommendation = :updtRevAssign_regretMessage, 
+	competing_interests = :updtRevAssign_competingInterests, regret_message = :updtRevAssign_regretMessage, recommendation = :updtRevAssign_recommendation, 
 	date_assigned = :updtRevAssign_dateAssigned, date_notified = :updtRevAssign_dateNotified, date_confirmed = :updtRevAssign_dateConfirmed, 
 	date_completed = :updtRevAssign_dateCompleted, date_acknowledged = :updtRevAssign_dateAcknowledged, date_due = :updtRevAssign_dateDue, 
 	last_modified = :updtRevAssign_lastModified, reminder_was_automatic = :updtRevAssign_reminderWasAutomatic, declined = :updtRevAssign_declined, 
@@ -3336,6 +3336,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$revAssign['review_round_new_id'] = $dataMapping['review_round_id'][$revAssign['review_round_id']];
 					$reviewRoundIdOk = true;
 				}
+				else if ($revAssign['review_round_id'] == 0 || $revAssign['review_round_id'] === null) {
+					$revAssign['review_round_new_id'] = $revAssign['review_round_id'];
+					$reviewRoundIdOk = true;
+				}
 				else {
 					$error['review_round_id'] = array('review_round_id' => $revAssign['review_round_id'], 'error' => 'this review_round_id is not in the dataMapping.');
 				}
@@ -3377,7 +3381,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 										array('name' => ':updtRevAssign_dateAcknowledged', 'attr' => 'date_acknowledged', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_dateDue', 'attr' => 'date_due', 'type' => PDO::PARAM_STR),
 										array('name' => ':updtRevAssign_lastModified', 'attr' => 'last_modified', 'type' => PDO::PARAM_INT),
-										array('name' => ':updtRevAssign_reminderAuto', 'attr' => 'reminder_was_automatic', 'type' => PDO::PARAM_INT),
+										array('name' => ':updtRevAssign_reminderWasAutomatic', 'attr' => 'reminder_was_automatic', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_declined', 'attr' => 'declined', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_replaced', 'attr' => 'replaced', 'type' => PDO::PARAM_STR),
 										array('name' => ':updtRevAssign_cancelled', 'attr' => 'cancelled', 'type' => PDO::PARAM_STR),
@@ -3394,7 +3398,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 										array('name' => ':updtRevAssign_unconsidered', 'attr' => 'unconsidered', 'type' => PDO::PARAM_INT),
 										array('name' => ':updtRevAssign_reviewId', 'attr' => 'review_new_id', 'type' => PDO::PARAM_INT)
 									);
-									
+														
 									
 									echo '    updating review_assignment #' . $revAssign['review_new_id'] . ' ......... '; 
 									
@@ -5479,6 +5483,11 @@ function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId,
 //#15
 function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
 	
+	
+	if (!array_key_exists('user_id', $dataMapping)) {
+		$dataMapping['user_id'] = array();
+	}
+	
 	$user_registration_dates_node = null;
 	
 	if (strpos($xml->nodeName, 'articles') !== false) {
@@ -5490,6 +5499,8 @@ function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
 	
 	$registrations = xmlToArray($user_registration_dates_node, true); //from helperFunctions.php
 	
+	$selectUserByEmailSTMT = $conn->prepare('SELECT user_id, email FROM users WHERE email = :email');
+	
 	$updateUserRegistrationDateSTMT = $conn->prepare(
 		'UPDATE users 
 		 SET date_registered = :updateUserRegistrationDate_dateRegistered 
@@ -5498,27 +5509,46 @@ function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
 	
 	$numUpdates = 0;
 	$errors = array(
-		'users' => array('updates' => array())
+		'users' => array('updates' => array(), 'check' => array())
 	);
 	
 	echo "\n\nUpdating the users registrations dates: \n";
 	
 	foreach ($registrations as $reg) {
-		if (!array_key_exists($reg['user_id'], $dataMapping['user_id'])) {
-			
+		
+		//fetch the user_id
+		$selectUserByEmailSTMT->bindParam(':email', $reg['email'], PDO::PARAM_STR);
+		
+		$fetchedUser = null;
+		
+		if ($selectUserByEmailSTMT->execute()) {
+			if ($fetchedUser = $selectUserByEmailSTMT->fetch(PDO::FETCH_ASSOC)) {
+				
+				
+				///// map the user_id //////
+				if (!array_key_exists($reg['user_id'], $dataMapping)) {
+					$dataMapping['user_id'][$reg['user_id']] = $fetchedUser['user_id'];
+				}
+				////////////////////////////
+				
+				$updateUserRegistrationDateSTMT->bindParam(':updateUserRegistrationDate_userId', $fetchedUser['user_id'], PDO::PARAM_INT);
+			}
+			else {
+				continue; // go to the user
+			}
+		}
+		else { //the selectUserByEmailSTMT did not execute
 			$error = array(
 				'registration' => $reg, 
-				'error' => 'the user_id is not in the dataMapping'
+				'error' => 'the statement to select user by email did not execute', 
+				'errorInfo' => $selectUserByEmailSTMT->errorInfo()
 			);
-			array_push($errors['users']['update'], $error);
-			
-			continue; // go to the next user_registration_date
+			array_push($errors['users']['check'], $error);
+			continue; // go to the next user
 		}
 		
-		$userNewId = $dataMapping['user_id'][$reg['user_id']];
-		
 		$updateUserRegistrationDateSTMT->bindParam(':updateUserRegistrationDate_dateRegistered', $reg['date_registered'], PDO::PARAM_STR);
-		$updateUserRegistrationDateSTMT->bindParam(':updateUserRegistrationDate_userId', $reg['user_id'], PDO::PARAM_INT);
+		
 		
 		if ($updateUserRegistrationDateSTMT->execute()) {
 			if ($updateUserRegistrationDateSTMT->rowCount() == 1) {
@@ -5528,7 +5558,7 @@ function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
 		else {
 			$error = array(
 				'registration' => $reg, 
-				'error' => 'the statement did not execute', 
+				'error' => 'the statement to update user registration did not execute', 
 				'errorInfo' => $updateUserRegistrationDateSTMT->errorInfo()
 			);
 			array_push($errors['users']['update'], $error);
