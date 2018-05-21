@@ -5,7 +5,11 @@
 
 //set the queries
 $queries = array();
-	
+
+////// ########### USER QUERIES ############# /////////	
+
+
+/////////////////////// INSERT /////////////////////////////////////
 $queries['insertUser'] = array( 
 	'query' =>'INSERT INTO users (username, password, salutation, first_name, middle_name, last_name, gender, initials, email, url, phone, fax, mailing_address,
 country, locales, date_last_email, date_registered, date_validated, date_last_login, must_change_password, auth_id, disabled, disabled_reason, auth_str, suffix, billing_address, 
@@ -45,9 +49,29 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	)
 );
 
-$queries['checkUsername'] = array(
-	'query' => 'SELECT COUNT(*) as count FROM users WHERE username = :checkUsername_username'
-	'params' => array('username' => ':checkUsername_username')
+$queries['insertUserSetting'] = array(
+	'query' => 'INSERT INTO user_settings (user_id, locale, setting_name, setting_value, setting_type, assoc_id, assoc_type)
+			VALUES (:insertUserSetting_userId, :insertUserSetting_locale, :insertUserSetting_settingName, :insertUserSetting_settingValue, :insertUserSetting_settingType,
+			:insertUserSetting_assocId, :insertUserSetting_assocType)',
+			
+	'params' => array(
+		'user_id' => ':insertUserSetting_userId',
+		'locale' => ':insertUserSetting_locale',
+		'setting_name' => ':insertUserSetting_settingName',
+		'setting_value' => ':insertUserSetting_settingValue',
+		'setting_type' => ':insertUserSetting_settingType',
+		'assoc_id' => ':insertUserSetting_assocId',
+		'assoc_type' => ':insertUserSetting_assocType'
+	)
+);
+
+/////////////// END OF INSERT  ////////////////////////////////
+
+////////////// SELECT ////////////////////////////////////////////
+
+$queries['selectUsernameCount'] = array(
+	'query' => 'SELECT COUNT(*) as count FROM users WHERE username = :selectUsernameCount_username'
+	'params' => array('username' => ':selectUsernameCount_username')
 );
 
 $queries['selectUserByEmail'] = array(
@@ -55,26 +79,73 @@ $queries['selectUserByEmail'] = array(
 	'params' => array('email' => ':selectUserByEmail_email')
 );
 
-$queries['lastUsers'] = array(
+$queries['selectLastTenUsers'] = array(
 	'query' => 'SELECT * FROM users ORDER BY user_id DESC LIMIT 10',
 	'params' => null
 );
 
-$queries['insertUserSetting'] = array(
-	'query' => 'INSERT INTO user_settings (user_id, locale, setting_name, setting_value, setting_type, assoc_id, assoc_type)
-			VALUES (:userSetting_userId, :userSetting_locale, :userSetting_settingName, :userSetting_settingValue, :userSetting_settingType,
-			:userSetting_assocId, :userSetting_assocType)',
-			
+$queries['selectUserById'] = array(
+	'query' => 'SELECT * FROM users WHERE user_id = :selectUserById_userId'
+	'params' => array('user_id' => ':selectUserById_userId')
+);
+
+$queries['selectUserSettings'] = array(
+	'query' => 'SELECT * FROM user_settings WHERE user_id = :selectUserSettings_userId',
+	'params' => array('user_id', ':selectUserSettings_userId')
+);
+
+$queries['selectUserRoles'] = array(
+	'query' => 'SELECT * FROM roles WHERE journal_id = :selectUserRoles_journalId AND user_id = :selectUserRoles_userId',
 	'params' => array(
-		'user_id' => ':userSetting_userId',
-		'locale' => ':userSetting_locale',
-		'setting_name' => ':userSetting_settingName',
-		'setting_value' => ':userSetting_settingValue',
-		'setting_type' => ':userSetting_settingType',
-		'assoc_id' => ':userSetting_assocId',
-		'assoc_type' => ':userSetting_assocType'
+		'journal_id' => ':selectUserRoles_journalId',
+		'user_id' => ':selectUserRoles_userId'
 	)
 );
+
+$queries['selectUserInterests'] = array(
+	'query' => 'SELECT t.setting_value AS interest, u_int.controlled_vocab_entry_id AS controlled_vocab_entry_id 
+		FROM user_interests AS u_int
+		INNER JOIN controlled_vocab_entry_settings AS t
+			ON u_int.controlled_vocab_entry_id = t.controlled_vocab_entry_id
+		WHERE u_int.user_id = :selectUserInterests_userId',
+		
+	'params' => array('user_id' => ':selectUserInterests_userId')
+);
+
+$queries['getInterestControlledVocabId'] = array(
+	'query' => 'SELECT * FROM controlled_vocabs WHERE symbolic = "interest"',
+	'params' => null
+);
+	
+///////////////// END OF SELECT /////////////////////////////////////////////////////
+
+//////////////// UPDATE //////////////////////////////////////////////////////////////
+
+$queries['updateUserDates'] = array(
+	'query' => 'UPDATE users SET 
+		date_last_email = :updateUserDates_dateLastEmail, date_registered = :updateUserDates_dateRegistered, 
+		date_validated = :updateUserDates_dateValidated, date_last_login = :updateUserDates_dateLastLogin
+		WHERE user_id = :updateUserDates_userId',
+		
+	'params' => array(
+		'date_last_email' => ':updateUserDates_dateLastEmail', 
+		'date_registered' => ':updateUserDates_dateRegistered', 
+		'date_validated' => ':updateUserDates_dateValidated', 
+		'date_last_login' => ':updateUserDates_dateLastLogin',
+		'user_id' => ':updateUserDates_userId'
+	)
+);
+
+//////////END OF UPDATE ///////////////////////////////////////////////////////////////
+
+////########## END OF THE USER QUERIES #############///////
+
+////----------------------------------------------------------------------------------------///////
+
+
+////########## ARTICLE QUERIES #############//////
+
+/////////////////// INSERT /////////////////////////////////////////////////////////////
 
 /**
 this query does not insert the following fields:
@@ -113,6 +184,10 @@ $queries['insertArticle'] = array(
 	)
 );
 
+/////////////// END OF INSERT /////////////////////////////////////////////////////////////
+
+////////////////  SELECT  /////////////////////////////////////////////////////////////////
+
 $queries['fetchPublishedArticleBySetting'] = array(
 	'query' => 'SELECT art.*, sett.*, pub.* 
 		 FROM article_settings AS sett
@@ -120,14 +195,14 @@ $queries['fetchPublishedArticleBySetting'] = array(
 		 	ON art.article_id = sett.article_id
 		 INNER JOIN published_articles AS pub
 		 	ON pub.article_id = sett.article_id
-		  WHERE art.journal_id = :publishedArticle_journalId AND sett.locale = :publishedArticle_locale AND
-		       sett.setting_name = :publishedArticle_settingName AND sett.setting_value = :publishedArticle_settingValue',
+		  WHERE art.journal_id = :fetchPublishedArticleBySetting_journalId AND sett.locale = :fetchPublishedArticleBySetting_locale AND
+		       sett.setting_name = :fetchPublishedArticleBySetting_settingName AND sett.setting_value = :fetchPublishedArticleBySetting_settingValue',
 		       
 	'params' => array(
-		'journal_id' => ':publishedArticle_journalId',
-		'locale' => ':publishedArticle_locale',
-		'setting_name' => ':publishedArticle_settingName',
-		'setting_value' => ':publishedArticle_settingValue'
+		'journal_id' => ':fetchPublishedArticleBySetting_journalId',
+		'locale' => ':fetchPublishedArticleBySetting_locale',
+		'setting_name' => ':fetchPublishedArticleBySetting_settingName',
+		'setting_value' => ':fetchPublishedArticleBySetting_settingValue'
 	)
 	
 );
@@ -139,32 +214,20 @@ $queries['countPublishedArticleBySetting'] = array(
 		 	ON art.article_id = sett.article_id
 		 INNER JOIN published_articles AS pub
 		 	ON pub.article_id = sett.article_id
-		  WHERE art.journal_id = :countPublishedArticle_journalId AND sett.locale = :countPublishedArticle_locale AND
-		       sett.setting_name = :countPublishedArticle_settingName AND sett.setting_value = :countPublishedArticle_settingValue',
+		  WHERE art.journal_id = :countPublishedArticleBySetting_journalId AND sett.locale = :countPublishedArticleBySetting_locale AND
+		       sett.setting_name = :countPublishedArticleBySetting_settingName AND sett.setting_value = :countPublishedArticleBySetting_settingValue',
 		       
 	'params' => array(
-		'journal_id' => ':countPublishedArticle_journalId',
-		'locale' => ':countPublishedArticle_locale',
-		'setting_name' => ':countPublishedArticle_settingName',
-		'setting_value' => ':countPublishedArticle_settingValue'
+		'journal_id' => ':countPublishedArticleBySetting_journalId',
+		'locale' => ':countPublishedArticleBySetting_locale',
+		'setting_name' => ':countPublishedArticleBySetting_settingName',
+		'setting_value' => ':countPublishedArticleBySetting_settingValue'
 	)
 );
 
-//queries for update
-$queries['updateUserDates'] = array(
-	'query' => 'UPDATE users SET 
-		date_last_email = :updateUserDates_dateLastEmail, date_registered = :updateUserDates_dateRegistered, 
-		date_validated = :updateUserDates_dateValidated, date_last_login = :updateUserDates_dateLastLogin
-		WHERE user_id = :updateUserDates_userId',
-		
-	'params' => array(
-		'date_last_email' => ':updateUserDates_dateLastEmail', 
-		'date_registered' => ':updateUserDates_dateRegistered', 
-		'date_validated' => ':updateUserDates_dateValidated', 
-		'date_last_login' => ':updateUserDates_dateLastLogin',
-		'user_id' => ':updateUserDates_userId'
-	)
-);
+//////////////////////// END OF SELECT ////////////////////////////////////////////////////////////////////////
+
+/////////////////////// UPDATE ////////////////////////////////////////////////////////////////////////////////
 
 /**
 does not update the following fields:
@@ -222,31 +285,36 @@ $queries['updateArticleDates'] = array(
 
 $queries['updateArticle_filesIds'] = array(
 	'query' => 'UPDATE articles SET 
-		submission_file_id = :updateFilesIds_submissionFileId, revised_file_id = :updateFilesIds_revisedFileId, 
-		review_file_id = :updateFilesIds_reviewFileId, editor_file_id = :updateFilesIds_editorFileId 
-		WHERE article_id = :updateFilesIds_articleId',
+		submission_file_id = :updateArticle_filesIds_submissionFileId, revised_file_id = :updateArticle_filesIds_revisedFileId, 
+		review_file_id = :updateArticle_filesIds_reviewFileId, editor_file_id = :updateArticle_filesIds_editorFileId 
+		WHERE article_id = :updateArticle_filesIds_articleId',
 		
 	'params' => array(
-		'submission_file_id' => ':updateFilesIds_submissionFileId',
-		'revised_file_id' => ':updateFilesIds_revisedFileId', 
-		'review_file_id' => ':updateFilesIds_reviewFileId', 
-		'editor_file_id' => ':updateFilesIds_editorFileId', 
-		'article_id' => ':updateFilesIds_articleId'
+		'submission_file_id' => ':updateArticle_filesIds_submissionFileId',
+		'revised_file_id' => ':updateArticle_filesIds_revisedFileId', 
+		'review_file_id' => ':updateArticle_filesIds_reviewFileId', 
+		'editor_file_id' => ':updateArticle_filesIds_editorFileId', 
+		'article_id' => ':updateArticle_filesIds_articleId'
 	)
 );
 
 $queries['updateArticleFile_namesAndSourceId'] = array(
-	'query' => 'UPDATE article_files SET source_file_id = :updateFile_sourceFileId, file_name = :updateFile_fileName, 
-		original_file_name = :updateFile_originalFileName WHERE file_id = :updateFile_fileId AND revision = :updateFile_revision',
+	'query' => 'UPDATE article_files SET source_file_id = :updateArticleFile_namesAndSourceIds_sourceFileId, 
+		file_name = :updateArticleFile_namesAndSourceIds_fileName, original_file_name = :updateArticleFile_namesAndSourceIds_originalFileName 
+		WHERE file_id = :updateArticleFile_namesAndSourceIds_fileId AND revision = :updateArticleFile_namesAndSourceIds_revision',
 		
 	'params' => array(
-		'source_file_id' => ':updateFile_sourceFileId', 
-		'file_name' => ':updateFile_fileName', 
-		'original_file_name' => ':updateFile_originalFileName',
-		'file_id' => ':updateFile_fileId',
-		'revision' => ':updateFile_revision'
+		'source_file_id' => ':updateArticleFile_namesAndSourceIds_sourceFileId', 
+		'file_name' => ':updateArticleFile_namesAndSourceIds_fileName', 
+		'original_file_name' => ':updateArticleFile_namesAndSourceIds_originalFileName',
+		'file_id' => ':updateArticleFile_namesAndSourceIds_fileId',
+		'revision' => ':updateArticleFile_namesAndSourceIds_revision'
 	)
 );
+
+////////////////// END OF UPDATE /////////////////////////////////////////////////////////////
+
+//########### END OF THE ARTICLE QUERIES ##############//
 
 // $conn has to be set
 if (!isset($conn)) {
