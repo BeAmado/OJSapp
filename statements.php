@@ -65,6 +65,51 @@ $queries['insertUserSetting'] = array(
 	)
 );
 
+$queries['insertUserRole'] = array(
+	'query' => 'INSERT INTO roles (journal_id, user_id, role_id) 
+	VALUES (:insertUserRole_journalId, :insertUserRole_userId, :insertUserRole_roleId)',
+	
+	'params' => array(
+		'journal_id' => ':insertUserRole_journalId',
+		'user_id' => ':insertUserRole_userId',
+		'role_id' => ':insertUserRole_roleId'
+	)
+);
+
+$queries['insertControlledVocabEntry'] = array(
+	'query' => 'INSERT INTO controlled_vocab_entries (controlled_vocab_id, seq) 
+	VALUES (:insertControlledVocabEntry_controlledVocabId, :insertControlledVocabEntry_seq)'
+	
+	'params' => array(
+		'controlled_vocab_id' => ':insertControlledVocabEntry_controlledVocabId',
+		'seq' => ':insertControlledVocabEntry_seq'
+	)
+);
+
+$queries['insertControlledVocabEntrySetting'] = array(
+	'query' => 'INSERT INTO controlled_vocab_entry_settings (controlled_vocab_entry_id, locale, setting_name, setting_value, setting_type)
+	VALUES (:insertControlledVocabEntrySetting_controlledVocabEntryId, :insertControlledVocabEntrySetting_locale,
+	:insertControlledVocabEntrySetting_settingName, :insertControlledVocabEntrySetting_settingValue, :insertControlledVocabEntrySetting_settingType)',
+	
+	'params' => array(
+		'controlled_vocab_entry_id' => ':insertControlledVocabEntrySetting_controlledVocabEntryId',
+		'locale' => ':insertControlledVocabEntrySetting_locale',
+		'setting_name' => ':insertControlledVocabEntrySetting_settingName',
+		'setting_value' => ':insertControlledVocabEntrySetting_settingValue',
+		'setting_type' => ':insertControlledVocabEntrySetting_settingType'
+	)
+);
+
+$queries['insertUserInterest'] = array(
+	'query' => 'INSERT INTO user_interests (controlled_vocab_entry_id, user_id) 
+	VALUES (:insertUserInterest_controlledVocabEntryId, :insertUserInterest_userId)',
+	
+	'params' => array(
+		'controlled_vocab_entry_id' => ':insertUserInterest_controlledVocabEntryId',
+		'user_id' => ':insertUserInterest_userId'
+	)
+);
+
 /////////////// END OF INSERT  ////////////////////////////////
 
 ////////////// SELECT ////////////////////////////////////////////
@@ -116,6 +161,11 @@ $queries['getInterestControlledVocabId'] = array(
 	'query' => 'SELECT * FROM controlled_vocabs WHERE symbolic = "interest"',
 	'params' => null
 );
+
+$queries['selectLastControlledVocabEntry'] = array(
+	'query' => 'SELECT * FROM controlled_vocab_entries ORDER BY controlled_vocab_entry_id DESC LIMIT 1',
+	'params' => null
+)
 	
 ///////////////// END OF SELECT /////////////////////////////////////////////////////
 
@@ -188,21 +238,31 @@ $queries['insertArticle'] = array(
 
 ////////////////  SELECT  /////////////////////////////////////////////////////////////////
 
-$queries['fetchPublishedArticleBySetting'] = array(
+$queries['selectPublishedArticles'] = array(
+	'query' => 'SELECT art.*, pub_art.* 
+		FROM published_articles AS pub_art
+		INNER JOIN articles AS art
+			ON art.article_id = pub_art.article_id
+		WHERE art.journal_id = :selectPublishedArticles_journalId',
+		
+	'params' => array('journal_id' => ':selectPublishedArticles_journalId')
+);
+
+$queries['selectPublishedArticleBySetting'] = array(
 	'query' => 'SELECT art.*, sett.*, pub.* 
 		 FROM article_settings AS sett
 		 INNER JOIN articles AS art
-		 	ON art.article_id = sett.article_id
+			ON art.article_id = sett.article_id
 		 INNER JOIN published_articles AS pub
-		 	ON pub.article_id = sett.article_id
-		  WHERE art.journal_id = :fetchPublishedArticleBySetting_journalId AND sett.locale = :fetchPublishedArticleBySetting_locale AND
-		       sett.setting_name = :fetchPublishedArticleBySetting_settingName AND sett.setting_value = :fetchPublishedArticleBySetting_settingValue',
+			ON pub.article_id = sett.article_id
+		  WHERE art.journal_id = :selectPublishedArticleBySetting_journalId AND sett.locale = :selectPublishedArticleBySetting_locale AND
+			   sett.setting_name = :selectPublishedArticleBySetting_settingName AND sett.setting_value = :selectPublishedArticleBySetting_settingValue',
 		       
 	'params' => array(
-		'journal_id' => ':fetchPublishedArticleBySetting_journalId',
-		'locale' => ':fetchPublishedArticleBySetting_locale',
-		'setting_name' => ':fetchPublishedArticleBySetting_settingName',
-		'setting_value' => ':fetchPublishedArticleBySetting_settingValue'
+		'journal_id' => ':selectPublishedArticleBySetting_journalId',
+		'locale' => ':selectPublishedArticleBySetting_locale',
+		'setting_name' => ':selectPublishedArticleBySetting_settingName',
+		'setting_value' => ':selectPublishedArticleBySetting_settingValue'
 	)
 	
 );
@@ -224,6 +284,126 @@ $queries['countPublishedArticleBySetting'] = array(
 		'setting_value' => ':countPublishedArticleBySetting_settingValue'
 	)
 );
+
+$queries['selectUnpublishedArticles'] = array(
+	'query' => 'SELECT * FROM articles WHERE article_id IN (
+			SELECT article_id FROM articles WHERE article_id NOT IN (
+				SELECT article_id FROM published_articles
+			) AND journal_id = :selectUnpublishedArticles_journalId
+		)',
+		
+	'params' => array('journal_id' => ':selectUnpublishedArticles_journalId')
+);
+
+$queries['selectArticles'] = array(
+	'query' => 'SELECT art.*, pub_art.* 
+		 FROM articles AS art
+		 LEFT JOIN published_articles AS pub_art
+			ON pub_art.article_id = art.article_id
+		 WHERE art.journal_id = :selectArticles_journalId',
+	
+	'params' => array('journal_id' => ':selectArticles_journalId')
+);
+
+$queries['selectArticleAuthors'] = array(
+	'query' => 'SELECT * FROM authors WHERE submission_id = :selectArticleAuthors_submissionId',
+	'params' => array('submission_id' => ':selectArticleAuthors_submissionId')
+);
+
+$queries['selectAuthorSettings'] = array(
+	'query' => 'SELECT * FROM author_settings WHERE author_id = :selectAuthorSettings_authorId',
+	'params' => array('author_id' => ':selectAuthorSettings_authorId')
+);
+
+$queries['selectArticleSettings'] = array(
+	'query' => 'SELECT * FROM article_settings WHERE article_id = :selectArticleSettings_articleId',
+	'params' => array('article_id' => ':selectArticleSettings_articleId')
+);
+
+$queries['selectArticleFiles'] = array(
+	'query' => 'SELECT * FROM article_files WHERE article_id = :selectArticleFiles_articleId',
+	'params' => array('article_id' => ':selectArticleFiles_articleId')
+);
+
+$queries['selectArticleSupplementaryFiles'] = array(
+	'query' => 'SELECT * FROM article_supplementary_files WHERE article_id = :selectArticleSupplementaryFiles_articleId',
+	'params' => array('article_id' => ':selectArticleSupplementaryFiles_articleId')
+);
+
+$queries['selectArticleSuppFileSettings'] = array(
+	'query' => 'SELECT * FROM article_supp_file_settings WHERE supp_id = :selectArticleSuppFileSettings_suppId',
+	'params' => array('supp_id' => ':selectArticleSuppFileSettings_suppId')
+);
+
+$queries['selectArticleComments'] = array(
+	'query' => 'SELECT * FROM article_comments WHERE article_id = :selectArticleComments_articleId',
+	'params' => array('article_id' => ':selectArticleComments_articleId')
+);
+
+$queries['selectArticleGalleys'] = array(
+	'query' => 'SELECT * FROM article_galleys WHERE article_id = :selectArticleGalleys_articleId',
+	'params' => array('article_id' => ':selectArticleGalleys_articleId')
+);
+
+$queries['selectArticleGalleySettings'] = array(
+	'query' => 'SELECT * FROM article_galley_settings WHERE galley_id = :selectArticleGalleySettings_galleyId',
+	'params' => array('galley_id' => ':selectArticleGalleySettings_galleyId')
+);
+
+$queries['selectArticleXmlGalleys'] = array(
+	'query' => 'SELECT * FROM article_xml_galleys WHERE galley_id = :selectArticleXmlGalleys_galleyId AND article_id = :selectArticleXmlGalleys_articleId',
+	'params' => array(
+		'galley_id' => ':selectArticleXmlGalleys_galleyId',
+		'article_id' => ':selectArticleXmlGalleys_articleId'
+	)
+);
+
+$queries['selectHtmlGalleyImages'] = array(
+	'query' => 'SELECT * FROM article_html_galley_images WHERE galley_id = :selectHtmlGalleyImages_galleyId',
+	'params' => array('galley_id' => ':selectHtmlGalleyImages_galleyId')
+);
+
+$queries['selectArticleSearchKeywordLists'] = array(
+	'query' => 'SELECT * FROM article_search_keyword_list WHERE keyword_id = :selectArticleSearchKeywordLists_keywordId',
+	'params' => array('keyword_id' => ':selectArticleSearchKeywordLists_keywordId')
+);
+
+$queries['selectArticleSearchObjectKeywords'] = array(
+	'query' => 'SELECT * FROM article_search_object_keywords WHERE object_id = :selectArticleSearchObjectKeywords_objectId'
+	'params' => array('object_id' => ':selectArticleSearchObjectKeywords_objectId')
+);
+
+$queries['selectArticleSearchObjects'] = array(
+	'query' => 'SELECT * FROM article_search_objects WHERE article_id = :selectArticleSearchObjects_articleId',
+	'params' => array('article_id' => ':selectArticleSearchObjects_articleId')
+);
+
+$queries['selectEditDecisions'] = array(
+	'query' => 'SELECT * FROM edit_decisions WHERE article_id = :selectEditDecisions_articleId',
+	'params' => array('article_id' => ':selectEditDecisions_articleId')
+);
+
+$queries['selectEditAssignments'] = array(
+	'query' => 'SELECT * FROM edit_assignments WHERE article_id = :selectEditAssignments_articleId',
+	'params' => array('article_id' => ':selectEditAssignments_articleId')
+);
+
+$queries['selectReviewAssignments'] = array(
+	'query' => 'SELECT * FROM review_assignments WHERE submission_id = :selectReviewAssignments_submissionId',
+	'params' => array('submission_id' => ':selectReviewAssignments_submissionId')
+);
+
+$queries['selectReviewRounds'] = array(
+	'query' => 'SELECT * FROM review_rounds WHERE submission_id = :selectReviewRounds_submissionId'
+	'params' => array('submission_id' => ':selectReviewRounds_submissionId')
+);
+
+$queries['selectReviewFormResponses'] = array(
+	'query' => 'SELECT * FROM review_form_responses WHERE review_id = :selectReviewFormResponses_reviewId',
+	'params' => array('review_id' => ':selectReviewFormResponses_reviewId')
+);
+	
+	
 
 //////////////////////// END OF SELECT ////////////////////////////////////////////////////////////////////////
 
@@ -314,7 +494,105 @@ $queries['updateArticleFile_namesAndSourceId'] = array(
 
 ////////////////// END OF UPDATE /////////////////////////////////////////////////////////////
 
-//########### END OF THE ARTICLE QUERIES ##############//
+//########### END OF THE ARTICLES QUERIES ##############//
+
+
+//########### SECTIONS ###################//
+
+
+///// SELECT ////////////////////////
+
+$queries['selectSections'] = array(
+	'query' => 'SELECT * FROM sections WHERE journal_id = :selectSections_journalId',
+	'params' => array('journal_id' => ':selectSections_journalId')
+);
+
+$queries['selectSectionSettings'] = array(
+	'query' => 'SELECT * FROM section_settings WHERE section_id = :selectSectionSettings_sectionId'
+	'params' => array('section_id' => ':selectSectionSettings_sectionId')
+);
+
+$queries['selectSectionTitlesAndAbbrevs'] = array(
+	'query' => 'SELECT section_id, setting_name, setting_value, locale 
+	FROM section_settings 
+	WHERE section_id = :selectSectionTitlesAndAbbrevs_sectionId AND setting_name IN ("title", "abbrev")',
+	
+	'params' => array('section_id' => ':selectSectionTitlesAndAbbrevs_sectionId')
+);
+
+/// END OF THE SELECT QUERIES ///////
+//###### END OF THE SECTIONS QUERIES #####//
+
+
+//###### ANNOUNCEMENTS ########//
+
+/////// SELECT //////
+
+$queries['selectAnnouncements'] = array(
+	'query' => 'SELECT * FROM announcements WHERE assoc_id = :selectAnnouncements_journalId',
+	'params' => array('assoc_id' => ':selectAnnouncements_journalId')
+);
+
+$queries['selectAnnouncementSettings'] = array(
+	'query' => 'SELECT * FROM announcement_settings WHERE announcement_id = :selectAnnouncementSettings_announcementId',
+	'params' => array('announcement_id' => ':selectAnnouncementSettings_announcementId')
+);
+
+/// END OF THE SELECT QUERIES /////
+//## END OF THE ANNOUNCEMENTS QUERIES ####//
+
+
+//######## GROUPS #############///
+
+///////// SELECT /////////
+$queries['selectGroups'] = array(
+	'query' => 'SELECT * FROM groups WHERE assoc_id = :selectGroups_journalId',
+	'params' => array('assoc_id' => ':selectGroups_journalId')
+);
+
+$queries['selectGroupSettings'] = array(
+	'query' => 'SELECT * FROM group_settings WHERE group_id = :selectGroupSettings_groupId',
+	'params' => array('group_id' => ':selectGroupSettings_groupId')
+);
+
+$queries['selectGroupMemberships'] = array(
+	'query' => 'SELECT * FROM group_memberships WHERE group_id = :selectGroupMemberships_groupId'
+	'params' => array('group_id' => ':selectGroupMemberships_groupId')
+);
+
+	
+/// END OF THE SELECT QUERIES /////
+
+//## END OF THE GROUPS QUERIES ###////
+
+
+//####### REVIEW FORMS #######//
+
+/////// SELECT /////////
+
+$queries['selectReviewForms'] = array(
+	'query' => 'SELECT * FROM review_forms WHERE assoc_id = :selectReviewForms_assocId',
+	'params' => array('assoc_id' => ':selectReviewForms_assocId')
+);
+
+$queries['selectReviewFormSettings'] = array(
+	'query' => 'SELECT * FROM review_form_settings WHERE review_form_id = :selectReviewFormSettings_reviewFormId',
+	'params' => array('review_form_id' => ':selectReviewFormSettings_reviewFormId')
+);
+
+$queries['selectReviewFormElements'] = array(
+	'query' => 'SELECT * FROM review_form_elements WHERE review_form_id = :selectReviewFormElements_reviewFormId',
+	'params' => array('review_form_id' => ':selectReviewFormElements_reviewFormId')
+);
+
+$queries['selectReviewFormElementSettings'] = array(
+	'query' => 'SELECT * FROM review_form_element_settings WHERE review_form_element_id = :selectReviewFormElementSettings_reviewFormElementId',
+	'params' => array('review_form_element_id' => ':selectReviewFormElementSettings_reviewFormElementId')
+);
+
+///END OF THE SELECT QUERIES ///
+
+////### END OF THE REVIEW FORMS QUERIES ###///
 
 // $conn has to be set
 if (!isset($conn)) {
@@ -323,4 +601,17 @@ if (!isset($conn)) {
 
 //set the statements
 $statements = array();
-$statements['insertUser'] = $conn->prepare($queries['insertUser']['query']);
+
+function createStatement(&$conn, &$stmts, $statementName, &$queriesArray) {
+	
+	if (!array_key_exists($statementName, $queriesArray)) {
+		return false;
+	}
+	
+	if (!array_key_exists($statementName, $stmts)) {
+		$stmts[$statementName] = $conn->prepare($queriesArray[$statementName]['query']);
+	}
+	
+	return true;
+}
+
