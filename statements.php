@@ -1144,7 +1144,7 @@ $queries['updateReviewForm'] = array(
 	)
 );
 
-$queries['updateRevFormElement'] = array (
+$queries['updateReviewFormElement'] = array (
 	'query' => 'UPDATE review_form_elements SET
 		seq = :updateReviewFormElement_seq, element_type = :updateReviewFormElement_elementType,
 		required = :updateReviewFormElement_required, included = :updateReviewFormElement_included

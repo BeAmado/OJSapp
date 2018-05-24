@@ -57,28 +57,6 @@ function isFileId($type) {
 
 //the variable tables stores the properties of the OJS database tables that might be used in the app
 $tables = array(
-	'article' => array(),
-	'article_comment' => array(),
-	'article_file' => array(),
-	'article_galley' => array(),
-	'article_galley_settings' => array(),
-	'article_html_galley_image' => array(),
-	'article_settings' => array(),
-	'article_supplementary_file' => array(),
-	'article_supp_file_settings' => array(),
-	'article_search_object' => array(),
-	'article_search_object_keyword' => array(),
-	'article_search_keyword_list' => array(),
-	'article_xml_galley' => array(),
-	'edit_assignment' => array(),
-	'edit_decision' => array(),
-	'review_assignment' => array(),
-	'review_round' => array(),
-	'review_form' => array(),
-	'review_form_settings' => array(),
-	'review_form_element' => array(),
-	'review_form_element_settings' => array(),
-	'review_form_response' => array(),
 	'role' => array(),
 	'user' => array(), 
 	'user_settings' => array(),
@@ -113,370 +91,449 @@ $tables = array(
 	'issue_settings' => array()
 );
 
+$tables['articles'] = array(
+	'attributes' => array('article_id', 'user_id', 'journal_id', 'section_id', 'language', 'comments_to_ed', 'date_submitted', 'last_modified', 
+		'date_status_modified', 'status', 'submission_progress', 'current_round', 'submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id', 
+		'pages', 'fast_tracked', 'hide_author','comments_status', 'locale', 'citations'),
+	'primary_keys' => array('article_id'),
+	'foreign_keys' => array('user_id', 'journal_id', 'section_id'),
+	'properties' => array(
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'user_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'journal_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'section_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'language' => array('type' => 'varchar(10)', 'null' => 'yes', 'key' => '', 'default' => 'en', 'extra' => ''),
+		'comments_to_ed' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_submitted' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'last_modified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_status_modified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'status' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'submission_progress' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'current_round' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'submission_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'revised_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'review_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'editor_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'pages' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'fast_tracked' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'hide_author' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'comments_status' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'citations' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
 
-$tables['article']['attributes'] = array('article_id', 'user_id', 'journal_id', 'section_id', 'language', 'comments_to_ed', 'date_submitted', 'last_modified', 
-'date_status_modified', 'status', 'submission_progress', 'current_round', 'submission_file_id', 'revised_file_id', 'review_file_id', 'editor_file_id', 
-'pages', 'fast_tracked', 'hide_author','comments_status', 'locale', 'citations');
-$tables['article']['primary_keys'] = array('article_id');
-$tables['article']['foreign_keys'] = array('user_id', 'journal_id', 'section_id');
-$tables['article']['properties'] = array();
-$tables['article']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article']['properties']['user_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article']['properties']['journal_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article']['properties']['section_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article']['properties']['language'] = array('type' => 'varchar(10)', 'null' => 'yes', 'key' => '', 'default' => 'en', 'extra' => '');
-$tables['article']['properties']['comments_to_ed'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['date_submitted'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['last_modified'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['date_status_modified'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['status'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['article']['properties']['submission_progress'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['article']['properties']['current_round'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['article']['properties']['submission_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['revised_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['review_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['editor_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['pages'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['fast_tracked'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article']['properties']['hide_author'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article']['properties']['comments_status'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article']['properties']['citations'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+$tables['article_settings'] = array(
+	'attributes' => array('article_id', 'locale', 'setting_name', 'setting_value', 'setting_type'),
+	'primary_keys' => array('article_id', 'locale', 'setting_name'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => 'setting name', 'extra' => ''),
+		'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '')
+	)
+);
 
-$tables['article_settings']['attributes'] = array('article_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
-$tables['article_settings']['primary_keys'] = array('article_id', 'locale', 'setting_name');
-$tables['article_settings']['foreign_keys'] = array();
-$tables['article_settings']['properties'] = array();
-$tables['article_settings']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['article_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
+$tables['article_comments'] = array(
+	'attributes' = array('comment_id', 'comment_type', 'role_id', 'article_id', 'assoc_id', 'author_id', 'commment_title', 
+		'comments', 'date_posted', 'date_modified', 'viewable'),
+	'primary_keys' => array('comment_id'),
+	'foreign_keys' => array('article_id'),
+	'properties' => array(
+		'comment_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'comment_type' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'role_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'assoc_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'author_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'comment_title' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => 'Titulo do comentario', 'extra' => ''),
+		'comments' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_posted' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_modified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'viewable' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '')
+	)
 
-
-$tables['article_comment']['attributes'] = array('comment_id', 'comment_type', 'role_id', 'article_id', 
-'assoc_id', 'author_id', 'commment_title', 'comments', 'date_posted', 'date_modified', 'viewable');
-$tables['article_comment']['primary_keys'] = array('comment_id');
-$tables['article_comment']['foreign_keys'] = array('article_id');
-$tables['article_comment']['properties'] = array();
-$tables['article_comment']['properties']['comment_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_comment']['properties']['comment_type'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['role_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['assoc_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['author_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['comment_title'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => 'Titulo do comentario', 'extra' => '');
-$tables['article_comment']['properties']['comments'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['date_posted'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['date_modified'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_comment']['properties']['viewable'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['article_file']['attributes'] = array('file_id', 'revision', 'source_file_id', 'source_revision', 'article_id', 'file_name', 'file_type', 
-'file_size', 'original_file_name','file_stage', 'viewable', 'date_uploaded', 'date_modified', 'round', 'assoc_id');
-$tables['article_file']['primary_keys'] = array('file_id', 'revision');
-$tables['article_file']['foreign_keys'] = array('article_id');
-$tables['article_file']['properties'] = array();
-$tables['article_file']['properties']['file_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_file']['properties']['revision'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['source_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['source_revision'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['file_name'] = array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['file_type'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['file_size'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['original_file_name'] = array('type' => 'varchar(127)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['file_stage'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['viewable'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['date_uploaded'] = array('type' => 'datetime', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['date_modified'] = array('type' => 'datetime', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['round'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_file']['properties']['assoc_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+);
 
 
-$tables['article_supplementary_file']['attributes'] = array('supp_id', 'file_id', 'article_id', 'type', 'language', 'date_created', 'show_reviewers', 'date_submitted', 'seq', 'remote_url');
-$tables['article_supplementary_file']['primary_keys'] = array('supp_id');
-$tables['article_supplementary_file']['foreign_keys'] = array('file_id', 'article_id');
-$tables['article_supplementary_file']['properties'] = array();
-$tables['article_supplementary_file']['properties']['supp_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_supplementary_file']['properties']['file_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_supplementary_file']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_supplementary_file']['properties']['type'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_supplementary_file']['properties']['language'] = array('type' => 'varchar(10)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_supplementary_file']['properties']['date_created'] = array('type' => 'date', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_supplementary_file']['properties']['show_reviewers'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article_supplementary_file']['properties']['date_submitted'] = array('type' => 'datetime', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_supplementary_file']['properties']['seq'] = array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article_supplementary_file']['properties']['remote_url'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
 
-$tables['article_supp_file_settings']['attributes'] = array('supp_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
-$tables['article_supp_file_settings']['primary_keys'] = array('supp_id', 'locale', 'setting_name');
-$tables['article_supp_file_settings']['foreign_keys'] = array();
-$tables['article_supp_file_settings']['properties'] = array();
-$tables['article_supp_file_settings']['properties']['supp_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_supp_file_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['article_supp_file_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_supp_file_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_supp_file_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['article_galley']['attributes'] = array('galley_id', 'locale', 'article_id', 'file_id', 'label', 'html_galley', 'style_file_id', 'seq', 'remote_url');
-$tables['article_galley']['primary_keys'] = array('galley_id');
-$tables['article_galley']['foreign_keys'] = array('article_id', 'file_id', 'style_file_id');
-$tables['article_galley']['properties'] = array();
-$tables['article_galley']['properties']['galley_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_galley']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_galley']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_galley']['properties']['file_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_galley']['properties']['label'] = array('type' => 'varchar(32)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_galley']['properties']['html_galley'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article_galley']['properties']['style_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_galley']['properties']['seq'] = array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article_galley']['properties']['remote_url'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-$tables['article_galley_settings']['attributes'] = array('galley_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
-$tables['article_galley_settings']['primary_keys'] = array('galley_id', 'locale', 'setting_name');
-$tables['article_galley_settings']['foreign_keys'] = array();
-$tables['article_galley_settings']['properties'] = array();
-$tables['article_galley_settings']['properties']['galley_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_galley_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['article_galley_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_galley_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['article_galley_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => '-type-', 'extra' => '');
+$tables['article_files'] = array(
+	'attributes' => array('file_id', 'revision', 'source_file_id', 'source_revision', 'article_id', 'file_name', 'file_type', 'file_size',
+		'original_file_name','file_stage', 'viewable', 'date_uploaded', 'date_modified', 'round', 'assoc_id'),
+	'primary_keys' => array('file_id', 'revision'),
+	'foreign_keys' => array('article_id'),
+	'properties' => array(
+		'file_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'revision' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+		'source_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'source_revision' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'file_name' => array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => 'file name', 'extra' => ''),
+		'file_type' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => 'file type', 'extra' => ''),
+		'file_size' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'original_file_name' => array('type' => 'varchar(127)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'file_stage' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'viewable' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_uploaded' => array('type' => 'datetime', 'null' => 'no', 'key' => '', 'default' => '1990-01-01 00:00:00', 'extra' => ''),
+		'date_modified' => array('type' => 'datetime', 'null' => 'no', 'key' => '', 'default' => '1990-01-01 00:00:00', 'extra' => ''),
+		'round' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'assoc_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
 
 
-$tables['article_html_galley_image']['attributes'] = array('galley_id', 'file_id');
-$tables['article_html_galley_image']['primary_keys'] = array('galley_id', 'file_id');
-$tables['article_html_galley_image']['foreign_keys'] = array();
-$tables['article_html_galley_image']['properties'] = array();
-$tables['article_html_galley_image']['properties']['galley_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_html_galley_image']['properties']['file_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
+$tables['article_supplementary_files'] = array(
+	'attributes' => array('supp_id', 'file_id', 'article_id', 'type', 'language', 'date_created', 'show_reviewers', 'date_submitted', 'seq', 'remote_url'),
+	'primary_keys' => array('supp_id'),
+	'foreign_keys' => array('file_id', 'article_id'),
+	'properties' => array(
+		'supp_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'file_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'type' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'language' => array('type' => 'varchar(10)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_created' => array('type' => 'date', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'show_reviewers' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => 0, 'extra' => ''),
+		'date_submitted' => array('type' => 'datetime', 'null' => 'no', 'key' => '', 'default' => '1990-01-01 00:00:00', 'extra' => ''),
+		'seq' => array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'remote_url' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+$tables['article_supp_file_settings'] = array(
+	'attributes' => array('supp_id', 'locale', 'setting_name', 'setting_value', 'setting_type'),
+	'primary_keys' => array('supp_id', 'locale', 'setting_name'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'supp_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
 
 
-$tables['article_xml_galley']['attributes'] = array('xml_galley_id', 'galley_id', 'article_id', 'label', 'galley_type', 'views');
-$tables['article_xml_galley']['primary_keys'] = array('xml_galley_id');
-$tables['article_xml_galley']['foreign_keys'] = array('galley_id', 'article_id');
-$tables['article_xml_galley']['properties'] = array();
-$tables['article_xml_galley']['properties']['xml_galley_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_xml_galley']['properties']['galley_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_xml_galley']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_xml_galley']['properties']['label'] = array('type' => 'varchar(32)', 'null' => 'no', 'key' => '', 'default' => '--label--', 'extra' => '');
-$tables['article_xml_galley']['properties']['galley_type'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['article_xml_galley']['properties']['views'] = array('type' => 'int(11)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
+$tables['article_galleys'] = array(
+	'attributes' => array('galley_id', 'locale', 'article_id', 'file_id', 'label', 'html_galley', 'style_file_id', 'seq', 'remote_url'),
+	'primary_keys' => array('galley_id'),
+	'foreign_keys' => array('article_id', 'file_id', 'style_file_id'),
+	'properties' => array(
+		'galley_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'file_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'label' => array('type' => 'varchar(32)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'html_galley' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'style_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'seq' => array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'remote_url' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
 
-	
-$tables['article_search_object']['attributes'] = array('object_id', 'article_id', 'type', 'assoc_id');
-$tables['article_search_object']['primary_keys'] = array('object_id');
-$tables['article_search_object']['foreign_keys'] = array('article_id');
-$tables['article_search_object']['properties'] = array();
-$tables['article_search_object']['properties']['object_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_search_object']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_search_object']['properties']['type'] = array('type' => 'int(11)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['article_search_object']['properties']['assoc_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+$tables['article_galley_settings'] = array(
+	'attributes' => array('galley_id', 'locale', 'setting_name', 'setting_value', 'setting_type'),
+	'primary_keys' => array('galley_id', 'locale', 'setting_name'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'galley_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+		'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => '-type-', 'extra' => '')
+	)
 
-
-$tables['article_search_object_keyword']['attributes'] = array('object_id', 'keyword_id', 'pos');
-$tables['article_search_object_keyword']['primary_keys'] = array('object_id', 'pos');
-$tables['article_search_object_keyword']['foreign_keys'] = array('keyword_id');
-$tables['article_search_object_keyword']['properties'] = array();
-$tables['article_search_object_keyword']['properties']['object_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['article_search_object_keyword']['properties']['keyword_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['article_search_object_keyword']['properties']['pos'] = array('type' => 'int(11)', 'null' => 'no', 'key' => 'pri', 'default' => 10, 'extra' => '');
-
-
-$tables['article_search_keyword_list']['attributes'] = array('keyword_id', 'keyword_text');
-$tables['article_search_keyword_list']['primary_keys'] = array('keyword_id');
-$tables['article_search_keyword_list']['foreign_keys'] = array();
-$tables['article_search_keyword_list']['properties'] = array();
-$tables['article_search_keyword_list']['properties']['keyword_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['article_search_keyword_list']['properties']['keyword_text'] = array('type' => 'varchar(60)', 'null' => 'no', 'key' => 'uni', 'default' => null, 'extra' => '');
+);
 
 
-$tables['author']['attributes'] = array('author_id', 'submission_id', 'primary_contact', 'seq', 'first_name', 'middle_name', 'last_name', 'country', 'email', 'url', 'user_group_id', 'suffix');
-$tables['author']['primary_keys'] = array('author_id');
-$tables['author']['foreign_keys'] = array('submission_id');
-$tables['author']['properties'] = array();
-$tables['author']['properties']['author_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['author']['properties']['submission_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['author']['properties']['primary_contact'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['author']['properties']['seq'] = array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['author']['properties']['first_name'] = array('type' => 'varchar(40)', 'null' => 'no', 'key' => '', 'default' => '--first_name--', 'extra' => '');
-$tables['author']['properties']['middle_name'] = array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['author']['properties']['last_name'] = array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => '--last_name--', 'extra' => '');
-$tables['author']['properties']['country'] = array('type' => 'varchar(90)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['author']['properties']['email'] = array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => '--email--', 'extra' => '');
-$tables['author']['properties']['url'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['author']['properties']['user_group_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['author']['properties']['suffix'] = array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+$tables['article_html_galley_images'] = array(
+	'attributes' => array('galley_id', 'file_id'),
+	'primary_keys' => array('galley_id', 'file_id'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'galley_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+		'file_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '')
+	)
 
-$tables['author_settings']['attributes'] = array('author_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
-$tables['author_settings']['primary_keys'] = array('author_id', 'locale', 'setting_name');
-$tables['author_settings']['foreign_keys'] = array();
-$tables['author_settings']['properties'] = array();
-$tables['author_settings']['properties']['author_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['author_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['author_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['author_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['author_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
+);
 
 
-$tables['edit_assignment']['attributes'] = array('edit_id', 'article_id', 'editor_id', 'can_edit', 'can_review', 'date_assigned', 'date_notified', 'date_underway');
-$tables['edit_assignment']['primary_keys'] = array('edit_id');
-$tables['edit_assignment']['foreign_keys'] = array('article_id', 'editor_id');
-$tables['edit_assignment']['properties'] = array();
-$tables['edit_assignment']['properties']['edit_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['edit_assignment']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['edit_assignment']['properties']['editor_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['edit_assignment']['properties']['can_edit'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['edit_assignment']['properties']['can_review'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['edit_assignment']['properties']['date_assigned'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['edit_assignment']['properties']['date_notified'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['edit_assignment']['properties']['date_underway'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+$tables['article_xml_galleys'] = array(
+	'attributes' => array('xml_galley_id', 'galley_id', 'article_id', 'label', 'galley_type', 'views'),
+	'primary_keys' => array('xml_galley_id'),
+	'foreign_keys' => array('galley_id', 'article_id'),
+	'properties' => array(
+		'xml_galley_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'galley_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'label' => array('type' => 'varchar(32)', 'null' => 'no', 'key' => '', 'default' => '--label--', 'extra' => ''),
+		'galley_type' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'views' => array('type' => 'int(11)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '')
+	)
 
-
-$tables['edit_decision']['attributes'] = array('edit_decision_id', 'article_id', 'round', 'editor_id', 'decision', 'date_decided');
-$tables['edit_decision']['primary_keys'] = array('edit_decision_id');
-$tables['edit_decision']['foreign_keys'] = array('article_id', 'editor_id');
-$tables['edit_decision']['properties'] = array();
-$tables['edit_decision']['properties']['edit_decision_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['edit_decision']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['edit_decision']['properties']['editor_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['edit_decision']['properties']['round'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['edit_decision']['properties']['decision'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['edit_decision']['properties']['date_decided'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['review_assignment']['attributes'] = array('review_id', 'submission_id', 'reviewer_id', 'competing_interests', 'recommendation', 'date_assigned', 'date_notified', 'date_confirmed',
-'date_completed', 'date_acknowledged', 'date_due', 'last_modified', 'reminder_was_automatic', 'declined', 'replaced', 'cancelled', 'reviewer_file_id', 'date_rated', 'date_reminded',
-'quality', 'round', 'review_form_id', 'regret_message', 'date_response_due', 'review_method', 'step', 'review_round_id', 'stage_id', 'unconsidered');
-$tables['review_assignment']['primary_keys'] = array('review_id');
-$tables['review_assignment']['foreign_keys'] = array('submission_id', 'reviewer_id', 'review_form_id', 'reviewer_file_id', 'review_round_id');
-$tables['review_assignment']['properties'] = array();
-$tables['review_assignment']['properties']['review_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['review_assignment']['properties']['submission_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['reviewer_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['competing_interests'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['recommendation'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_assigned'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_notified'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_confirmed'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_completed'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_acknowledged'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_due'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['last_modified'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['reminder_was_automatic'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['review_assignment']['properties']['declined'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['review_assignment']['properties']['replaced'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['review_assignment']['properties']['cancelled'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => '');
-$tables['review_assignment']['properties']['reviewer_file_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_rated'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_reminded'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['quality'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['round'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['review_assignment']['properties']['review_form_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['regret_message'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['date_response_due'] = array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['review_method'] = array('type' => 'tinyint(20)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['review_assignment']['properties']['step'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['review_assignment']['properties']['review_round_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_assignment']['properties']['stage_id'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['review_assignment']['properties']['unconsidered'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['review_round']['attributes'] = array('submission_id', 'round', 'review_revision', 'status', 'review_round_id', 'stage_id');
-$tables['review_round']['primary_keys'] = array('review_round_id');
-$tables['review_round']['foreign_keys'] = array('submission_id');
-$tables['review_round']['properties'] = array();
-$tables['review_round']['properties']['review_round_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['review_round']['properties']['submission_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['review_round']['properties']['round'] = array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => '');
-$tables['review_round']['properties']['review_revision'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_round']['properties']['status'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_round']['properties']['stage_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['review_form']['attributes'] = array('review_form_id', 'assoc_id', 'seq', 'is_active', 'assoc_type');
-$tables['review_form']['primary_keys'] = array('review_form_id');
-$tables['review_form']['foreign_keys'] = array();
-$tables['review_form']['properties'] = array();
-$tables['review_form']['properties']['review_form_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['review_form']['properties']['assoc_id'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form']['properties']['seq'] = array('type' => 'double', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form']['properties']['is_active'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form']['properties']['assoc_type'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['review_form_settings']['attributes'] = array('review_form_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
-$tables['review_form_settings']['primary_keys'] = array('review_form_id', 'locale', 'setting_name');
-$tables['review_form_settings']['foreign_keys'] = array();
-$tables['review_form_settings']['properties'] = array();
-$tables['review_form_settings']['properties']['review_form_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['review_form_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['review_form_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['review_form_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['review_form_element']['attributes'] = array('review_form_element_id', 'review_form_id', 'seq', 'element_type', 'required', 'included');
-$tables['review_form_element']['primary_keys'] = array('review_form_element_id');
-$tables['review_form_element']['foreign_keys'] = array('review_form_id');
-$tables['review_form_element']['properties'] = array();
-$tables['review_form_element']['properties']['review_form_element_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['review_form_element']['properties']['review_form_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => '');
-$tables['review_form_element']['properties']['seq'] = array('type' => 'double', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_element']['properties']['element_type'] = array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_element']['properties']['required'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_element']['properties']['included'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-$tables['review_form_element_settings']['attributes'] = array('review_form_element_id', 'locale', 'setting_name', 'setting_value', 'setting_type');
-$tables['review_form_element_settings']['primary_keys'] = array('review_form_element_id', 'locale', 'setting_name');
-$tables['review_form_element_settings']['foreign_keys'] = array();
-$tables['review_form_element_settings']['properties'] = array();
-$tables['review_form_element_settings']['properties']['review_form_element_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['review_form_element_settings']['properties']['locale'] = array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => '');
-$tables['review_form_element_settings']['properties']['setting_name'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['review_form_element_settings']['properties']['setting_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_element_settings']['properties']['setting_type'] = array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['review_form_response']['attributes'] = array('review_form_element_id', 'review_id', 'response_type', 'response_value');
-$tables['review_form_response']['primary_keys'] = array();
-$tables['review_form_response']['foreign_keys'] = array('review_form_element_id', 'review_id');
-$tables['review_form_response']['properties'] = array();
-$tables['review_form_response']['properties']['review_form_element_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => 'auto_increment');
-$tables['review_form_response']['properties']['review_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_response']['properties']['response_type'] = array('type' => 'varchar(6)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['review_form_response']['properties']['response_value'] = array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-
-
-$tables['role']['attributes'] = array('journal_id', 'user_id', 'role_id');
-$tables['role']['primary_keys'] = array('journal_id', 'user_id', 'role_id');
-$tables['role']['foreign_keys'] = array('journal_id', 'user_id');
-$tables['role']['properties'] = array();
-$tables['role']['properties']['article_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['role']['properties']['user_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => '');
-$tables['role']['properties']['role_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 65536, 'extra' => '');
+);
 
 	
-$tables['user']['attributes'] = array('user_id', 'username', 'password', 'salutation', 'first_name', 'middle_name', 'last_name', 'gender', 'initials', 'email', 'url', 'phone', 'fax', 'mailing_address',
-'country', 'locales', 'date_last_email', 'date_registered', 'date_validated', 'date_last_login', 'must_change_password', 'auth_id', 'disabled', 'disabled_reason', 'auth_str', 
-'suffix', 'billing_address', 'inline_help');
-$tables['user']['primary_keys'] = array('user_id');
-$tables['user']['foreign_keys'] = array();
-$tables['user']['properties'] = array();
-$tables['user']['properties']['user_id'] = array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
-$tables['user']['properties']['username'] = array('type' => 'varchar(32)', 'null' => 'no', 'key' => 'uni', 'default' => null, 'extra' => '');
-$tables['user']['properties']['password'] = array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['salutation'] = array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['first_name'] = array('type' => 'varchar(40)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '');
-$tables['user']['properties']['middle_name'] = array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['last_name'] = array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '');
-$tables['user']['properties']['gender'] = array('type' => 'varchar(1)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['initials'] = array('type' => 'varchar(5)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['email'] = array('type' => 'varchar(90)', 'null' => 'no', 'key' => 'uni', 'default' => null, 'extra' => '');
-$tables['user']['properties']['url'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['phone'] = array('type' => 'varchar(24)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['fax'] = array('type' => 'varchar(24)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+$tables['article_search_objects'] = array(
+	'attributes' => array('object_id', 'article_id', 'type', 'assoc_id'),
+	'primary_keys' => array('object_id'),
+	'foreign_keys' => array('article_id'),
+	'properties' => array(
+		'object_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'type' => array('type' => 'int(11)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'assoc_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['article_search_object_keywords'] = array(
+	'attributes' => array('object_id', 'keyword_id', 'pos'),
+	'primary_keys' => array('object_id', 'pos'),
+	'foreign_keys' => array('keyword_id'),
+	'properties' => array(
+		'object_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+		'keyword_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'pos' => array('type' => 'int(11)', 'null' => 'no', 'key' => 'pri', 'default' => 10, 'extra' => '')
+	)
+);
+
+
+$tables['article_search_keyword_list'] = array(
+	'attributes' => array('keyword_id', 'keyword_text'),
+	'primary_keys' => array('keyword_id'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'keyword_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'keyword_text' => array('type' => 'varchar(60)', 'null' => 'no', 'key' => 'uni', 'default' => 0, 'extra' => '')
+	)
+);
+
+
+$tables['authors'] = array(
+	'attributes' => array('author_id', 'submission_id', 'primary_contact', 'seq', 'first_name', 'middle_name', 'last_name', 'country', 'email', 'url', 'user_group_id', 'suffix'),
+	'primary_keys' => array('author_id'),
+	'foreign_keys' => array('submission_id'),
+	'properties' => array(
+		'author_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment'),
+		'submission_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => ''),
+		'primary_contact' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'seq' => array('type' => 'double', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'first_name' => array('type' => 'varchar(40)', 'null' => 'no', 'key' => '', 'default' => '--first_name--', 'extra' => ''),
+		'middle_name' => array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'last_name' => array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => '--last_name--', 'extra' => ''),
+		'country' => array('type' => 'varchar(90)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'email' => array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => '--email--', 'extra' => ''),
+		'url' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'user_group_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'suffix' => array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+$tables['author_settings'] = array(
+	'attributes' => array('author_id', 'locale', 'setting_name', 'setting_value', 'setting_type'),
+	'primary_keys' => array('author_id', 'locale', 'setting_name'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'author_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+		'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['edit_assignments'] = array(
+	'attributes' => array('edit_id', 'article_id', 'editor_id', 'can_edit', 'can_review', 'date_assigned', 'date_notified', 'date_underway'),
+	'primary_keys' => array('edit_id'),
+	'foreign_keys' => array('article_id', 'editor_id'),
+	'properties' => array(
+		'edit_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'editor_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'can_edit' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'can_review' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'date_assigned' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_notified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_underway' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['edit_decisions'] = array(
+	'attributes' => array('edit_decision_id', 'article_id', 'round', 'editor_id', 'decision', 'date_decided'),
+	'primary_keys' => array('edit_decision_id'),
+	'foreign_keys' => array('article_id', 'editor_id'),
+	'properties' => array(
+		'edit_decision_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'editor_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'round' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'decision' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'date_decided' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['review_assignments'] = array(
+	'attributes' => array('review_id', 'submission_id', 'reviewer_id', 'competing_interests', 'recommendation', 'date_assigned', 'date_notified', 'date_confirmed',
+		'date_completed', 'date_acknowledged', 'date_due', 'last_modified', 'reminder_was_automatic', 'declined', 'replaced', 'cancelled', 'reviewer_file_id', 'date_rated', 
+		'date_reminded', 'quality', 'round', 'review_form_id', 'regret_message', 'date_response_due', 'review_method', 'step', 'review_round_id', 'stage_id', 'unconsidered'),
+	'primary_keys' => array('review_id'),
+	'foreign_keys' => array('submission_id', 'reviewer_id', 'review_form_id', 'reviewer_file_id', 'review_round_id'),
+	'properties' => array(
+		'review_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'submission_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'reviewer_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'competing_interests' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'recommendation' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_assigned' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_notified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_confirmed' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_completed' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_acknowledged' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_due' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'last_modified' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'reminder_was_automatic' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'declined' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'replaced' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'cancelled' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'reviewer_file_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_rated' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_reminded' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'quality' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'round' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'review_form_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => 'mul', 'default' => null, 'extra' => ''),
+		'regret_message' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'date_response_due' => array('type' => 'datetime', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'review_method' => array('type' => 'tinyint(20)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'step' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'review_round_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'stage_id' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'unconsidered' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['review_rounds'] = array(
+	'attributes' => array('submission_id', 'round', 'review_revision', 'status', 'review_round_id', 'stage_id'),
+	'primary_keys' => array('review_round_id'),
+	'foreign_keys' => array('submission_id'),
+	'properties' => array(
+		'review_round_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'submission_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => ''),
+		'round' => array('type' => 'tinyint(4)', 'null' => 'no', 'key' => '', 'default' => 1, 'extra' => ''),
+		'review_revision' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'status' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'stage_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['review_forms'] = array(
+	'attributes' => array('review_form_id', 'assoc_id', 'seq', 'is_active', 'assoc_type'),
+	'primary_keys' => array('review_form_id'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'review_form_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => 'auto_increment'),
+		'assoc_id' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'seq' => array('type' => 'double', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'is_active' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'assoc_type' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['review_form_settings'] = array(
+	'attributes' => array('review_form_id', 'locale', 'setting_name', 'setting_value', 'setting_type'),
+	'primary_keys' => array('review_form_id', 'locale', 'setting_name'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'review_form_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => '-type-', 'extra' => '')
+	)
+);
+
+
+$tables['review_form_element'] = array(
+	'attributes' => array('review_form_element_id', 'review_form_id', 'seq', 'element_type', 'required', 'included'),
+	'primary_keys' => array('review_form_element_id'),
+	'foreign_keys' => array('review_form_id'),
+	'properties' => array(
+		'review_form_element_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment'),
+		'review_form_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => null, 'extra' => ''),
+		'seq' => array('type' => 'double', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'element_type' => array('type' => 'bigint(20)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'required' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'included' => array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+$tables['review_form_element_settings'] = array(
+	'attributes' => array('review_form_element_id', 'locale', 'setting_name', 'setting_value', 'setting_type'),
+	'primary_keys' => array('review_form_element_id', 'locale', 'setting_name'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'review_form_element_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+		'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+		'setting_name' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => ''),
+		'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['review_form_response'] = array(
+	'attributes' => array('review_form_element_id', 'review_id', 'response_type', 'response_value'),
+	'primary_keys' => array(),
+	'foreign_keys' => array('review_form_element_id', 'review_id'),
+	'properties' => array(
+		'review_form_element_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'mul', 'default' => 0, 'extra' => 'auto_increment'),
+		'review_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => '', 'default' => 0, 'extra' => ''),
+		'response_type' => array('type' => 'varchar(6)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+		'response_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
+
+
+$tables['role'] = array(
+	'attributes' => array('journal_id', 'user_id', 'role_id'),
+	'primary_keys' => array('journal_id', 'user_id', 'role_id'),
+	'foreign_keys' => array('journal_id', 'user_id'),
+	'properties' => array(
+		'article_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => '');
+		'user_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => '');
+		'role_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 65536, 'extra' => '')
+	)
+);
+
+	
+$tables['user'] = array(
+	'attributes'] = array('user_id', 'username', 'password', 'salutation', 'first_name', 'middle_name', 'last_name', 'gender', 'initials', 'email', 'url', 'phone', 'fax', 
+		'mailing_address', 'country', 'locales', 'date_last_email', 'date_registered', 'date_validated', 'date_last_login', 'must_change_password', 'auth_id', 'disabled', 
+		'disabled_reason', 'auth_str', 'suffix', 'billing_address', 'inline_help'),
+	'primary_keys' => array('user_id'),
+	'foreign_keys' => array(),
+	'properties' => array(
+		'user_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => null, 'extra' => 'auto_increment');
+		'username' => array('type' => 'varchar(32)', 'null' => 'no', 'key' => 'uni', 'default' => null, 'extra' => '');
+		'password' => array('type' => 'varchar(255)', 'null' => 'no', 'key' => '', 'default' => null, 'extra' => '');
+		'salutation' => array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+		'first_name' => array('type' => 'varchar(40)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '');
+		'middle_name' => array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+		'last_name' => array('type' => 'varchar(90)', 'null' => 'no', 'key' => '', 'default' => '', 'extra' => '');
+		'gender' => array('type' => 'varchar(1)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+		'initials' => array('type' => 'varchar(5)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+		'email' => array('type' => 'varchar(90)', 'null' => 'no', 'key' => 'uni', 'default' => null, 'extra' => '');
+		'url' => array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+		'phone' => array('type' => 'varchar(24)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+		'fax' => array('type' => 'varchar(24)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
 $tables['user']['properties']['mailing_address'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
 $tables['user']['properties']['country'] = array('type' => 'varchar(90)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
 $tables['user']['properties']['locales'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
@@ -491,7 +548,9 @@ $tables['user']['properties']['disabled_reason'] = array('type' => 'text', 'null
 $tables['user']['properties']['auth_str'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
 $tables['user']['properties']['suffix'] = array('type' => 'varchar(40)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
 $tables['user']['properties']['billing_address'] = array('type' => 'varchar(255)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
-$tables['user']['properties']['inline_help'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '');
+$tables['user']['properties']['inline_help'] = array('type' => 'tinyint(4)', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => '')
+	)
+);
 
 $tables['user_settings']['attributes'] = array('user_id', 'locale', 'setting_name', 'setting_value', 'setting_type', 'assoc_id', 'assoc_type');
 $tables['user_settings']['primary_keys'] = array();
