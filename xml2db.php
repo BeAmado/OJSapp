@@ -1413,6 +1413,8 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
+	$selectArticleFilesSTMT = $conn->prepare('SELECT * FROM article_files WHERE article_id = :selectArticleFiles_articleId');
+	
 	$articlesXml = null;
 	
 	if (strpos($xml->nodeName, 'articles') !== false) {
@@ -1766,7 +1768,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 		}// end of the if published
 		
-		else { // the article is unpublished //////////////////////////////////////////////////
+		else if (!$articleAlreadyImported){ // the article is unpublished //////////////////////////////////////////////////
 		
 		$error = array('article_id' => $article['article_id']);
 		
@@ -2002,7 +2004,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		if ($articleOk) {
 			
 			//insert the article_settings /////////////////////////
-			if (array_key_exists('settings', $article)) { if (!empty($article['settings']) && $article['settings'] != null) {
+			if (!$published && array_key_exists('settings', $article)) { if (!empty($article['settings']) && $article['settings'] != null) {
 			echo "\ninserting article_settings:\n";
 			
 			//insert each article setting
@@ -2088,6 +2090,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			
 			/////////////// insert author ///////////////////////////////////////
+			if (!$published && array_key_exists('authors', $article)) { if (!empty($article['authors'])) {
 			echo "\ninserting authors:\n";
 			foreach ($article['authors'] as $author) {
 				
@@ -2139,11 +2142,27 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				
 			}//end of foreach author
 			
+			}//end fo the if not published and authors exist
+			}//end of the if authors not empty
+			
 			//// end of the insert author ///////////////////////////
 			
 			
 			// insert article_files ////////////////////////////////
 			if (array_key_exists('files', $article)) {  if (!empty($article['files']) && $article['files'] != null) {
+				
+			$fetchedArticleFiles = null;
+				
+			if ($published) {
+				$selectArticleFilesSTMT->bindParam('selectArticleFiles_articleId', $article['article_new_id'], PDO::PARAM_INT);
+				if ($selectArticleFilesSTMT->execute()) {
+					$fetchedArticleFiles = $selectArticleFilesSTMT->fetchAll(PDO::FETCH_ASSOC);
+				}
+				else {
+					//TREAT THE ERROR
+				}
+			}
+				
 			echo "\ninserting article_files:\n";
 			
 			//insert each article_file
@@ -2263,6 +2282,37 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							array_push($errors['article_file']['check'], $checkError);
 						}
 						
+					}//end of the if file_id is mapped
+					else if ($published) {
+						
+						//WORKING ON NOW
+						
+						//check if the corresponding files already exists
+		//the PB.pdf must exist and some other like the RV.doc or ED.doc might exist
+		
+						$matchedFile = null;
+						
+						//look for the same original_file_name and termination of file_name
+						
+						//search for types: AT, SP, CE, SM, PB, RV, ED, LE
+						if (strpos($articleFile['file_name'])) echo 'whoa there'!;
+						
+							//OBS! original_file_name might have types too like Sp, Pb, ...
+						//BEWARE OF THAT AND PROBABLY BEST TO MAKE A FUNCTION TO TREAT IT
+						
+						//search for a match in the fetchedArticleFiles
+						foreach ($fetchedArticleFiles as $fetchedFile) {
+							
+							if (substr())
+							
+							$sameOriginalName = $fetchedFile['original_file_name'] == $articleFile['original_file_name'];
+							$sameSize = $fetchedFile['file_size'] == $articleFile['file_size'];
+							$sameFileTermination = 
+							if ()
+						}
+						
+						
+						
 					}
 					else { //insert the article_file
 						
@@ -2322,7 +2372,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			
 			/////////////// insert article_supplementary_files ///////////////////////
-			if (array_key_exists('supplementary_files', $article)) {  if (!empty($article['supplementary_files']) && $article['supplementary_files'] != null) {
+			if (!$published && array_key_exists('supplementary_files', $article)) {  if (!empty($article['supplementary_files']) && $article['supplementary_files'] != null) {
 			echo "inserting article_supplementary_files:\n";
 			foreach ($article['supplementary_files'] as &$articleSuppFile) {
 				
@@ -2439,7 +2489,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		
 			/////////////////////// insert article comments  ///////////////////////////////////
-			if (array_key_exists('comments', $article)) { if (!empty($article['comments'])) {
+			if (!$published && array_key_exists('comments', $article)) { if (!empty($article['comments'])) {
 			echo "\ninserting article comments...\n";
 			
 			foreach ($article['comments'] as &$articleComment) {
@@ -2541,7 +2591,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			
 			///////////////////// insert article galleys /////////////////////////////////////
-			if (array_key_exists('galleys', $article)) { if (!empty($article['galleys'])) {
+			if (!$published && array_key_exists('galleys', $article)) { if (!empty($article['galleys'])) {
 			echo "\ninserting article galleys...\n";
 			
 			foreach ($article['galleys'] as &$articleGalley) {
