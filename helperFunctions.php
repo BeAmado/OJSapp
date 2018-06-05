@@ -117,16 +117,44 @@ function saveMyXml(&$xml, $filename, $migrate) {
 	return false;
 }
 
+// #04.9)
+/**
+this function receives a string as argument representing the name of the file
+if returns a string indicationg the class of the file which might be one of the following:
+AT, SP, CE, SM, PB, RV, ED, LE or None
+
+*/
+function getFileClass($name) {
+	$tests = array('AT.', 'SP.', 'CE.', 'SM.', 'PB.', 'RV.', 'ED.', 'LE.');
+	$words = explode("-", $name);
+	$sizeWords = count($words);
+	$type = substr($words[$sizeWords - 1], 0, 2); //the first 2 characters of the last word
+	$searchStr = $type . '.'; //include the dot (".") at the end to match the tests array 
+	if (in_array($searchStr, $tests)) {
+		return $type;
+	}
+	
+	return 'None';
+}
 
 // #05)
 function isStandardName($name) {
 	$words = explode("-", $name);
+	
+	$numericsOk = false;
+	$classOk = false;
+	
 	if (sizeof($words) === 4) {
 		if (is_numeric($words[0]) && is_numeric($words[1]) && is_numeric($words[2])) {
-			return true;
+			$numericsOk = true;
 		}
 	}
-	return false;
+	
+	$fileClass = getFileClass($name);
+	if ($fileClass != 'None') {
+		$classOk = true;
+	}
+	return ($numericsOk && $classOk);
 }
 
 
@@ -655,7 +683,7 @@ function same2($arr1, $arr2, &$args = null) {
 
 
 // #17)
-function myExecute($mode, $type, $arrData, &$stmt, &$errors, $args = null) {
+function myExecute($mode, $type, $arrData, &$stmt, &$errors, &$args = null) {
 	
 	$params = $arrData["params"];
 	$data = $arrData["data"];
@@ -673,6 +701,11 @@ function myExecute($mode, $type, $arrData, &$stmt, &$errors, $args = null) {
 	}
 	
 	if ($stmt->execute()) {
+		
+		if ($mode == 'update' && $args !== null) {
+			$args['affectedRows'] = $stmt->rowCount();
+		}
+		
 		return true;
 	}
 	else {

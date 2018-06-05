@@ -1414,6 +1414,11 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	
 	$selectArticleFilesSTMT = $conn->prepare('SELECT * FROM article_files WHERE article_id = :selectArticleFiles_articleId');
+	$updatePublishedArticleFileSTMT = $conn->prepare(
+		'UPDATE article_files 
+		 SET date_uploaded = :updatePublishedArticleFile_dateUploaded, date_modified = :updatePublishedArticleFile_dateModified
+		 WHERE file_id = :updatePublishedArticleFile_fileId AND revision = :updatePublishedArticleFile_revision'
+	);
 	
 	$articlesXml = null;
 	
@@ -1738,10 +1743,23 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						);
 						
 						echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
+						$args = array();
 						
-						if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors)) { //from helperFunctions.php
-							echo "Ok\n";
-							$numUpdates['articles']++;
+						if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors, $args)) { //from helperFunctions.php
+							if ($args['affectedRows'] == 1) {
+								echo "Ok\n";
+								$numUpdates['articles']++;
+							}
+							else if ($args['affectedRows'] == 0) {
+								echo "Already up to date\n";
+							}
+							else {
+								echo "Error\n";
+								//flag the error
+								$error['article_id'] = $article['article_id'];
+								$error['article_new_id'] = $article['article_new_id'];
+								$error['error'] = 'The number of affected rows was ' . $args['affectedRows'];
+							}
 						}
 						else {
 							echo "Failed\n";
@@ -1914,10 +1932,23 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							);
 							
 							echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
+							$args = array();
 							
-							if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors)) { //from helperFunctions.php
-								echo "Ok\n";
-								$numUpdates['articles']++;
+							if (myExecute('update', 'article', $arr, $updtArticleSTMT, $errors, $args)) { //from helperFunctions.php
+								if ($args['affectedRows'] == 1) {
+									echo "Ok\n";
+									$numUpdates['articles']++;
+								}
+								else if ($args['affectedRows'] == 0) {
+									echo "Already up to date\n";
+								}
+								else {
+									echo "Error\n";
+									//flag the error
+									$error['article_id'] = $article['article_id'];
+									$error['article_new_id'] = $article['article_new_id'];
+									$error['error'] = 'The number of affected rows was ' . $args['affectedRows'];
+								}
 							}
 							else {
 								echo "Failed\n";
@@ -1997,7 +2028,7 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 		
 		
 		/////////end of the unpublished_articles ////////////
-		}
+		}//end of the if  not articleAlreadyImported
 		
 		
 		//if the article has been correctly inserted
@@ -2025,8 +2056,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					if ($checkArticleSettingSTMT->fetchColumn() > 0) {
 						// update the article_setting //////////////////
 						
-						echo '    updating '. $articleSetting['setting_name'] . ' with locale ' . $articleSetting['locale'] . ' .........'; 
-				
 						$arr = array();
 						$arr['data'] = $articleSetting;
 						$arr['params'] = array(
@@ -2037,13 +2066,32 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							array('name' => ':updtArticleSetting_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR)
 						);
 						
+						$args = array();
 						
-						if (myExecute('update', 'article_settings', $arr, $updtArticleSettingSTMT, $errors)) { //from helperFunctions.php
-							echo " Ok\n";
-							$numUpdates['article_settings']++;
+						echo '    updating '. $articleSetting['setting_name'] . ' with locale ' . $articleSetting['locale'] . ' .........'; 
+				
+						if (myExecute('update', 'article_settings', $arr, $updtArticleSettingSTMT, $errors, $args)) { //from helperFunctions.php
+							if ($args['affectedRows'] == 1) {
+								echo "Ok\n";
+								$numUpdates['article_settings']++;
+							}
+							else if ($args['affectedRows'] == 0) {
+								echo "Already up to date\n";
+							}
+							else {
+								echo "Error\n";
+								//flag the error
+								$error = array(
+									'article_id' => $articleSetting['article_id'],
+									'article_new_id' => $articleSetting['article_new_id'],
+									'error' => 'The number of affected rows was ' . $args['affectedRows']
+								);
+								array_push($errors['article_settings']['update'], $error);
+							}
+							
 						}
 						else {
-							echo " Up to date\n";
+							echo " Failed\n";
 						}
 						
 					}// end of the if to update the article_setting ////
@@ -2159,9 +2207,14 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 					$fetchedArticleFiles = $selectArticleFilesSTMT->fetchAll(PDO::FETCH_ASSOC);
 				}
 				else {
-					//TREAT THE ERROR
+					$error = array(
+						'article_file' => $articleFile,
+						'error' => 'Did not execute the selectArticleFilesSTMT',
+						'errorInfo' => $selectArticleFilesSTMT->errorInfo()
+					);
+					array_push($errors['article_file']['check'], $error);
 				}
-			}
+			}//end of if published to fetch the articleFiles
 				
 			echo "\ninserting article_files:\n";
 			
@@ -2221,9 +2274,27 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									
 									echo '    updating article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .'............ ';
 									
-									if (myExecute('update', 'article_file', $arr, $updtArticleFileSTMT, $errors)) { //from helperFunctions.php
-										echo "Ok\n";
-										$numUpdates['article_files']++;
+									$args = array();
+									
+									if (myExecute('update', 'article_file', $arr, $updtArticleFileSTMT, $errors, $args)) { //from helperFunctions.php
+										
+										if ($args['affectedRows'] == 1) {
+											echo "Ok\n";
+											$numUpdates['article_files']++;
+										}
+										else if ($args['affectedRows'] == 0) {
+											echo "Already up to date\n";
+										}
+										else {
+											echo "Error\n";
+											//flag the error
+											$error = array(
+												'article_file' => $articleFile, 
+												'error' => 'The number of affected rows was ' . $args['affectedRows']
+											);
+											array_push($errors['article_file']['update'], $error);
+										}
+										
 									}
 									else {
 										echo "Failed\n";
@@ -2283,37 +2354,150 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 						}
 						
 					}//end of the if file_id is mapped
-					else if ($published) {
-						
+					else if ($published) { 
+						//published article that has not yet been processed by the OJSapp for importation of missing data
 						//WORKING ON NOW
 						
-						//check if the corresponding files already exists
+						//check if the corresponding files already exist
 		//the PB.pdf must exist and some other like the RV.doc or ED.doc might exist
-		
-						$matchedFile = null;
 						
-						//look for the same original_file_name and termination of file_name
+						//look for the same original_file_name if its of class None and same class of file_name
+						//and same file_type and same file_size
+							
+						$matchedFile = false;
 						
-						//search for types: AT, SP, CE, SM, PB, RV, ED, LE
-						if (strpos($articleFile['file_name'])) echo 'whoa there'!;
-						
-							//OBS! original_file_name might have types too like Sp, Pb, ...
-						//BEWARE OF THAT AND PROBABLY BEST TO MAKE A FUNCTION TO TREAT IT
+						//the classes will be one of: AT, SP, CE, SM, PB, RV, ED, LE, None
+						$filenameClass = getFileClass($articleFile['file_name']); // from helperFunctions.php function #04.9
+						$originalFilenameClass = getFileClass($articleFile['original_file_name']); //from helperFunctions.php function #04.9
 						
 						//search for a match in the fetchedArticleFiles
 						foreach ($fetchedArticleFiles as $fetchedFile) {
 							
-							if (substr())
+							$sameFilenameClass = getFileClass($fetchedFile['file_name']) == $filenameClass;
 							
-							$sameOriginalName = $fetchedFile['original_file_name'] == $articleFile['original_file_name'];
-							$sameSize = $fetchedFile['file_size'] == $articleFile['file_size'];
-							$sameFileTermination = 
-							if ()
-						}
+							if ($sameFilenameClass) {
+								$sameOriginalFilenameClass = getFileClass($fetchedFile['original_file_name']) == $originalFilenameClass;
+								if ($sameOriginalFilenameClass) {
+									
+									$sameSize = $fetchedFile['file_size'] == $articleFile['file_size'];
+									$sameType = $fetchedFile['file_type'] == $articleFile['file_type'];
+									$sameRevision = $fetchedFile['revision'] == $articleFile['revision'];
+									$supplementaryTest = true; //set it as true in case the originalFilenameClass is not None, 
+									                           //which would not allow for original_file_name comparison 
+									
+									//if the class is None make a supplementary test for the same orginal_file_name
+									if ($filenameClass == 'None') {
+										$supplementaryTest = $fetchedFile['original_file_name'] == $articleFile['original_file_name'];
+									}//end of the if filenameClass == None
+									
+									if ($sameSize && $sameType && $sameRevision && $supplementaryTest) {
+										$matchedFile = true;
+										$articleFile['file_new_id'] = $fetchedFile['file_id'];
+										break; //breaking out of the foreach fetchedArticleFiles
+									}
+									
+								}//end of the if sameOriginalFilenameClass
+							}// end of the if sameFilenameClass
+							
+						}//end of the foreach fetchedArticleFiles
+						
+						if ($matchedFile) { //found a match published file
+							//map and update it
+							
+							//map the file_id
+							$dataMapping['file_id'][$articleFile['file_id']] = $articleFile['file_new_id'];
+							
+							///////// update the date_uploaded and date_modified ///////////
+							$arr = array();
+							$arr['data'] = $articleFile;
+							$arr['params'] = array(
+								array('name' => ':updatePublishedArticleFile_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+								array('name' => ':updatePublishedArticleFile_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+								array('name' => ':updatePublishedArticleFile_fileId', 'attr' => 'file_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':updatePublishedArticleFile_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT)
+							);
+							
+							echo '    updating article file #' . $articleFile['file_new_id']. ' revision ' . $articleFile['revision'] .'............ ';
+							
+							$args = array();
+							
+							if (myExecute('update', 'article_file', $arr, $updatePublishedArticleFileSTMT, $errors, $args)) { //from helperFunctions.php
+								
+								if ($args['affectedRows'] == 1) {
+									echo "Ok\n";
+									$numUpdates['article_files']++;
+								}
+								else if ($args['affectedRows'] == 0) {
+									echo "Already up to date\n";
+								}
+								else {
+									echo "Error\n";
+									//flag the error
+									$error = array(
+										'article published' => 1,
+										'article_file' => $articleFile, 
+										'error' => 'The number of affected rows was ' . $args['affectedRows']
+									);
+									array_push($errors['article_file']['update'], $error);
+								}
+								
+							}
+							else {
+								echo "Failed\n";
+							}
+							
+							$articleFile['DNU'] = true; // DNU means Do Not Update
+							
+							//////////// end of the update the published article_file ////////////
+							
+						}//end of the if matchedFile
+						
+						else {
+							//the file was not found in the database
+							//assume it does not have a correspondent file yet
+							//so insert the article_file
+							$arr = array();
+							$arr['data'] = $articleFile;
+							$arr['params'] = array(
+								array('name' => ':file_revision', 'attr' => 'revision', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_sourceRevision', 'attr' => 'source_revision', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_fileName', 'attr' => 'file_name', 'type' => PDO::PARAM_STR),
+								array('name' => ':file_fileType', 'attr' => 'file_type', 'type' => PDO::PARAM_STR),
+								array('name' => ':file_originalFileName', 'attr' => 'original_file_name', 'type' => PDO::PARAM_STR),
+								array('name' => ':file_fileSize', 'attr' => 'file_size', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_fileStage', 'attr' => 'file_stage', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_viewable', 'attr' => 'viewable', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_dateUploaded', 'attr' => 'date_uploaded', 'type' => PDO::PARAM_STR),
+								array('name' => ':file_dateModified', 'attr' => 'date_modified', 'type' => PDO::PARAM_STR),
+								array('name' => ':file_round', 'attr' => 'round', 'type' => PDO::PARAM_INT),
+								array('name' => ':file_assocId', 'attr' => 'assoc_id', 'type' => PDO::PARAM_INT)
+							);
+							
+							echo '    inserting article file #' . $articleFile['file_id']. '............ ';
+							
+							if (myExecute('insert', 'article_file', $arr, $insertArticleFileSTMT, $errors)) { //from helperFunctions.php
+								echo "Ok\n";
+								
+								$numInsertions['article_files']++;
+								
+								$args = array();
+								$args['compare'] = 'almost all';
+								$args['notCompare'] = ['file_name','original_file_name', 'source_file_id'];
+								
+								if (getNewId('article_file', $lastArticleFilesSTMT, $articleFile, $dataMapping, $errors, $args)) { //from helperFunctions.php
+									echo "    file new id = " . $articleFile['file_new_id'] . "\n\n";
+									$articleFileOk = true;
+								}
+							}
+							else {
+								echo "Failed\n";
+							}
+						}//end of the if matchedFile is null
 						
 						
-						
-					}
+					}//end of the if published
+					
 					else { //insert the article_file
 						
 						$arr = array();
@@ -3222,8 +3406,6 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 							}
 							else { //////// update the review_round /////////////////////////
 								
-								echo '    updating review_round #' . $revRound['review_round_new_id'] . ' .................';
-				
 								$arr = array();
 								$arr['data'] = $revRound;
 								$arr['params'] = array(
@@ -3234,11 +3416,26 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 									array('name' => ':updtRevRound_status', 'attr' => 'status', 'type' => PDO::PARAM_INT)
 								);
 								
-								if (myExecute('update', 'review_round', $arr, $updtRevRoundSTMT, $errors)) {  //from helperFunctions.php
-									echo "Ok\n";
-									
-									$numUpdates['review_rounds']++;
-									
+								$args = array();
+								echo '    updating review_round #' . $revRound['review_round_new_id'] . ' .................';
+				
+								if (myExecute('update', 'review_round', $arr, $updtRevRoundSTMT, $errors, $args)) {  //from helperFunctions.php
+									if ($args['affectedRows'] == 1) {
+										echo "Ok\n";
+										$numUpdates['review_rounds']++;
+									}
+									else if ($args['affectedRows'] == 0) {
+										echo "Already up to date\n";
+									}
+									else {
+										echo "Error\n";
+										//flag the error
+										$error = array(
+											'review_round' => $revRound, 
+											'error' => 'The number of affected rows was ' . $args['affectedRows']
+										);
+										array_push($errors['review_round']['update'], $error);
+									}
 								}
 								else {
 									echo "Failed\n";
@@ -3451,12 +3648,25 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 														
 									
 									echo '    updating review_assignment #' . $revAssign['review_new_id'] . ' ......... '; 
+									$args = array();
 									
-									if (myExecute('update', 'review_assignment', $arr, $updtRevAssignSTMT, $errors)) { //from helperFunctions.php
-										echo "Ok\n";
-										
-										$numUpdates['review_assignments']++;
-										
+									if (myExecute('update', 'review_assignment', $arr, $updtRevAssignSTMT, $errors, $args)) { //from helperFunctions.php
+										if ($args['affectedRows'] == 1) {
+											echo "Ok\n";
+											$numUpdates['review_assignments']++;
+										}
+										else if ($args['affectedRows'] == 0) {
+											echo "Already up to date\n";
+										}
+										else {
+											echo "Error\n";
+											//flag the error
+											$error = array(
+												'review_assignment' => $revAssign, 
+												'error' => 'The number of affected rows was ' . $args['affectedRows']
+											);
+											array_push($errors['review_assignment']['update'], $error);
+										}
 									}
 									else {
 										echo "Failed\n";
@@ -3592,11 +3802,25 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 											array('name' => ':updtRevFormResp_reponseValue', 'attr' => 'response_value', 'type' => PDO::PARAM_STR)
 										);
 										
-										if (myExecute('update', 'review_form_response', $arr, $updtReviewFormResponseSTMT, $errors)) {  //from helperFunctions.php
-											echo "Ok\n";
-											
-											$numUpdates['review_form_responses']++;
-											
+										$args = array();
+										
+										if (myExecute('update', 'review_form_response', $arr, $updtReviewFormResponseSTMT, $errors, $args)) {  //from helperFunctions.php
+											if ($args['affectedRows'] == 1) {
+												echo "Ok\n";
+												$numUpdates['review_form_responses']++;
+											}
+											else if ($args['affectedRows'] == 0) {
+												echo "Already up to date\n";
+											}
+											else {
+												echo "Error\n";
+												//flag the error
+												$error = array(
+													'review_form_response' => $revFormResponse, 
+													'error' => 'The number of affected rows was ' . $args['affectedRows']
+												);
+												array_push($errors['review_form_response']['update'], $error);
+											}
 										}
 										else {
 											echo "Failed\n";
@@ -3732,11 +3956,26 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 			
 			echo "\nupdating article #" . $article['article_new_id'] . " ......... "; 
 			
-			if (myExecute('update', 'article', $arr, $updateArticleSTMT, $errors)) { //from helperFunctions.php
-				echo "Ok\n";
-				
-				$numUpdates['articles']++;
-				
+			$args = array();
+			
+			if (myExecute('update', 'article', $arr, $updateArticleSTMT, $errors, $args)) { //from helperFunctions.php
+				if ($args['affectedRows'] == 1) {
+					echo "Ok\n";
+					$numUpdates['articles']++;
+				}
+				else if ($args['affectedRows'] == 0) {
+					echo "Already up to date\n";
+				}
+				else {
+					echo "Error\n";
+					//flag the error
+					$error = array(
+						'article_id' => $article['article_id'],
+						'article_new_id' => $article['article_new_id'],
+						'error' => 'The number of affected rows was ' . $args['affectedRows']
+					);
+					array_push($errors['article']['update'], $error);
+				}
 			}
 			else {
 				echo "Failed\n";
@@ -3827,11 +4066,28 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 				);
 				
 				echo "\nupdating file #" . $articleFile['file_new_id'] . " ......... "; 
+				$args = array();
 				
-				if (myExecute('update', 'article_file', $arr, $updateArticleFileSTMT, $errors)) { //from helperFunctions.php
-					echo "Ok\n";
-					
-					$numUpdates['article_files']++;
+				if (myExecute('update', 'article_file', $arr, $updateArticleFileSTMT, $errors, $args)) { //from helperFunctions.php
+					if ($args['affectedRows'] == 1) {
+						echo "Ok\n";
+						$numUpdates['article_files']++;
+					}
+					else if ($args['affectedRows'] == 0) {
+						echo "Already up to date\n";
+					}
+					else {
+						echo "Error\n";
+						//flag the error
+						$error = array(
+							'article_id' => $articleFile['article_id'],
+							'article_new_id' => $articleFile['article_new_id'],
+							'file_id' => $articleFile['file_id'],
+							'file_new_id' => $articleFile['file_new_id'],
+							'error' => 'The number of affected rows was ' . $args['affectedRows']
+						);
+						array_push($errors['article_file']['update'], $error);
+					}
 				}
 				else {
 					echo "Failed\n";
@@ -4438,10 +4694,28 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 						
 						
 						echo '    updating review_form #' . $revForm['review_form_new_id']. '............ ';
+						$args = array();
 						
-						if (myExecute('update', 'review_form', $arr, $updtReviewFormSTMT, $errors)) { //from helperFunctions.php
-							echo "Ok\n";
-							$numUpdates['review_forms']++;
+						if (myExecute('update', 'review_form', $arr, $updtReviewFormSTMT, $errors, $args)) { //from helperFunctions.php
+							if ($args['affectedRows'] == 1) {
+								echo "Ok\n";
+								$numUpdates['review_forms']++;
+							}
+							else if ($args['affectedRows'] == 0) {
+								echo "Already up to date\n";
+							}
+							else {
+								echo "Error\n";
+								//flag the error
+								$error = array(
+									'review_form_id' => $revForm['review_form_id'],
+									'review_form_new_id' => $revForm['review_form_new_id'],
+									'seq' => $revForm['seq'],
+									'is_active' => $revForm['is_active'],
+									'error' => 'The number of affected rows was ' . $args['affectedRows']
+								);
+								array_push($errors['review_form']['update'], $error);
+							}
 						}
 						else {
 							echo "Failed\n";
@@ -4580,9 +4854,27 @@ function insertReviewForms(&$xml, $conn, &$dataMapping, $journalNewId, $args = n
 									array('name' => ':updtRevFormElem_included', 'attr' => 'included', 'type' => PDO::PARAM_INT),
 									array('name' => ':updtRevFormElem_elementType', 'attr' => 'element_type', 'type' => PDO::PARAM_INT)
 								);
+								
+								$args = array();
 					
-								if (myExecute('update', 'review_form_element', $arr, $updtRevFormElementSTMT, $errors)) { //from helperFunctions.php
-									echo "Ok\n";
+								if (myExecute('update', 'review_form_element', $arr, $updtRevFormElementSTMT, $errors, $args)) { //from helperFunctions.php
+									if ($args['affectedRows'] == 1) {
+										echo "Ok\n";
+										$numUpdates['review_forms']++;
+									}
+									else if ($args['affectedRows'] == 0) {
+										echo "Already up to date\n";
+									}
+									else {
+										echo "Error\n";
+										//flag the error
+										$error = array(
+											'review_form_element_id' => $element['review_form_element_id'],
+											'review_form_element_new_id' => $element['review_form_element_new_id'],
+											'error' => 'The number of affected rows was ' . $args['affectedRows']
+										);
+										array_push($errors['review_form']['update'], $error);
+									}
 									$numUpdates['review_form_elements']++;
 								}
 								else {
@@ -5173,9 +5465,25 @@ function insertPluginSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args 
 					
 					echo '    updating plugin setting ............ ';
 					
-					if (myExecute('update', 'plugin_settings', $arr, $updatePluginSettingsSTMT, $errors)) { //from helperFunctions.php
-						echo "Ok\n\n";
-						$numUpdates++;
+					$args = array();
+					
+					if (myExecute('update', 'plugin_settings', $arr, $updatePluginSettingsSTMT, $errors, $args)) { //from helperFunctions.php
+						if ($args['affectedRows'] == 1) {
+							echo "Ok\n";
+							$numUpdates++;
+						}
+						else if ($args['affectedRows'] == 0) {
+							echo "Already up to date\n";
+						}
+						else {
+							echo "Error\n";
+							//flag the error
+							$error = array(
+								'plugin' => $plugin,
+								'error' => 'The number of affected rows was ' . $args['affectedRows']
+							);
+							array_push($errors['plugin_settings']['update'], $error);
+						}
 					}
 					else {
 						echo "Failed\n\n";
@@ -5508,7 +5816,7 @@ function insertIssueOrders(&$xml, $conn, &$dataMapping, $journal, $args = null) 
 
 // #14)
 function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
-	//echo "\n\nTHE FUNCTION insertCitationsAndReferrals DOES NOT DO ANYTHING YET\n\n";
+	echo "\n\nTHE FUNCTION insertCitationsAndReferrals DOES NOT DO ANYTHING YET\n\n";
 	$limit = 10;
 	
 	if (is_array($args)) {
@@ -5517,16 +5825,63 @@ function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId,
 		}
 	}
 	
-	if (!array_key_exists('event_log_id', $dataMapping)) {
-		$dataMapping['event_log_id'] = array();
+	if (!array_key_exists('citation_id', $dataMapping)) {
+		$dataMapping['citation_id'] = array();
 	}
 	
-	if (!array_key_exists('email_log_id', $dataMapping)) {
-		$dataMapping['email_log_id'] = array();
+	if (!array_key_exists('referral_id', $dataMapping)) {
+		$dataMapping['referral_id'] = array();
 	}
 	
+	$errors = array(
+		'referral' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'referral_settings' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'citation' => array('insert' => array(), 'update' => array(), 'check' => array()),
+		'citation_settings' => array('insert' => array(), 'update' => array(), 'check' => array())
+	);
 	
 	///////  THE STATEMENTS  ////////////////////////////////////////////////////////////
+	
+	$insertReferralSTMT = $conn->prepare('INSERT INTO referrals (article_id, status, url, date_added, link_count)
+ VALUES (:insertReferral_articleId, :insertReferral_status, :insertReferral_url, :insertReferral_dateAdded, :insertReferral_linkCount)');
+ 	
+ 	$updateReferralSTMT = $conn->prepare('UPDATE referrals SET status = :updateReferral_status, url = :updateReferral_url, date_added = :updaeReferral_dateAdded,
+ 		link_count = :updateReferral_linkCount WHERE referral_id = :updateReferral_referralId');
+ 	
+ 	$lastReferralsSTMT = $conn->prepare('SELECT * FROM referrals ORDER BY referral_id DESC LIMIT 10');
+	
+	$insertReferralSettingSTMT = $conn->prepare('INSERT INTO referral_settings (referral_id, locale, setting_name, setting_value, setting_type) VALUES
+ (:insertReferralSetting_referralId, :insertReferralSetting_locale, :insertReferralSetting_settingName, :insertReferralSetting_settingValue, :insertReferralSetting_settingType)');
+ 	
+ 	$updateReferralSettingSTMT = $conn->prepare('UPDATE referral_settings 
+ SET setting_value = :updateReferralSetting_settingValue, setting_type = :updateReferralSetting_settingType
+ WHERE referral_id = :updateReferralSetting_referralId AND locale = :updateReferralSetting_locale AND setting_name = :updateReferralSetting_settingName');
+	
+	$insertCitationSTMT = $conn->prepare('INSERT INTO citations (assoc_type, assoc_id, citation_state, raw_citation, seq, lock_id) VALUES 
+ (:insertCitation_assocType, :insertCitation_assocId, :insertCitation_citationState, :insertCitation_rawCitation, :insertCitation_seq, :insertCitation_lockId)');
+ 	
+ 	$updateCitationSTMT = $conn->prepare('UPDATE citations SET citation_state = :updateCitation_citationState, raw_citation = :updateCitation_rawCitation,
+ seq = :updateCitation_seq, lock_id = :updateCitation_lockId WHERE citation_id = :updateCitation_citationId');
+ 	
+ 	$lastCitationsSTMT = $conn->prepare('SELECT * FROM citations ORDER BY citation_id DESC LIMIT 10');
+ 	
+ 	$insertCitationSettingSTMT = $conn->prepare('INSERT INTO citation_settings (citation_id, locale, setting_name, setting_value, setting_type) VALUES 
+ (:insertCitationSetting_citationId, :insertCitationSetting_locale, :insertCitationSetting_settingName, :insertCitationSetting_settingValue, :insertCitationSetting_settingType)');
+ 	
+ 	$updateCitationSettingSTMT = $conn->prepare('UPDATE citation_settings 
+ SET setting_value = :updateCitationSetting_settingValue, setting_type = :updateCitationSetting_settingType
+ WHERE referral_id = :updateCitationSetting_referralId AND locale = :updateCitationSetting_locale AND setting_name = :updateCitationSetting_settingName');
+	
+	$referrals_node = $xml->getElementsByTagName('referrals')->item(0);
+	$referrals = xmlToArray($referrals_node, true); //from helperFunctions.php
+	
+	foreach ($referrals as &$referral) {
+		
+	}
+	
+	$citations_node = $xml->getElementsByTagName('citations')->item(0);
+	$citations = xmlToArray($citations_node, true); //from helperFunctions.php
+	
 }
 // end of insertCitationsAndReferrals
 
