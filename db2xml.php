@@ -1535,7 +1535,7 @@ function fetchCitations($conn, $journal, $args = null) {
 			
 			if ($verbose) echo "    fetching citation #" . $citation['citation_id'] . " settings ......... ";
 			
-			if ($citationsSettingsSTMT->execute()) {
+			if ($citationSettingsSTMT->execute()) {
 				$citationSettings = array();
 				
 				while ($setting = $citationSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -1543,9 +1543,12 @@ function fetchCitations($conn, $journal, $args = null) {
 					array_push($citationSettings, $setting);
 				}
 				
-				$citation['settings'] = $citationSettings;
-				
-				if ($verbose) echo "Ok\n";
+				if (!empty($citationSettings)) {
+					$citation['settings'] = $citationSettings;
+					if ($verbose) echo "Ok\n";
+				} else {
+					if ($verbose) echo "there is none\n";
+				}
 			}
 			else {
 				$error = array('citation' => $citation, 'error' => $citationSettingsSTMT->errorInfo());
@@ -1628,7 +1631,7 @@ function fetchReferrals($conn, $journal, $args = null) {
 			
 			if ($verbose) echo "    fetching referral #" . $referral['referral_id'] . " settings .......... ";
 			
-			if ($referralsSettingsSTMT->execute()) {
+			if ($referralSettingsSTMT->execute()) {
 				$referralSettings = array();
 				
 				while ($setting = $referralSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
@@ -1636,7 +1639,12 @@ function fetchReferrals($conn, $journal, $args = null) {
 					array_push($referralSettings, $setting);
 				}
 				
-				$referral['settings'] = $referralSettings;
+				if (!empty($referralSettings)) {
+					$referral['settings'] = $referralSettings;
+					if ($verbose) echo "Ok\n";
+				} else {
+					if ($verbose) echo "there is none\n";
+				}
 			}
 			else {
 				$error = array('referral' => $referral, 'error' => $referralSettingsSTMT->errorInfo());

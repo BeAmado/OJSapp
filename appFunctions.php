@@ -953,7 +953,7 @@ function myMain() {
 		2 => 'import',
 		3 => 'migrate',
 		4 => 'copy files',
-		5 => 'correct charset'
+		//5 => 'correct charset'
 	);
 	
 	$index = mainMenu($actions); // use a the mainMenu function to choose the action
@@ -971,7 +971,7 @@ function myMain() {
 		'plugin settings' => false,
 		'issue orders' => false,
 		'user registration dates' => false,
-		//'citations and referrals' => false
+		'citations and referrals' => false
 	);
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
@@ -1011,9 +1011,9 @@ function myMain() {
 			migrateFiles();
 			break;
 			
-		case 'correct charset':
+		/*case 'correct charset':
 			correctCharset();
-			break;
+			break;*/
 		
 		default: 
 			echo "\n\nBye bye!\n\n----------------------------------------------------------------------\n";
@@ -1307,7 +1307,7 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			break;
 			
 		case 'citations_and_referrals':
-			echo "\nTHE OPTION citations and referrals DOES NOT WORK FOR IMPORTATION YET\n";
+			$returnedData = insertCitationsAndReferrals($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
 		case 'user_registration_dates':

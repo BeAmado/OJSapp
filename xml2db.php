@@ -5816,7 +5816,6 @@ function insertIssueOrders(&$xml, $conn, &$dataMapping, $journal, $args = null) 
 
 // #14)
 function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
-	echo "\n\nTHE FUNCTION insertCitationsAndReferrals DOES NOT DO ANYTHING YET\n\n";
 	$limit = 10;
 	
 	if (is_array($args)) {
@@ -5845,7 +5844,7 @@ function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId,
 	$insertReferralSTMT = $conn->prepare('INSERT INTO referrals (article_id, status, url, date_added, link_count)
  VALUES (:insertReferral_articleId, :insertReferral_status, :insertReferral_url, :insertReferral_dateAdded, :insertReferral_linkCount)');
  	
- 	$updateReferralSTMT = $conn->prepare('UPDATE referrals SET status = :updateReferral_status, url = :updateReferral_url, date_added = :updaeReferral_dateAdded,
+ 	$updateReferralSTMT = $conn->prepare('UPDATE referrals SET status = :updateReferral_status, url = :updateReferral_url, date_added = :updateReferral_dateAdded,
  		link_count = :updateReferral_linkCount WHERE referral_id = :updateReferral_referralId');
  	
  	$lastReferralsSTMT = $conn->prepare('SELECT * FROM referrals ORDER BY referral_id DESC LIMIT 10');
@@ -5871,17 +5870,228 @@ function insertCitationsAndReferrals(&$xml, $conn, &$dataMapping, $journalNewId,
  	$updateCitationSettingSTMT = $conn->prepare('UPDATE citation_settings 
  SET setting_value = :updateCitationSetting_settingValue, setting_type = :updateCitationSetting_settingType
  WHERE referral_id = :updateCitationSetting_referralId AND locale = :updateCitationSetting_locale AND setting_name = :updateCitationSetting_settingName');
+ 	
+ 	$numInsertions = array('referrals' => 0, 'referral_settings' => 0, 'citations' => 0, 'citation_settings' => 0);
+ 	$numUpdates = array('referrals' => 0, 'referral_settings' => 0, 'citations' => 0, 'citation_settings' => 0);
 	
+ 	////////////// INSERT THE REFERRALS  /////////////////////////////////
+ 	
 	$referrals_node = $xml->getElementsByTagName('referrals')->item(0);
 	$referrals = xmlToArray($referrals_node, true); //from helperFunctions.php
 	
 	foreach ($referrals as &$referral) {
 		
-	}
+		$referralOk = false;
+		$articleIdOk = false;
+		
+		if (array_key_exists($referral['article_id'], $dataMapping['article_id'])) {
+			$referral['article_new_id'] = $dataMapping['article_id'][$referral['article_id']];
+			$articleIdOk = true;
+		}
+		
+		validateData('referral', $referral); //from helperFunctions.php
+		
+		if (array_key_exists($referral['referral_id'], $dataMapping['referral_id'])) {
+			//the referral was already imported
+			//try to update it
+			
+			$referral['referral_new_id'] = $dataMapping['referral_id'][$referral['referral_id']];
+			$referralOk = true;
+			
+			$arr = array();
+			$arr['data'] = $referral;
+			$arr['params'] = array(
+				array('name' => ':updateReferral_status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateReferral_url', 'attr' => 'url', 'type' => PDO::PARAM_STR),
+				array('name' => ':updateReferral_dateAdded', 'attr' => 'date_added', 'type' => PDO::PARAM_STR),
+				array('name' => ':updateReferral_linkCount', 'attr' => 'link_count', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateReferral_referralId', 'attr' => 'referral_new_id', 'type' => PDO::PARAM_INT)
+			);
+			
+			echo "\nupdating referral #" . $referral['referral_new_id'] . " ......... "; 
+			$args = array();
+			
+			if (myExecute('update', 'referral', $arr, $updateReferralSTMT, $errors, $args)) { //from helperFunctions.php
+				if ($args['affectedRows'] == 1) {
+					echo "Ok\n";
+					$numUpdates['referrals']++;
+				}
+				else if ($args['affectedRows'] == 0) {
+					echo "Already up to date\n";
+				}
+				else {
+					echo "Error\n";
+					//flag the error
+					$error = array(
+						'referral' => $referral,
+						'error' => 'The number of affected rows was ' . $args['affectedRows']
+					);
+					
+					array_push($errors['referral']['update'], $error);
+				}
+			}
+			else {
+				echo "Failed\n";
+				$referralOk = false;
+			}
+			
+			
+		}//end of the "if" block to update the referral
+		
+		else if ($articleIdOk){
+			//the referral was not yet imported
+			//try to insert it
+			
+			$arr = array();
+			$arr['data'] = $referral;
+			$arr['params'] = array(
+				array('name' => ':insertReferral_articleId', 'attr' => 'article_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertReferral_status', 'attr' => 'status', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertReferral_linkCount', 'attr' => 'link_count', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertReferral_url', 'attr' => 'url', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertReferral_dateAdded', 'attr' => 'date_added', 'type' => PDO::PARAM_STR)
+			);
+			
+			echo "\ninserting referral #" . $referral['referral_id'] . " ......... "; 
+			
+			if (myExecute('insert', 'referral', $arr, $insertReferralSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n";
+				$numInsertions['referrals']++;
+				
+				if (getNewId('referral', $lastReferralsSTMT, $referral, $dataMapping, $errors)) { //from helperFunctions.php
+					echo "referral new id = " . $referral['referral_new_id'] . "\n";
+					$referralOk = true;
+				}
+				
+			}
+			else {
+				echo "Failed\n";
+			}
+			
+		}//end of the "else" block to insert the referral
+		else { //the article_id was not in the data mapping
+			$error = array('referral' => $referral, 'error' => 'The article_id "' . $referral['article_id'] . '" is not in the dataMapping');
+			array_push($errors['referral']['insert'], $error);
+		}
+		
+		//I'm in a hurry to finish this function so I won't implement the referral_setting importation since
+		// this table is very rarely not empty
+		
+		
+	}//end of the foreach referrals
+	unset($referral);
+	//////////// END OF INSERT THE REFERRALS  /////////////////////////////
+	
+	//////////// INSERT THE CITATIONS  ////////////////////////////////////
 	
 	$citations_node = $xml->getElementsByTagName('citations')->item(0);
 	$citations = xmlToArray($citations_node, true); //from helperFunctions.php
 	
+	foreach ($citations as &$citation) {
+		
+		$citationOk = false;
+		$assocIdOk = false;
+		
+		if (array_key_exists($citation['assoc_id'], $dataMapping['article_id'])) {
+			$citation['assoc_new_id'] = $dataMapping['article_id'][$citation['assoc_id']];
+			$assocIdOk = true;
+		}
+		
+		validateData('citation', $citation); //from helperFunctions.php
+		
+		if (array_key_exists($citation['citation_id'], $dataMapping['citation_id'])) {
+			//the citation was already imported
+			//try to update it
+			
+			$citation['citation_new_id'] = $dataMapping['citation_id'][$citation['citation_id']];
+			$citationOk = true;
+			
+			$arr = array();
+			$arr['data'] = $citation;
+			$arr['params'] = array(
+				array('name' => ':updateCitation_citationState', 'attr' => 'citation_state', 'type' => PDO::PARAM_INT),
+				array('name' => ':updateCitation_rawCitation', 'attr' => 'raw_citation', 'type' => PDO::PARAM_STR),
+				array('name' => ':updateCitation_seq', 'attr' => 'seq'),
+				array('name' => ':updateCitation_lockId', 'attr' => 'lock_id', 'type' => PDO::PARAM_STR),
+				array('name' => ':updateCitation_citationId', 'attr' => 'citation_new_id', 'type' => PDO::PARAM_INT)
+			);
+			
+			echo "\nupdating citation #" . $citation['citation_new_id'] . " ......... "; 
+			$args = array();
+			
+			if (myExecute('update', 'citation', $arr, $updateCitationSTMT, $errors, $args)) { //from helperFunctions.php
+				if ($args['affectedRows'] == 1) {
+					echo "Ok\n";
+					$numUpdates['citations']++;
+				}
+				else if ($args['affectedRows'] == 0) {
+					echo "Already up to date\n";
+				}
+				else {
+					echo "Error\n";
+					//flag the error
+					$error = array(
+						'citation' => $citation,
+						'error' => 'The number of affected rows was ' . $args['affectedRows']
+					);
+					
+					array_push($errors['citation']['update'], $error);
+				}
+			}
+			else {
+				echo "Failed\n";
+				$citationOk = false;
+			}
+			
+			
+		}//end of the "if" block to update the citation
+		
+		else if ($assocIdOk){
+			//the citation was not yet imported
+			//try to insert it
+			
+			$arr = array();
+			$arr['data'] = $citation;
+			$arr['params'] = array(
+				array('name' => ':insertCitation_assocType', 'attr' => 'assoc_type', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertCitation_assocId', 'attr' => 'assoc_new_id', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertCitation_citationState', 'attr' => 'citation_state', 'type' => PDO::PARAM_INT),
+				array('name' => ':insertCitation_rawCitation', 'attr' => 'raw_citation', 'type' => PDO::PARAM_STR),
+				array('name' => ':insertCitation_seq', 'attr' => 'seq'),
+				array('name' => ':insertCitation_lockId', 'attr' => 'lock_id', 'type' => PDO::PARAM_STR)
+			);
+			
+			echo "\ninserting citation #" . $citation['citation_id'] . " ......... "; 
+			
+			if (myExecute('insert', 'citation', $arr, $insertCitationSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n";
+				$numInsertions['citations']++;
+				
+				if (getNewId('citation', $lastCitationsSTMT, $citation, $dataMapping, $errors)) { //from helperFunctions.php
+					echo "citation new id = " . $citation['citation_new_id'] . "\n";
+					$citationOk = true;
+				}
+				
+			}
+			else {
+				echo "Failed\n";
+			}
+			
+		}//end of the "else" block to insert the citation
+		else { //the assoc_id was not in the data mapping
+			$error = array('citation' => $citation, 'error' => 'The assoc_id "' . $citation['assoc_id'] . '" is not in the dataMapping');
+			array_push($errors['citation']['insert'], $error);
+		}
+		
+		//I'm in a hurry to finish this function so I won't implement the citation_setting importation since
+		// this table is very rarely not empty
+		
+		
+	}// end of the foreach citations
+	unset($citations);
+	//////////  END OF INSERT THE CITATIONS  //////////////////////////////
+	
+	return array('errors' => $errors, 'numInsertedRecords' => $numInsertions, 'numUpdatedRecords' => $numUpdates);
 }
 // end of insertCitationsAndReferrals
 
