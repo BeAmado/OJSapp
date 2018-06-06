@@ -1,17 +1,5 @@
 <?php
 
-/*function clearId($id){
-     $LetraProibi = Array(' ',',','.',"'",'"','&','|','!','#','$','¨','*','(',')','`','´','<','>',';','=','+','§','{','}','[',']','^','~','?','%');
-     $special = Array('Á','È','ô','Ç','á','è','Ò','ç','Â','Ë','ò','â','ë','Ø','Ñ','À','Ð','ø','ñ','à','ð','Õ','Å','õ','Ý','å','Í','Ö','ý','Ã','í','ö','ã',
-        'Î','Ä','î','Ú','ä','Ì','ú','Æ','ì','Û','æ','Ï','û','ï','Ù','®','É','ù','©','é','Ó','Ü','Þ','Ê','ó','ü','þ','ê','Ô','ß','‘','’','‚','“','”','„');
-     $clearspc = Array('a','e','o','c','a','e','o','c','a','e','o','a','e','o','n','a','d','o','n','a','o','o','a','o','y','a','i','o','y','a','i','o','a',
-        'i','a','i','u','a','i','u','a','i','u','a','i','u','i','u','','e','u','c','e','o','u','p','e','o','u','b','e','o','b','','','','','','');
-     $newId = str_replace($special, $clearspc, $id);
-     $newId = str_replace($LetraProibi, '', trim($newId));
-     return strtolower($newId);
-}*/
-
-
 function fixDuplicateInterests(&$user) {
 	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
 	$duplicateInterests = 0;
@@ -56,19 +44,19 @@ function fillImportUsersInfo(&$xmlNode, $arr) {
 		/////////////////////////////////////////////////
 	
 	
-	$import_users_info = $xmlNode->createELement('import_users_info'); //NÓ RAIZ DO DOCUMENTO XML
+	$import_users_info = $xmlNode->createELement('import_users_info'); //the root node
 		
-	///////////////////// PREENCHENDO O NÓ JOURNAL //////////////////////////////
-	$exportedJournalNameNode = $xmlNode->createElement('name', $arr['exportedJournalName']); //CRIA O NÓ NAME DO JOURNAL EXPORTADO
+	///////////////////// //////////////////////////////
+	$exportedJournalNameNode = $xmlNode->createElement('name', $arr['exportedJournalName']); 
 	
-	$journalNode = $xmlNode->createElement('journal'); //CRIA O NÓ JOURNAL
+	$journalNode = $xmlNode->createElement('journal');
 	
 	$journalNode->appendChild($exportedJournalNameNode);
 	/////////////////////////////////////////////////////////////////////////
 	
 	
-	///////////////////////////////// PREENCHENDO O NÓ CHANGED_USERS /////////////////////////////////////////////////////////
-	$changed_usersNode = $xmlNode->createElement('changed_users'); //CRIA O NÓ CHANGED_USERS
+	///////////////////////////////// /////////////////////////////////////////////////////////
+	$changed_usersNode = $xmlNode->createElement('changed_users'); //
 	
 	$num_usersNode = $xmlNode->createElement('number_of_users', $arr['num_user_changes']);
 	$changed_usersNode->appendChild($num_usersNode);
@@ -80,7 +68,7 @@ function fillImportUsersInfo(&$xmlNode, $arr) {
 	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	
-	/////////////////// CRIANDO OS NÓS PARA GUARDARAS QUANTIDADES DE USUÁRIOS DO ARQUIVO ORIGINAL  ///////////////////
+	/////////////////// creating the nodes to store the numbers of users  ///////////////////
 	
 	$num_users_originalNode = $xmlNode->createElement('num_users_original', $arr['num_users_original']);
 	$num_users_registeredNode = $xmlNode->createElement('num_users_already_registered', $arr['num_users_registered']);
@@ -132,7 +120,7 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn, &$err
 	$arrInfo['num_users_original']++;
 	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
 	
-	//PRIMEIRO ACERTANDO OS DADOS DOS interests PARA NÃO TER REPETIDO NO MESMO USUÁRIO
+	//fixing the duplicate interests for the user 
 	fixDuplicateInterests($user);
 	////////////////////////////////////////////////////////////////////////////////////
 	
@@ -300,7 +288,7 @@ function modify($filename) {
 	$xml = new DOMDocument;
 
 	$xml_username_changes = new DOMDocument('1.0', 'utf-8');
-	$users = $xml_username_changes->createElement("users"); // NÓ PARA GUARDAR OS USUÁRIOS MODIFICADOS
+	$users = $xml_username_changes->createElement("users"); // node to keep the changes
 	
 	if (!$xml->load($filename)) {
 		echo "\nUsando encoding iso-8859-1 para abrir o xml...\n";
@@ -316,27 +304,27 @@ function modify($filename) {
 	
 	echo "\nMudando os usernames que já estão em uso no banco de dados $db_name...\n";
 	
-	$userNodes = $xml->getElementsByTagName("user"); //VARIÁVEL COM TODOS OS USERS DO XML ORIGINAL
+	$userNodes = $xml->getElementsByTagName("user");
 
 	
 	$info = array(
-		"num_users_original" => 0, //VARIÁVEL PARA SABER QUANTOS USUÁRIOS POSSUI O ARQUIVO ORIGINAL
-		"num_user_changes" => 0, //O NÚMERO DE USUÁRIOS QUE PRECISOU ALTERAR O USERNAME
-		"num_users_registered" => 0, //QUANTOS USUÁRIOS DO ARQUIVO ORIGINAL JÁ ESTAVAM REGISTRADOS
-		"num_changed_users_registered" => 0 //QUANTOS USUÁRIOS QUE PRECISARAM MUDAR DE USERNAME JÁ ESTAVAM REGISTRADOS
+		"num_users_original" => 0, //the total number of users in the users.xml file
+		"num_user_changes" => 0, //number of user that changed the username
+		"num_users_registered" => 0, //the number of users in the users.xml file that were alredy registered
+		"num_changed_users_registered" => 0 //number of users that were already registered and needed to change the username
 	);
 	
 	$errors = array();
 	
-	//LOOP PARA PERCORRER TODOS OS USUÁRIOS NO ARQUIVO XML///////////////////////////////////////
+	//LOOP TO GO THROUGH EACH USER IN THE users.xml FILE///////////////////////////////////////
 	foreach ($userNodes as $user) {
 		processUsers($user, $users, $info, $xml_username_changes, $conn, $errors);
-		//$user é o user atual
-		//$users é o XmlNode com os usuários modificados
+		//$user is the current user in the loop
+		//$users is the  XmlNode
 	}
-	//FIM DO LOOP PARA PERCORRER TODOS OS USUÁRIO DO ARQUIVO//////
+	//END OF THE LOOP
 	
-	//FECHA A CONEXÃO
+	//CLOSING THE CONNECTION
 	$conn = null;
 	
 	if (!empty($errors)) {
@@ -345,26 +333,26 @@ function modify($filename) {
 		echo "\n\n";
 	}
 	
-	// SÓ CRIA OS ARQUIVOS XML SE TIVER QUE FAZER ALTERAÇÃO EM ALGUM USUÁRIO
+	// Will only create the xml files if there is at least one user who needed change the username
 	if ($info["num_user_changes"] > 0) {
 
 		$changed_filename = "changed_$filename";
-		echo "Os usuários serão salvos no arquivo $changed_filename.";
+		echo "The users will be saved in the file $changed_filename.";
 		
-		$keep_filename = readline("Deseja manter este nome de arquivo (S/n)? ");
+		$keep_filename = readline("Do you wish to keep this filename? (Y/n)");
 		
 		if ($keep_filename === "N" || $keep_filename === "n") {
-			$changed_filename = readline("\nDigite o nome que deseja para o arquivo: ");
+			$changed_filename = readline("\nEnter the name you want for the file: ");
 		}
 		
 		if ($xml->save("$changed_filename")) {
-			echo "\nUsernames modificados com sucesso e salvo no arquivo $changed_filename.\n";
+			echo "\nUsernames successfully changed and saved in the file $changed_filename.\n";
 		}
 		else {
-			$error .= "\nNão conseguiu salvar o arquivo $changed_filename.\n";
+			$error .= "\nCould not save the file $changed_filename.\n";
 		}
 		
-		$exportedJournalName = readline("Digite o nome da revista de onde os usuários foram exportados: ");
+		$exportedJournalName = readline("Enter the name of the journal: ");
 		
 		$arrayImportUsersInfo = array(
 			"num_user_changes" => $info["num_user_changes"],
@@ -406,7 +394,7 @@ function modify($filename) {
 		}
 		/////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-	}//fim do if num_changes > 0
+	}//end of the if num_changes > 0
 	
 	else {
 		$error = "Não há nenhum username repetido";
@@ -422,5 +410,5 @@ function modify($filename) {
 }
 //FIM DE modify
 
-$users_file = readline("Digite o nome do arquivo com os usuários: ");
+$users_file = readline("Enter the name of the .xml file with the users: ");
 modify($users_file);
