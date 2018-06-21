@@ -2345,3 +2345,51 @@ function fetchUserRegistrationDates($conn, $journal = null, $args = null) {
 	
 	return array('user_registration_dates' => $registrations);
 }
+
+// #14)
+/**
+function to fetech the journal_settings
+*/
+function fetchJournalSettings($conn, $journalId, $args) {
+	
+	$collations = null;
+	$verbose = null;
+	$forceCollationProcessing = false;
+	
+	if (is_array($args)) {
+		if (array_key_exists('collations', $args)) {
+			$collations = $args['collations'];
+		}
+		if (array_key_exists('verbose', $args)) {
+			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
+		}
+	}
+	
+	$errors = array();
+	$journalSettings = null;
+	
+	
+	$stmt = $conn->prepare('SELECT * FROM journal_settings WHERE journal_id = :journalId');
+	
+	$stmt->bindParam(':journalId', $journalId, PDO::PARAM_INT);
+	
+	if ($verbose) echo "fetching the journal_settings: ";
+	
+	if ($stmt->execute()) {
+		$journalSettings = array();
+		while ($setting = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			processCollation($setting, 'journal_settings', $collations, $forceCollationProcessing);
+			array_push($journalSettings, $setting);
+		}
+		if ($verbose) echo "Ok\n";
+	}
+	else {
+		$errors['error'] = array('journal_id' => $journalId, 'error' => $stmt->errorInfo()); 
+		if ($verbose) echo "Error\n";
+	}
+	
+	return array('journal_settings' => $journalSettings, 'errors' => $errors);
+}

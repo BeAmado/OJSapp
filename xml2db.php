@@ -6183,3 +6183,160 @@ function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
 	return array('errors' => $errors, 'numUpdatedRecords' => $numUpdates);
 	
 }
+
+
+// #16) 
+function insertJournalSettings(&$xml, $conn, &$dataMapping, $journalNewId, $args = null) {
+	//echo "\n\nTHE FUNCTION insertPluginSettings DOES NOT DO ANYTHING YET\n\n";
+	$limit = 10;
+	
+	if (is_array($args)) {
+		if (array_key_exists('limit', $args)) {
+			$limit = $args['limit'];
+		}
+	}
+	
+	///////  THE STATEMENTS  ///////////////////////////////////////////////////////////
+	
+	$checkJournalSettingSTMT = $conn->prepare('SELECT * FROM journal_settings WHERE journal_id = :check_journalId AND locale = :check_locale AND setting_name = :check_settingName');
+	
+	$insertJournalSettingSTMT = $conn->prepare('INSERT INTO journal_settings (locale, journal_id, setting_name, setting_value, setting_type)
+		VALUES (:insert_locale, :insert_journalId, :insert_settingName, :insert_settingValue, :insert_settingType)');
+	
+	$updateJournalSettingSTMT = $conn->prepare(
+		'UPDATE journal_settings 
+		 SET setting_value = :update_settingValue, setting_type = :update_settingType 
+		 WHERE journal_id = :update_journalId AND locale = :update_locale AND setting_name = :update_settingName'
+	);
+	
+	$checkJournalSettingSTMT->bindParam(':check_journalId', $journalNewId, PDO::PARAM_INT);
+	$insertJournalSettingSTMT->bindParam(':insert_journalId', $journalNewId, PDO::PARAM_INT);
+	$updateJournalSettingSTMT->bindParam(':update_journalId', $journalNewId, PDO::PARAM_INT);
+	
+	/////////////////////////////////////////////////////////////////////////////////////
+	
+	$errors = array(
+		'journal_settings' => array('insert' => array(), 'update' => array(), 'check' => array())
+	);
+	
+	$journal_settings_node = $xml->getElementsByTagName('journal_settings')->item(0);
+	
+	$journalSettings = xmlToArray($journal_settings_node, true); //from helperFunctions.php
+	
+	$numUpdates = 0;
+	$numInsertions = 0;
+	
+	foreach ($journalSettings as &$setting) {
+		
+		$setting['journal_new_id'] = $journalNewId;
+		
+		validateData('journal_settings', $setting); //from helperFunctions.php
+		
+		$journalSettingExists = false;
+		/////////// check if the journal setting exists //////////////////////////
+		$checkJournalSettingSTMT->bindParam(':check_journalId', $setting['journal_new_id'], PDO::PARAM_STR);
+		$checkJournalSettingSTMT->bindParam(':check_locale', $setting['locale'], PDO::PARAM_STR);
+		$checkJournalSettingSTMT->bindParam(':check_settingName', $setting['setting_name'], PDO::PARAM_STR);
+		
+		echo "\nChecking if the  '" . $setting['setting_name'] .
+		"' with locale '" . $setting['locale'] .  "' exists: ";
+		
+		if ($checkJournalSettingSTMT->execute()) {
+			if ($checkedJournalSetting = $checkJournalSettingSTMT->fetch(PDO::FETCH_ASSOC)) {
+				$journalSettingExists = true;
+				echo "Yes\n";
+				/////////////// update the journal setting if necessary //////////////////////
+				
+				if ($checkedJournalSetting['setting_value'] != $setting['setting_value']) {
+					//update the journal setting value
+					$arr = array();
+					$arr['data'] = $setting;
+					$arr['params'] = array(
+						array('name' => ':update_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+						array('name' => ':update_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR)
+					);
+					
+					echo '    updating journal setting ............ ';
+					
+					$args = array();
+					
+					if (myExecute('update', 'journal_settings', $arr, $updateJournalSettingSTMT, $errors, $args)) { //from helperFunctions.php
+						if ($args['affectedRows'] == 1) {
+							echo "Ok\n";
+							$numUpdates++;
+						}
+						else if ($args['affectedRows'] == 0) {
+							echo "Already up to date\n";
+						}
+						else {
+							echo "Error\n";
+							//flag the error
+							$error = array(
+								'journal_setting' => $setting,
+								'error' => 'The number of affected rows was ' . $args['affectedRows']
+							);
+							array_push($errors['journal_settings']['update'], $error);
+						}
+					}
+					else {
+						echo "Failed\n\n";
+					}
+				}
+				else {
+					echo "    this journal setting is already up to date\n\n";
+				}
+				
+				/////////////////////////////////////////////////////////////////////////////
+				
+			}// end of the if to fetch the journal setting
+			else {
+				echo "No\n"; // the journal setting does not exist yet
+			}
+		}//end of the if checkJournalSettingSTMT executed
+		else {
+			$error = array('journal_setting' => $setting, 'error' => $checkJournalSettingSTMT->errorInfo());
+			array_push($errors['journal_settings']['check'], $error);
+			echo "Error\n";
+		}
+		
+		///////////// end of the check if the journal exists ///////////////////////////
+		
+		if (!$journalSettingExists) {
+			/////////////// insert the journal setting //////////////////////////
+			$arr = array();
+			$arr['data'] = $setting;
+			$arr['params'] = array(
+				array('name' => ':insert_journalId', 'attr' => 'journal_new_id', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_locale', 'attr' => 'locale', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_settingName', 'attr' => 'setting_name', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_settingValue', 'attr' => 'setting_value', 'type' => PDO::PARAM_STR),
+				array('name' => ':insert_settingType', 'attr' => 'setting_type', 'type' => PDO::PARAM_STR),
+			);
+			
+			echo '    inserting the journal setting ............ ';
+			
+			if (myExecute('insert', 'journal_settings', $arr, $insertJournalSettingSTMT, $errors)) { //from helperFunctions.php
+				echo "Ok\n\n";
+				$numInsertions++;
+			}
+			else {
+				echo "Failed\n\n";
+			}
+			///////////// end of insert the journal setting /////////////////////
+		}
+		
+	}//end of the foreach journalSettings
+	unset($setting);
+	
+	$returnData = array();
+	$returnData['errors'] = $errors;
+	$returnData['numInsertedRecords'] = array('journal_settings' => $numInsertions);
+	$returnData['numUpdatedRecords'] = array('journal_settings' => $numUpdates);
+	
+	return $returnData;
+	
+}
+//end of insertJournalSettings

@@ -971,7 +971,8 @@ function myMain() {
 		'plugin settings' => false,
 		'issue orders' => false,
 		'user registration dates' => false,
-		'citations and referrals' => false
+		'citations and referrals' => false,
+		'journal_settings' => false
 	);
 	
 	if ($action !== 'copy files' && $action !== 'correct charset') {
@@ -1132,6 +1133,10 @@ function getData($type, $conn = null, $journal = null, $collations) {
 			
 		case 'user_registration_dates':
 			$returnedData = fetchUserRegistrationDates($conn, $journal, $args);
+			break;
+
+		case 'journal_settings':
+			$returnedData = fetchJournalSettings($conn, $journal['journal_id'], $args);
 			break;
 			
 		default:
@@ -1318,6 +1323,10 @@ function setData($type, $xmlFiles, $conn = null, $journal = null, &$dataMapping,
 			
 		case 'user_registration_dates':
 			$returnedData = updateUserRegistrationDates($dataXml, $conn, $dataMapping);
+			break;
+			
+		case 'journal_settings':
+			$returnedData = insertJournalSettings($dataXml, $conn, $dataMapping, $journal['journal_id']);
 			break;
 			
 		default:

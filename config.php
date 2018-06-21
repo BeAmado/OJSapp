@@ -110,7 +110,8 @@ $tables = array(
 	'custom_issue_order' => array(),
 	'custom_section_order' => array(),
 	'issue' => array(),
-	'issue_settings' => array()
+	'issue_settings' => array(),
+	'journal_settings' => array()
 );
 
 
@@ -840,6 +841,16 @@ $tables['issue_settings']['properties'] = array(
 );
 
 
+$tables['journal_settings']['attributes'] = array('locale', 'journal_id', 'setting_name', 'setting_value', 'setting_type');
+$tables['journal_settings']['primary_keys'] = array('locale', 'journal_id', 'setting_name');
+$tables['journal_settings']['foreign_keys'] = array();
+$tables['journal_settings']['properties'] = array(
+	'locale' => array('type' => 'varchar(5)', 'null' => 'no', 'key' => 'pri', 'default' => '', 'extra' => ''),
+	'journal_id' => array('type' => 'bigint(20)', 'null' => 'no', 'key' => 'pri', 'default' => 0, 'extra' => ''),
+	'setting_name' => array('type' => 'varchar(80)', 'null' => 'no', 'key' => 'pri', 'default' => 'defaultSettingName', 'extra' => ''),
+	'setting_value' => array('type' => 'text', 'null' => 'yes', 'key' => '', 'default' => null, 'extra' => ''),
+	'setting_type' => array('type' => 'varchar(6)', 'null' => 'no', 'key' => '', 'default' => 'def', 'extra' => '')
+);
 
 $idFields = array();
 foreach ($tables as $type => $arr) {
