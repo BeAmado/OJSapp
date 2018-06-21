@@ -927,8 +927,11 @@ function translateArray2utf8(&$array) {
 /**
 applies translateArray2utf8 if needed
 */
-function processCollation(&$item, $tableName, $collations) {
-	if (array_key_exists($tableName, $collations)) {
+function processCollation(&$item, $tableName, $collations, $forceProcessing) {
+	if ($forceProcessing) {
+		translateArray2utf8($item);
+	}
+	else if (array_key_exists($tableName, $collations)) {
 		if (strpos($collations[$tableName], "latin") !== false) {
 			//the item collation is of type ISO-8859-1 or very similar
 			translateArray2utf8($item);

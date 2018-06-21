@@ -41,6 +41,7 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -48,6 +49,9 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -74,7 +78,7 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 	$userSTMT->bindParam(':userId', $userId, PDO::PARAM_INT);
 	if ($userSTMT->execute()) {
 		if ($user = $userSTMT->fetch(PDO::FETCH_ASSOC)) {
-			processCollation($user, 'users', $collations);
+			processCollation($user, 'users', $collations, $forceCollationProcessing);
 		
 			//fetching the user settings
 			$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
@@ -84,7 +88,7 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 					array_push($userSettings, $setting);
 				}
 				
-				processCollation($userSettings, 'user_settings', $collations);
+				processCollation($userSettings, 'user_settings', $collations, $forceCollationProcessing);
 				if (!empty($userSettings)) {
 					$user['settings'] = $userSettings;
 				}
@@ -102,7 +106,8 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 					array_push($roles, $role);
 				}
 				
-				processCollation($roles, 'roles', $collations);
+				//roles only have integer types, so no need to process the collation
+				//processCollation($roles, 'roles', $collations);
 				
 				if (!empty($roles)) {
 					$user['roles'] = $roles;
@@ -117,7 +122,7 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 			$interestsSTMT->bindParam(':interests_userId', $user['user_id'], PDO::PARAM_INT);
 			if ($interestsSTMT->execute()) {
 				if ($interests = $interestsSTMT->fetchAll(PDO::FETCH_ASSOC)) {
-					processCollation($interests, 'controlled_vocab_entry_settings', $collations);
+					processCollation($interests, 'controlled_vocab_entry_settings', $collations, $forceCollationProcessing);
 					$user['interests'] = $interests;
 				}
 			}
@@ -152,6 +157,7 @@ function fetchSections($conn, $journal = null, $args = null) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -159,6 +165,9 @@ function fetchSections($conn, $journal = null, $args = null) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -179,7 +188,7 @@ function fetchSections($conn, $journal = null, $args = null) {
 	if ($sectionsSTMT->execute()) {
 		while ($section = $sectionsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($section, 'sections', $collations);
+			processCollation($section, 'sections', $collations, $forceCollationProcessing);
 			
 			$abbrevs = array();
 			$titles = array();
@@ -220,7 +229,7 @@ function fetchSections($conn, $journal = null, $args = null) {
 				array_push($errors['section_settings'], $error);
 			}
 			
-			processCollation($settings, 'section_settings', $collations);
+			processCollation($settings, 'section_settings', $collations, $forceCollationProcessing);
 			
 			$section['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
@@ -250,6 +259,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 	$numArticles = 0;
 	$numErrors = 0;
 	$collations = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('limitDate', $args)) {
@@ -263,6 +273,9 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 		}
 		if (array_key_exists('collations', $args)) {
 			$collations = $args['collations'];
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -422,7 +435,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 		
 		while ($article = $stmt->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($article, 'articles', $collations);
+			processCollation($article, 'articles', $collations, $forceCollationProcessing);
 			
 			if ($verbose) echo "\nArticle #".$article['article_id'].":\n";
 			
@@ -444,7 +457,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 					//if could not fetch the user should not fetch the article
 				}
 				
-				processCollation($user, 'users', $collations);
+				processCollation($user, 'users', $collations, $forceCollationProcessing);
 				
 				//fetching the user settings
 				$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
@@ -454,7 +467,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 						array_push($userSettings, $setting);
 					}
 					
-					processCollation($userSettings, 'user_settings', $collations);
+					processCollation($userSettings, 'user_settings', $collations, $forceCollationProcessing);
 					
 					$user['settings'] = $userSettings;
 				}// end of the if userSettingsSTMT executed
@@ -471,7 +484,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 						array_push($roles, $role);
 					}
 					
-					processCollation($roles, 'roles', $collations);
+					processCollation($roles, 'roles', $collations, $forceCollationProcessing);
 					
 					$user['roles'] = $roles;
 				}// end of the if rolesSTMT executed
@@ -484,7 +497,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 				$interestsSTMT->bindParam(':interests_userId', $user['user_id'], PDO::PARAM_INT);
 				if ($interestsSTMT->execute()) {
 					if ($interests = $interestsSTMT->fetchAll(PDO::FETCH_ASSOC)) {
-						processCollation($interests, 'controlled_vocab_entry_settings', $collations);
+						processCollation($interests, 'controlled_vocab_entry_settings', $collations, $forceCollationProcessing);
 						$user['interests'] = $interests;
 					}
 				}
@@ -548,7 +561,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 			if ($authorSTMT->execute()) {
 				while ($author = $authorSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($author, 'authors', $collations);
+					processCollation($author, 'authors', $collations, $forceCollationProcessing);
 					
 					$authorSettingsSTMT->bindParam(':authorSettings_authorId', $author['author_id'], PDO::PARAM_INT);
 					if ($authorSettingsSTMT->execute()) {
@@ -557,7 +570,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 						while ($setting = $authorSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
 							array_push($authorSettings, $setting);
 						}
-						processCollation($authorSettings, 'author_settings', $collations);
+						processCollation($authorSettings, 'author_settings', $collations, $forceCollationProcessing);
 						$author['settings'] = $authorSettings;
 					}
 					array_push($authors, $author);
@@ -587,7 +600,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 					array_push($articleSettings, $setting);
 				}
 				
-				processCollation($articleSettings, 'article_settings', $collations);
+				processCollation($articleSettings, 'article_settings', $collations, $forceCollationProcessing);
 				
 				$article['settings'] = $articleSettings;
 			}
@@ -606,7 +619,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 					array_push($articleFiles, $artFile);
 				}
 				
-				processCollation($articleFiles, 'article_files', $collations);
+				processCollation($articleFiles, 'article_files', $collations, $forceCollationProcessing);
 				
 				$article['files'] = $articleFiles;
 			}
@@ -624,7 +637,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 				$articleSuppFiles = array();
 				while($artSuppFile = $articleSuppFilesSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($artSuppFile, 'article_supplementary_files', $collations);
+					processCollation($artSuppFile, 'article_supplementary_files', $collations, $forceCollationProcessing);
 					
 					///// set the article_supp_file_settings //////////////
 					$articleSuppFileSettingsSTMT->bindParam(':suppId', $artSuppFile['supp_id'], PDO::PARAM_INT);
@@ -634,7 +647,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 							array_push($suppFileSettings, $setting);
 						}
 						
-						processCollation($suppFileSettings, 'article_supp_file_settings', $collations);
+						processCollation($suppFileSettings, 'article_supp_file_settings', $collations, $forceCollationProcessing);
 						
 						$artSuppFile['settings'] = $suppFileSettings;
 					}
@@ -657,13 +670,13 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 				$articleComments = array();
 				while($artComment = $articleCommentsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($artComment, 'article_comments', $collations);
+					processCollation($artComment, 'article_comments', $collations, $forceCollationProcessing);
 					
 					$userSTMT->bindParam(':userId', $artComment['author_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$author = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($author, 'users', $collations);
+						processCollation($author, 'users', $collations, $forceCollationProcessing);
 						
 						$artComment['author'] = $author;
 					}
@@ -693,7 +706,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 				$articleGalleys = array();
 				while ($artGalley = $articleGalleysSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($artGalley, 'article_galleys', $collations);
+					processCollation($artGalley, 'article_galleys', $collations, $forceCollationProcessing);
 					
 					////////// set the article_galley_settings   ///////////////////
 					$articleGalleySettingsSTMT->bindParam(':galleyId', $artGalley['galley_id'], PDO::PARAM_INT);
@@ -703,7 +716,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 							array_push($galleySettings, $setting);
 						}
 						
-						processCollation($galleySettings, 'article_galley_settings', $collations);
+						processCollation($galleySettings, 'article_galley_settings', $collations, $forceCollationProcessing);
 						
 						$artGalley['settings'] = $galleySettings;
 					}
@@ -724,7 +737,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 							array_push($xmlGalleys, $galley);
 						}
 						
-						processCollation($xmlGalleys, 'article_xml_galleys', $collations);
+						processCollation($xmlGalleys, 'article_xml_galleys', $collations, $forceCollationProcessing);
 						
 						$artGalley['xml_galleys'] = $xmlGalleys;
 					}
@@ -799,7 +812,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 								if ($articleSearchKeywordListSTMT->execute()) {
 									$keywordList = $articleSearchKeywordListSTMT->fetch(PDO::FETCH_ASSOC);
 									
-									processCollation($keywordList, 'article_search_keyword_list', $collations);
+									processCollation($keywordList, 'article_search_keyword_list', $collations, $forceCollationProcessing);
 									
 									$keyword['keyword_list'] = $keywordList;
 								}
@@ -855,7 +868,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 					if ($userSTMT->execute()) {
 						$editor = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($editor, 'users', $collations);
+						processCollation($editor, 'users', $collations, $forceCollationProcessing);
 						
 						$editDec['editor'] = $editor;
 					}
@@ -889,7 +902,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 					if ($userSTMT->execute()) {
 						$editor = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($editor, 'users', $collations);
+						processCollation($editor, 'users', $collations, $forceCollationProcessing);
 						
 						$editAssign['editor'] = $editor;
 					}
@@ -925,13 +938,13 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 				$reviewAssignments = array();
 				while($reviewAssign = $reviewAssignmentsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($reviewAssign, 'review_assignments', $collations);
+					processCollation($reviewAssign, 'review_assignments', $collations, $forceCollationProcessing);
 					
 					$userSTMT->bindParam(':userId', $reviewAssign['reviewer_id'], PDO::PARAM_INT);
 					if ($userSTMT->execute()) {
 						$reviewer = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($reviewer, 'users', $collations);
+						processCollation($reviewer, 'users', $collations, $forceCollationProcessing);
 						
 						$reviewAssign['reviewer'] = $reviewer;
 					}
@@ -950,7 +963,7 @@ function fetchArticles($conn, $journal, $type = 'both', $args = null) {
 							array_push($reviewResponses, $response);
 						}
 						
-						processCollation($reviewResponses, 'review_form_responses', $collations);
+						processCollation($reviewResponses, 'review_form_responses', $collations, $forceCollationProcessing);
 						
 						$reviewAssign['review_form_responses'] = $reviewResponses;
 					}
@@ -1016,6 +1029,7 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1023,6 +1037,9 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1045,7 +1062,7 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 	if ($announcementsSTMT->execute()) {
 		while ($announcement = $announcementsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($announcement, 'announcements', $collations);
+			processCollation($announcement, 'announcements', $collations, $forceCollationProcessing);
 			
 			//////////  announcement settings  ///////////////////////////////
 			$settings = array();
@@ -1065,7 +1082,7 @@ function fetchAnnouncements($conn, $journal = null, $args = null) {
 				array_push($errors['announcement_settings'], $error);
 			}
 			
-			processCollation($settings, 'announcement_settings', $collations);
+			processCollation($settings, 'announcement_settings', $collations, $forceCollationProcessing);
 			
 			$announcement['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
@@ -1126,7 +1143,7 @@ function fetchEmailTemplates($conn, $journal = null, $args = null) {
 	if ($emailTemplatesSTMT->execute()) {
 		while ($emailTemplate = $emailTemplatesSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($emailTemplate, "email_templates", $collations);
+			processCollation($emailTemplate, "email_templates", $collations, $forceCollationProcessing);
 			
 			//////////  get the email_template_data  ///////////////////////////////
 			$templateData = array();
@@ -1167,6 +1184,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1174,6 +1192,9 @@ function fetchGroups($conn, $journal = null, $args = null) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1208,7 +1229,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 	if ($groupsSTMT->execute()) {
 		while ($group = $groupsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($group, 'groups', $collations);
+			processCollation($group, 'groups', $collations, $forceCollationProcessing);
 			
 			//////////  group settings  ///////////////////////////////
 			$settings = array();
@@ -1228,7 +1249,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 				array_push($errors['group_settings'], $error);
 			}
 			
-			processCollation($settings, 'group_settings', $collations);
+			processCollation($settings, 'group_settings', $collations, $forceCollationProcessing);
 			
 			$group['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
@@ -1253,7 +1274,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 					if ($userSTMT->execute()) {
 						$user = $userSTMT->fetch(PDO::FETCH_ASSOC);
 						
-						processCollation($user, 'users', $collations);
+						processCollation($user, 'users', $collations, $forceCollationProcessing);
 						
 						//fetching the user settings
 						$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
@@ -1263,7 +1284,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 								array_push($userSettings, $setting);
 							}
 							
-							processCollation($userSettings, 'user_settings', $collations);
+							processCollation($userSettings, 'user_settings', $collations, $forceCollationProcessing);
 							
 							$user['settings'] = $userSettings;
 						}// end of the if userSettingsSTMT executed
@@ -1280,7 +1301,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 								array_push($roles, $role);
 							}
 							
-							processCollation($roles, 'roles', $collations);
+							processCollation($roles, 'roles', $collations, $forceCollationProcessing);
 							
 							$user['roles'] = $roles;
 						}// end of the if rolesSTMT executed
@@ -1319,7 +1340,7 @@ function fetchGroups($conn, $journal = null, $args = null) {
 				array_push($errors['group_memberships'], $error);
 			}
 			
-			processCollation($memberships, 'group_memberships', $collations);
+			processCollation($memberships, 'group_memberships', $collations, $forceCollationProcessing);
 			
 			$group['memberships'] = $memberships;
 			
@@ -1351,6 +1372,7 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1358,6 +1380,9 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1382,7 +1407,7 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 	if ($reviewFormsSTMT->execute()) {
 		while ($reviewForm = $reviewFormsSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($reviewForm, 'review_forms', $collations);
+			processCollation($reviewForm, 'review_forms', $collations, $forceCollationProcessing);
 			
 			//////////  review_form_settings  ///////////////////////////////
 			$settings = array();
@@ -1402,7 +1427,7 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 				array_push($errors['review_form_settings'], $error);
 			}
 			
-			processCollation($settings, 'review_form_settings', $collations);
+			processCollation($settings, 'review_form_settings', $collations, $forceCollationProcessing);
 			
 			$reviewForm['settings'] = $settings;
 			/////////////////////////////////////////////////////////////
@@ -1419,7 +1444,7 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 			if ($revFormElementsSTMT->execute()) {
 				while ($element = $revFormElementsSTMT->fetch(PDO::FETCH_ASSOC)) {
 					
-					processCollation($element, 'review_form_elements', $collations);
+					processCollation($element, 'review_form_elements', $collations, $forceCollationProcessing);
 					
 					///////// get the review form element settings ////////////////////
 					$elementSettings = array();
@@ -1438,7 +1463,7 @@ function fetchReviewForms($conn, $journal = null, $args = null) {
 						array_push($errors['review_form_element_settings'], $error);
 					}
 					
-					processCollation($elementSettings, 'review_form_element_settings', $collations);
+					processCollation($elementSettings, 'review_form_element_settings', $collations, $forceCollationProcessing);
 					
 					$element['settings'] = $elementSettings;
 					///////////////////////////////////////////////////////////////////
@@ -1488,6 +1513,7 @@ function fetchCitations($conn, $journal, $args = null) {
 	$collations = null;
 	$verbose = null;
 	$articleIdsSTR = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1498,6 +1524,9 @@ function fetchCitations($conn, $journal, $args = null) {
 		}
 		if (array_key_exists('articleIdsSTR', $args)) {
 			$articleIdsSTR = filter_var($args['articleIdsSTR'], FILTER_SANITIZE_STRING);
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1528,7 +1557,7 @@ function fetchCitations($conn, $journal, $args = null) {
 	if ($citationsSTMT->execute()) {
 		if ($verbose) echo "\n"; 
 		while ($citation = $citationsSTMT->fetch(PDO::FETCH_ASSOC))	{
-			processCollation($citation, 'citations', $collations);
+			processCollation($citation, 'citations', $collations, $forceCollationProcessing);
 			
 			//////////// fetch the citation_settings ///////////////////
 			$citationSettingsSTMT->bindParam(':citationId', $citation['citation_id'], PDO::PARAM_INT);
@@ -1539,7 +1568,7 @@ function fetchCitations($conn, $journal, $args = null) {
 				$citationSettings = array();
 				
 				while ($setting = $citationSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
-					processCollation($setting, 'citation_settings', $collations);
+					processCollation($setting, 'citation_settings', $collations, $forceCollationProcessing);
 					array_push($citationSettings, $setting);
 				}
 				
@@ -1584,6 +1613,7 @@ function fetchReferrals($conn, $journal, $args = null) {
 	$collations = null;
 	$verbose = null;
 	$articleIdsSTR = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1594,6 +1624,9 @@ function fetchReferrals($conn, $journal, $args = null) {
 		}
 		if (array_key_exists('articleIdsSTR', $args)) {
 			$articleIdsSTR = filter_var($args['articleIdsSTR'], FILTER_SANITIZE_STRING);
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1624,7 +1657,7 @@ function fetchReferrals($conn, $journal, $args = null) {
 	if ($referralsSTMT->execute()) {
 		if ($verbose) echo "\n";
 		while ($referral = $referralsSTMT->fetch(PDO::FETCH_ASSOC))	{
-			processCollation($referral, 'referrals', $collations);
+			processCollation($referral, 'referrals', $collations, $forceCollationProcessing);
 			
 			//////////// fetch the referral_settings ///////////////////
 			$referralSettingsSTMT->bindParam(':referralId', $referral['referral_id'], PDO::PARAM_INT);
@@ -1635,7 +1668,7 @@ function fetchReferrals($conn, $journal, $args = null) {
 				$referralSettings = array();
 				
 				while ($setting = $referralSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
-					processCollation($setting, 'referral_settings', $collations);
+					processCollation($setting, 'referral_settings', $collations, $forceCollationProcessing);
 					array_push($referralSettings, $setting);
 				}
 				
@@ -1678,6 +1711,7 @@ function fetchCitationsAndReferrals($conn, $journal, $args = null) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1685,6 +1719,9 @@ function fetchCitationsAndReferrals($conn, $journal, $args = null) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1723,6 +1760,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1730,6 +1768,9 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1756,7 +1797,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 		echo "\n\n";
 		while ($eventLog = $eventLogSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($eventLog, 'event_log', $collations);
+			processCollation($eventLog, 'event_log', $collations, $forceCollationProcessing);
 			
 			/////// checking if it needs to fetch the user data //////////////
 			$fetchUserData = false;
@@ -1807,7 +1848,7 @@ function fetchEventLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 				$settings = array();
 				
 				while ($setting = $eventLogSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
-					processCollation($setting, 'event_log_settings', $collations);
+					processCollation($setting, 'event_log_settings', $collations, $forceCollationProcessing);
 					array_push($settings, $setting);
 				}
 				
@@ -1852,6 +1893,7 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -1859,6 +1901,9 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -1889,7 +1934,7 @@ function fetchEmailLogs($conn, $articleIdsSTR, &$dataMapping, $journal = null, $
 		
 		while ($emailLog = $emailLogSTMT->fetch(PDO::FETCH_ASSOC)) {
 			
-			processCollation($emailLog, 'email_log', $collations);
+			processCollation($emailLog, 'email_log', $collations, $forceCollationProcessing);
 			$emailLog['email_body'] = $emailLog['body'];
 			unset($emailLog['body']);
 			
@@ -2067,6 +2112,7 @@ function fetchPluginSettings($conn, $journalId, $args) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -2075,10 +2121,14 @@ function fetchPluginSettings($conn, $journalId, $args) {
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
 		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
+		}
 	}
 	
 	$errors = array();
 	$pluginSettings = null;
+	
 	
 	$stmt = $conn->prepare('SELECT * FROM plugin_settings WHERE journal_id = :journalId');
 	
@@ -2089,7 +2139,7 @@ function fetchPluginSettings($conn, $journalId, $args) {
 	if ($stmt->execute()) {
 		$pluginSettings = array();
 		while ($setting = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			processCollation($setting, 'plugin_settings', $collations);
+			processCollation($setting, 'plugin_settings', $collations, $forceCollationProcessing);
 			array_push($pluginSettings, $setting);
 		}
 		if ($verbose) echo "Ok\n";
@@ -2111,6 +2161,7 @@ function fetchIssueOrders($conn, $journalId, $args) {
 	
 	$collations = null;
 	$verbose = null;
+	$forceCollationProcessing = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -2118,6 +2169,9 @@ function fetchIssueOrders($conn, $journalId, $args) {
 		}
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
+		}
+		if (array_key_exists('forceCollationProcessing', $args)) {
+			$forceCollationProcessing = $args['forceCollationProcessing'];
 		}
 	}
 	
@@ -2144,7 +2198,7 @@ function fetchIssueOrders($conn, $journalId, $args) {
 	
 	if ($issuesSTMT->execute()) {
 		while ($issue = $issuesSTMT->fetch(PDO::FETCH_ASSOC)) {
-			processCollation($issue, 'issues', $collations);
+			processCollation($issue, 'issues', $collations, $forceCollationProcessing);
 			
 			///// fetch the issue_settings ////////////////////////////////////////////////////////
 			$issueSettingsSTMT->bindParam(':settings_issueId', $issue['issue_id'], PDO::PARAM_INT);
@@ -2154,7 +2208,7 @@ function fetchIssueOrders($conn, $journalId, $args) {
 			if ($issueSettingsSTMT->execute()) {
 				$issueSettings = array();
 				while ($setting = $issueSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
-					processCollation($setting, 'issue_settings', $collations);
+					processCollation($setting, 'issue_settings', $collations, $forceCollationProcessing);
 					array_push($issueSettings, $setting);
 				}
 				

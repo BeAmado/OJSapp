@@ -1057,11 +1057,17 @@ function getData($type, $conn = null, $journal = null, $collations) {
 	
 	$verbose = false;
 	$getKeywords = false;
+	$forceCollationProcessing = false;
 	$returnedData = null;
 	
 	$resp = readline('Do you want the system to emit messages of each step? (y/N) : ');
 	if ($resp === 'y' || $resp === 'Y') {
 		$verbose = true;
+	}
+
+	$resp = readline('Do you want to force the collation processing, in order to blindly translate the caracters to utf-8? (y/N) : ');
+	if ($resp === 'y' || $resp === 'Y') {
+		$forceCollationProcessing = true;
 	}
 	
 	if ((strpos($type, 'articles') !== false) && (strpos($type, 'history') === false)) {
@@ -1075,7 +1081,7 @@ function getData($type, $conn = null, $journal = null, $collations) {
 	$args['collations'] = $collations;
 	$args['getKeywords'] = $getKeywords;
 	$args['verbose'] = $verbose;
-	
+	$args['forceCollationProcessing'] = $forceCollationProcessing;
 	
 	
 	switch($type) {
