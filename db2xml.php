@@ -33,7 +33,7 @@ include_once('appFunctions.php');
 
 // #00)
 
-function fetchUser($conn, $userId, $journal = null, $args = null) {
+function fetchUser($conn, $userId, &$statements, $journal = null, $args = null) {
 	
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
@@ -50,8 +50,27 @@ function fetchUser($conn, $userId, $journal = null, $args = null) {
 			$verbose = $args['verbose'];	
 		}
 	}
+
+	if (!array_key_exists('selectUserById', $statements)) {
+		//load the selectUserById prepared statement
+		createStatement($conn, $statements, 'selectUserById'); //from config.php
+	}
 	
+	if (!array_key_exists('selectUserSettings', $statements)) {
+		//load the selectUserSettings prepared statement
+		createStatement($conn, $statements, 'selectUserSettings'); //from config.php
+	}
 	
+	if (!array_key_exists('selectUserRoles', $statements)) {
+		//load the selectUserRoles prepared statement
+		createStatement($conn, $statements, 'selectUserRoles'); //from config.php
+	}
+	
+	if (!array_key_exists('selectUserInterests', $statements)) {
+		//load the selectUserInterests prepared statement
+		createStatement($conn, $statements, 'selectUserInterests'); //from config.php
+	}
+
 	$userSTMT = $conn->prepare('SELECT * FROM users WHERE user_id = :userId');
 	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
 	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
