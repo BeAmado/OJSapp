@@ -2038,21 +2038,21 @@ $queries['updateArticle'] = array(
 		WHERE article_id = :updateArticle_articleId',
 		
 	'params' => array(
-		'language' => ':updateArticle_language',
-		'comments_to_ed' => ':updateArticle_commentsToEd',
-		'date_submitted' => ':updateArticle_dateSubmitted',
-		'last_modified' => ':updateArticle_lastModified',
-		'date_status_modified' => ':updateArticle_dateStatusModified',
-		'status' => ':updateArticle_status',
-		'submission_progress' => ':updateArticle_submissionProgress', 
-		'current_round' => ':updateArticle_currentRound', 
-		'pages' => ':updateArticle_pages', 
-		'fast_tracked' => ':updateArticle_fastTracked', 
-		'hide_author' => ':updateArticle_hideAuthor', 
-		'comments_status' => ':updateArticle_commentsStatus', 
-		'locale' => ':updateArticle_locale', 
-		'citations' => ':updateArticle_citations'
-		'article_id' => ':updateArticle_articleId'
+		'language' => array('name' => ':updateArticle_language', 'type' => PDO::PARAM_STR),
+		'comments_to_ed' => array('name' => ':updateArticle_commentsToEd', 'type' => PDO::PARAM_STR),
+		'date_submitted' => array('name' => ':updateArticle_dateSubmitted', 'type' => PDO::PARAM_STR),
+		'last_modified' => array('name' => ':updateArticle_lastModified', 'type' => PDO::PARAM_STR),
+		'date_status_modified' => array('name' => ':updateArticle_dateStatusModified', 'type' => PDO::PARAM_STR),
+		'status' => array('name' => ':updateArticle_status', 'type' => PDO::PARAM_INT),
+		'submission_progress' => array('name' => ':updateArticle_submissionProgress', 'type' => PDO::PARAM_INT), 
+		'current_round' => array('name' => ':updateArticle_currentRound', 'type' => PDO::PARAM_INT), 
+		'pages' => array('name' => ':updateArticle_pages', 'type' => PDO::PARAM_STR), 
+		'fast_tracked' => array('name' => ':updateArticle_fastTracked', 'type' => PDO::PARAM_INT), 
+		'hide_author' => array('name' => ':updateArticle_hideAuthor', 'type' => PDO::PARAM_INT), 
+		'comments_status' => array('name' => ':updateArticle_commentsStatus', 'type' => PDO::PARAM_INT), 
+		'locale' => array('name' => ':updateArticle_locale', 'type' => PDO::PARAM_STR), 
+		'citations' => array('name' => ':updateArticle_citations', 'type' => PDO::PARAM_STR)
+		'article_id' => array('name' => ':updateArticle_articleId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2063,10 +2063,10 @@ $queries['updateArticleDates'] = array(
 		last_modified = :updateArticleDates_lastModified WHERE article_id = :updateArticleDates_articleId',
 		
 	'params' => array(
-		'date_status_modified' => ':updateArticleDates_dateStatusModified',
-		'date_submitted' => ':updateArticleDates_dateSubmitted',
-		'last_modified' => ':updateArticleDates_lastModified',
-		'article_id' => ':updateArticleDates_articleId'
+		'date_status_modified' => array('name' => ':updateArticleDates_dateStatusModified', 'type' => PDO::PARAM_STR),
+		'date_submitted' => array('name' => ':updateArticleDates_dateSubmitted', 'type' => PDO::PARAM_STR),
+		'last_modified' => array('name' => ':updateArticleDates_lastModified', 'type' => PDO::PARAM_STR),
+		'article_id' => array('name' => ':updateArticleDates_articleId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2078,11 +2078,11 @@ $queries['updateArticle_filesIds'] = array(
 		WHERE article_id = :updateArticle_filesIds_articleId',
 		
 	'params' => array(
-		'submission_file_id' => ':updateArticle_filesIds_submissionFileId',
-		'revised_file_id' => ':updateArticle_filesIds_revisedFileId', 
-		'review_file_id' => ':updateArticle_filesIds_reviewFileId', 
-		'editor_file_id' => ':updateArticle_filesIds_editorFileId', 
-		'article_id' => ':updateArticle_filesIds_articleId'
+		'submission_file_id' => array('name' => ':updateArticle_filesIds_submissionFileId', 'type' => PDO::PARAM_INT),
+		'revised_file_id' => array('name' => ':updateArticle_filesIds_revisedFileId', 'type' => PDO::PARAM_INT), 
+		'review_file_id' => array('name' => ':updateArticle_filesIds_reviewFileId', 'type' => PDO::PARAM_INT), 
+		'editor_file_id' => array('name' => ':updateArticle_filesIds_editorFileId', 'type' => PDO::PARAM_INT), 
+		'article_id' => array('name' => ':updateArticle_filesIds_articleId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2107,15 +2107,15 @@ $queries['updateArticleFile'] = array(
 		WHERE file_id = :updateArticleFile_fileId AND revision = :updateArticleFile_revision',
 		
 	'params' => array(
-		'source_revision' => ':updateArticleFile_sourceRevision',
-		'file_stage' => ':updateArticleFile_fileStage',
-		'viewable' => ':updateArticleFile_viewable',
-		'date_uploaded' => ':updateArticleFile_dateUploaded',
-		'date_modified' => ':updateArticleFile_dateModified',
-		'round' => ':updateArticleFile_round',
-		'assoc_id' => ':updateArticleFile_assocId',
-		'file_id' => ':updateArticleFile_fileId',
-		'revision' => ':updateArticleFile_revision'
+		'source_revision' => array('name' => ':updateArticleFile_sourceRevision', 'type' => PDO::PARAM_INT),
+		'file_stage' => array('name' => ':updateArticleFile_fileStage', 'type' => PDO::PARAM_INT),
+		'viewable' => array('name' => ':updateArticleFile_viewable', 'type' => PDO::PARAM_INT),
+		'date_uploaded' => array('name' => ':updateArticleFile_dateUploaded', 'type' => PDO::PARAM_STR),
+		'date_modified' => array('name' => ':updateArticleFile_dateModified', 'type' => PDO::PARAM_STR),
+		'round' => array('name' => ':updateArticleFile_round', 'type' => PDO::PARAM_INT),
+		'assoc_id' => array('name' => ':updateArticleFile_assocId', 'type' => PDO::PARAM_INT),
+		'file_id' => array('name' => ':updateArticleFile_fileId', 'type' => PDO::PARAM_INT),
+		'revision' => array('name' => ':updateArticleFile_revision', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2125,11 +2125,11 @@ $queries['updateArticleFile_namesAndSourceId'] = array(
 		WHERE file_id = :updateArticleFile_namesAndSourceIds_fileId AND revision = :updateArticleFile_namesAndSourceIds_revision',
 		
 	'params' => array(
-		'source_file_id' => ':updateArticleFile_namesAndSourceIds_sourceFileId', 
-		'file_name' => ':updateArticleFile_namesAndSourceIds_fileName', 
-		'original_file_name' => ':updateArticleFile_namesAndSourceIds_originalFileName',
-		'file_id' => ':updateArticleFile_namesAndSourceIds_fileId',
-		'revision' => ':updateArticleFile_namesAndSourceIds_revision'
+		'source_file_id' => array('name' => ':updateArticleFile_namesAndSourceIds_sourceFileId', 'type' => PDO::PARAM_INT), 
+		'file_name' => array('name' => ':updateArticleFile_namesAndSourceIds_fileName', 'type' => PDO::PARAM_STR), 
+		'original_file_name' => array('name' => ':updateArticleFile_namesAndSourceIds_originalFileName', 'type' => PDO::PARAM_STR),
+		'file_id' => array('name' => ':updateArticleFile_namesAndSourceIds_fileId', 'type' => PDO::PARAM_INT),
+		'revision' => array('name' => ':updateArticleFile_namesAndSourceIds_revision', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2140,11 +2140,11 @@ $queries['updateReviewRound'] = array(
 		WHERE review_round_id = :updateReviewRound_reviewRoundId',
 		
 	'params' => array(
-		'stage_id' => ':updateReviewRound_stageId', 
-		'round' => ':updateReviewRound_round', 
-		'review_revision' => ':updateReviewRound_reviewRevision', 
-		'status' => ':updateReviewRound_status'
-		'review_round_id' => ':updateReviewRound_reviewRoundId'
+		'stage_id' => array('name' => ':updateReviewRound_stageId', 'type' => PDO::PARAM_INT), 
+		'round' => array('name' => ':updateReviewRound_round', 'type' => PDO::PARAM_INT), 
+		'review_revision' => array('name' => ':updateReviewRound_reviewRevision', 'type' => PDO::PARAM_INT), 
+		'status' => array('name' => ':updateReviewRound_status', 'type' => PDO::PARAM_INT)
+		'review_round_id' => array('name' => ':updateReviewRound_reviewRoundId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2163,32 +2163,32 @@ $queries['updateReviewAssignment'] = array(
 		WHERE review_id = :updateReviewAssignment_reviewId',
 	
 	'params' => array(
-		'competing_interests' => ':updateReviewAssignment_competingInterests',
-		'regret_message' => ':updateReviewAssignment_regretMessage', 
-		'recommendation' => ':updateReviewAssignment_recommendation',
-		'date_assigned' => ':updateReviewAssignment_dateAssigned', 
-		'date_notified' => ':updateReviewAssignment_dateNotified', 
-		'date_confirmed' => ':updateReviewAssignment_dateConfirmed', 
-		'date_completed' => ':updateReviewAssignment_dateCompleted', 
-		'date_acknowledged' => ':updateReviewAssignment_dateAcknowledged', 
-		'date_due' => ':updateReviewAssignment_dateDue', 
-		'last_modified' => ':updateReviewAssignment_lastModified', 
-		'reminder_was_automatic' => ':updateReviewAssignment_reminderWasAutomatic', 
-		'declined' => ':updateReviewAssignment_declined', 
-		'replaced' => ':updateReviewAssignment_replaced',
-		'cancelled' => ':updateReviewAssignment_cancelled', 
-		'reviewer_file_id' => ':updateReviewAssignment_reviewerFileId',
-		'date_rated' => ':updateReviewAssignment_dateRated', 
-		'date_reminded' => ':updateReviewAssignment_dateReminded', 
-		'quality' => ':updateReviewAssignment_quality', 
-		'review_round_id' => ':updateReviewAssignment_reviewRoundId', 
-		'stage_id' => ':updateReviewAssignment_stageId',
-		'review_method' => ':updateReviewAssignment_reviewMethod', 
-		'round' => ':updateReviewAssignment_round', 
-		'step' => ':updateReviewAssignment_step', 
-		'review_form_id' => ':updateReviewAssignment_reviewFormId', 
-		'unconsidered' => ':updateReviewAssignment_unconsidered',
-		'review_id' => ':updateReviewAssignment_reviewId'
+		'competing_interests' => array('name' => ':updateReviewAssignment_competingInterests', 'type' => PDO::PARAM_STR),
+		'regret_message' => array('name' => ':updateReviewAssignment_regretMessage', 'type' => PDO::PARAM_STR), 
+		'recommendation' => array('name' => ':updateReviewAssignment_recommendation', 'type' => PDO::PARAM_INT),
+		'date_assigned' => array('name' => ':updateReviewAssignment_dateAssigned', 'type' => PDO::PARAM_STR), 
+		'date_notified' => array('name' => ':updateReviewAssignment_dateNotified', 'type' => PDO::PARAM_STR), 
+		'date_confirmed' => array('name' => ':updateReviewAssignment_dateConfirmed', 'type' => PDO::PARAM_STR), 
+		'date_completed' => array('name' => ':updateReviewAssignment_dateCompleted', 'type' => PDO::PARAM_STR), 
+		'date_acknowledged' => array('name' => ':updateReviewAssignment_dateAcknowledged', 'type' => PDO::PARAM_STR), 
+		'date_due' => array('name' => ':updateReviewAssignment_dateDue', 'type' => PDO::PARAM_STR), 
+		'last_modified' => array('name' => ':updateReviewAssignment_lastModified', 'type' => PDO::PARAM_STR), 
+		'reminder_was_automatic' => array('name' => ':updateReviewAssignment_reminderWasAutomatic', 'type' => PDO::PARAM_INT), 
+		'declined' => array('name' => ':updateReviewAssignment_declined', 'type' => PDO::PARAM_INT), 
+		'replaced' => array('name' => ':updateReviewAssignment_replaced', 'type' => PDO::PARAM_INT),
+		'cancelled' => array('name' => ':updateReviewAssignment_cancelled', 'type' => PDO::PARAM_INT), 
+		'reviewer_file_id' => array('name' => ':updateReviewAssignment_reviewerFileId', 'type' => PDO::PARAM_INT),
+		'date_rated' => array('name' => ':updateReviewAssignment_dateRated', 'type' => PDO::PARAM_STR), 
+		'date_reminded' => array('name' => ':updateReviewAssignment_dateReminded', 'type' => PDO::PARAM_STR), 
+		'quality' => array('name' => ':updateReviewAssignment_quality', 'type' => PDO::PARAM_INT), 
+		'review_round_id' => array('name' => ':updateReviewAssignment_reviewRoundId', 'type' => PDO::PARAM_INT), 
+		'stage_id' => array('name' => ':updateReviewAssignment_stageId', 'type' => PDO::PARAM_INT),
+		'review_method' => array('name' => ':updateReviewAssignment_reviewMethod', 'type' => PDO::PARAM_INT), 
+		'round' => array('name' => ':updateReviewAssignment_round', 'type' => PDO::PARAM_INT), 
+		'step' => array('name' => ':updateReviewAssignment_step', 'type' => PDO::PARAM_INT), 
+		'review_form_id' => array('name' => ':updateReviewAssignment_reviewFormId', 'type' => PDO::PARAM_INT), 
+		'unconsidered' => array('name' => ':updateReviewAssignment_unconsidered', 'type' => PDO::PARAM_INT),
+		'review_id' => array('name' => ':updateReviewAssignment_reviewId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2200,9 +2200,9 @@ $queries['updateReviewForm'] = array(
 		WHERE review_form_id = :updateReviewForm_reviewFormId',
 		
 	'params' => array(
-		'seq' => ':updateReviewForm_seq',
-		'is_active' => ':updateReviewForm_isActive',
-		'review_form_id' => ':updateReviewForm_reviewFormId' 
+		'seq' => array('name' => ':updateReviewForm_seq', 'type' => PDO::PARAM_STR),
+		'is_active' => array('name' => ':updateReviewForm_isActive', 'type' => PDO::PARAM_INT),
+		'review_form_id' => array('name' => ':updateReviewForm_reviewFormId', 'type' => PDO::PARAM_INT) 
 	)
 );
 
@@ -2213,11 +2213,11 @@ $queries['updateReviewFormElement'] = array (
 		WHERE review_form_element = :updateReviewFormElement_reviewFormElementId',
 		
 	'params' => array(
-		'seq' => ':updateReviewFormElement_seq', 
-		'element_type' => ':updateReviewFormElement_elementType',
-		'required' => ':updateReviewFormElement_required', 
-		'included' => ':updateReviewFormElement_included'
-		'review_form_element' => ':updateReviewFormElement_reviewFormElementId'
+		'seq' => array('name' => ':updateReviewFormElement_seq', 'type' => PDO::PARAM_STR), 
+		'element_type' => array('name' => ':updateReviewFormElement_elementType', 'type' => PDO::PARAM_INT),
+		'required' => array('name' => ':updateReviewFormElement_required', 'type' => PDO::PARAM_INT), 
+		'included' => array('name' => ':updateReviewFormElement_included', 'type' => PDO::PARAM_INT)
+		'review_form_element' => array('name' => ':updateReviewFormElement_reviewFormElementId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -2227,9 +2227,12 @@ $queries['updateReviewFormElement'] = array (
 //set the statements
 $statements = array();
 
-function createStatement(&$conn, &$stmts, $statementName) {
+function createStatement(&$conn, &$stmts, $statementName, &$queries = null) {
 	
-	global $queries;
+	if ($queries === null) {
+		echo "\nMy Warning: the queries array was passed as null. Using the global array queries.\n";
+		global $queries;
+	}
 
 	if (!array_key_exists($statementName, $queries)) {
 		return false;
@@ -2244,7 +2247,28 @@ function createStatement(&$conn, &$stmts, $statementName) {
 
 /**
 binds the value to the 'name' field of the prepared statement 'stmt'
+Returns true if the parameter was successfully bound, otherwise returns false
 */
-function bindStmtParam(&$stmt, $name, $value) {
+function bindStmtParam(&$stmts, &$queries, $statementName, $fieldName, $fieldValue, &$msg = null) {
 
+	if ($queries === null) {
+		echo "\nMy Warning: the queries array was passed as null. Using the global array queries.\n";
+		global $queries;
+	}
+	
+	if (!array_key_exists($statementName, $queries)) {
+		$msg = 'The statement name "' . $statementName . '" does not exist in the queries array.';
+		return false;
+	}
+
+	if (!array_key_exists($fieldName, $queries[$statementName]['params']) {
+		$msg = 'The field "' . $fieldName . '" does not exist in the "'. $statementName . '" query parameters.';
+		return false;
+	}
+
+	return $stmts[$statementName]->bindParam(
+		$queries[$statementName]['params'][$fieldName]['name'],
+		$fieldValue,
+		$queries[$statementName]['params'][$fieldName]['type']
+	);
 }
