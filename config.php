@@ -2239,7 +2239,13 @@ function createStatement(&$conn, &$stmts, $statementName, &$queries = null) {
 	}
 	
 	if (!array_key_exists($statementName, $stmts)) {
-		$stmts[$statementName] = $conn->prepare($queries[$statementName]['query']);
+		$stmts[$statementName] = array(
+			'stmt' => $conn->prepare($queries[$statementName]['query'],
+			'boundParams' => array();
+		);
+		foreach (array_keys($queries[$statementName]['params']) as $key) {
+			$stmts[$statementName]['boundParams'][$key] = null; //initialize the bound parameters as null
+		}
 	}
 	
 	return true;
@@ -2266,9 +2272,38 @@ function bindStmtParam(&$stmts, &$queries, $statementName, $fieldName, $fieldVal
 		return false;
 	}
 
-	return $stmts[$statementName]->bindParam(
+	$bound =  $stmts[$statementName]['stmt']->bindParam(
 		$queries[$statementName]['params'][$fieldName]['name'],
 		$fieldValue,
 		$queries[$statementName]['params'][$fieldName]['type']
 	);
+
+	if ($bound) {
+		$stmts[$statementName]['boundParams'][$fieldName] = $fieldValue;
+	}
+	else {
+		$msg = 'Did not bind the value "' . $fieldValue . 
+		'" of the parameter "' . $fieldName . 
+		'" to the prepared statement "' . $statementName . '".';
+	}
+
+	return $bound;
+}
+
+/**
+executes the specified prepared statement
+*/
+function executeStmt(&$stmts, $statementName, &$errors = array(), &$msg = null) {
+	
+	if ($stmts[$statementName]['stmt']->execute()) {
+		return true;
+	}
+	else {
+		if (!array_key_exists($statementName, $errors)) $errors[$statementName] = array();
+		$error = array(
+			'boundParameters' => $stmts[$statementName]['boundParams'];
+			'error' => $stmts[$statementName]['stmt']->errorInfo();
+		);
+	}
+	return false;
 }

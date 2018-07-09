@@ -33,14 +33,19 @@ include_once('appFunctions.php');
 
 // #00)
 
-function fetchUser($conn, $userId, &$statements, $journal = null, $args = null) {
+function fetchUser($conn, $userId, &$queries, &$stmts, $journal = null, $args = null) {
 	
 	if ($journal === null) {
 		$journal = chooseJournal($conn); //from helperFunctions.php
 	}
 	
+	//variables declaration
 	$collations = null;
-	$verbose = null;
+	$verbose = false;
+	$errors = array();
+	$bound = false;
+	$msg = '';
+	$user = array();
 	
 	if (is_array($args)) {
 		if (array_key_exists('collations', $args)) {
@@ -49,115 +54,59 @@ function fetchUser($conn, $userId, &$statements, $journal = null, $args = null) 
 		if (array_key_exists('verbose', $args)) {
 			$verbose = $args['verbose'];	
 		}
+		if (array_key_exists('errors', $args)) {
+			$errors =& $args['errors'];
+		}
 	}
 
-	if (!array_key_exists('selectUserById', $statements)) {
+	if (!array_key_exists('selectUserById', $stmts)) {
 		//load the selectUserById prepared statement
-		createStatement($conn, $statements, 'selectUserById'); //from config.php
+		createStatement($conn, $stmts, 'selectUserById', $queries); //from config.php
 	}
 	
-	if (!array_key_exists('selectUserSettings', $statements)) {
+	if (!array_key_exists('selectUserSettings', $stmts)) {
 		//load the selectUserSettings prepared statement
-		createStatement($conn, $statements, 'selectUserSettings'); //from config.php
+		createStatement($conn, $stmts, 'selectUserSettings', $queries); //from config.php
 	}
 	
-	if (!array_key_exists('selectUserRoles', $statements)) {
+	if (!array_key_exists('selectUserRoles', $stmts)) {
 		//load the selectUserRoles prepared statement
-		createStatement($conn, $statements, 'selectUserRoles'); //from config.php
+		createStatement($conn, $stmts, 'selectUserRoles', $queries); //from config.php
 	}
 	
-	if (!array_key_exists('selectUserInterests', $statements)) {
+	if (!array_key_exists('selectUserInterests', $stmts)) {
 		//load the selectUserInterests prepared statement
-		createStatement($conn, $statements, 'selectUserInterests'); //from config.php
+		createStatement($conn, $stmts, 'selectUserInterests', $queries); //from config.php
 	}
 
-	$userSTMT = $conn->prepare('SELECT * FROM users WHERE user_id = :userId');
-	$userSettingsSTMT = $conn->prepare('SELECT * FROM user_settings WHERE user_id = :userSettings_userId');
-	$rolesSTMT = $conn->prepare('SELECT * FROM roles WHERE journal_id = :roles_journalId AND user_id = :roles_userId');
-	$rolesSTMT->bindParam(':roles_journalId', $journal['journal_id'], PDO::PARAM_INT);
-	
-	$interestsSTMT = $conn->prepare(
-		'SELECT t.setting_value AS interest 
-		FROM user_interests AS u_int
-		INNER JOIN controlled_vocab_entry_settings AS t
-			ON u_int.controlled_vocab_entry_id = t.controlled_vocab_entry_id
-		WHERE u_int.user_id = :interests_userId');
-	
-	
 	/////////////  set the user info /////////////////////////////////////
 					
-	$errorOccurred = false;
-	$error = array();
-	$user = null;
-	
-	$userSTMT->bindParam(':userId', $userId, PDO::PARAM_INT);
-	if ($userSTMT->execute()) {
-		if ($user = $userSTMT->fetch(PDO::FETCH_ASSOC)) {
+	$bound = bindStmtParam($stmts, $queries, 'selectUserById', 'user_id', $userId, $msg); // from config.php
+
+	if ($bound && executeStmt($stmts, 'selectUserById', $errors)) {
+		if ($user = $stmts['selectUserById']['stmt']->fetch(PDO::FETCH_ASSOC)) {
 			processCollation($user, 'users', $collations);
-		
+			
 			//fetching the user settings
-			$userSettingsSTMT->bindParam(':userSettings_userId', $user['user_id'], PDO::PARAM_INT);
-			if ($userSettingsSTMT->execute()) {
-				$userSettings = array();
-				while ($setting = $userSettingsSTMT->fetch(PDO::FETCH_ASSOC)) {
-					array_push($userSettings, $setting);
-				}
-				
-				processCollation($userSettings, 'user_settings', $collations);
-				if (!empty($userSettings)) {
-					$user['settings'] = $userSettings;
-				}
-			}// end of the if userSettingsSTMT executed
-			else {
-				$errorOccurred = true;
-				$error['userSettingsError'] = $userSettingsSTMT->errorInfo();
-			}
+			$userSettings = array(); //from the newFunctions.php
+			$fetched = fetchUserSettings($userSettings, $stmts, $queries, $collations, $user['user_id'], $errors);
+			if ($fetched && !empty($userSettings)) $user['settings'] = $userSettings;
 			
 			//fetching the user roles for this journal
-			$rolesSTMT->bindParam(':roles_userId', $user['user_id'], PDO::PARAM_INT);
-			if ($rolesSTMT->execute()) {
-				$roles = array();
-				while ($role = $rolesSTMT->fetch(PDO::FETCH_ASSOC)) {
-					array_push($roles, $role);
-				}
-				
-				processCollation($roles, 'roles', $collations);
-				
-				if (!empty($roles)) {
-					$user['roles'] = $roles;
-				}
-			}// end of the if rolesSTMT executed
-			else {
-				$errorOccurred = true;
-				$error['rolesError'] = $rolesSTMT->errorInfo();
-			}
-			
+			$userRoles = array(); //from the newFunctions.php
+			$fetched = fetchUserRoles($userRoles, $stmts, $queries, $collations, $user['user_id'], $errors);
+			if ($fetched && !empty($userRoles)) $user['roles'] = $userRoles;
+
 			//fetching the user interests
-			$interestsSTMT->bindParam(':interests_userId', $user['user_id'], PDO::PARAM_INT);
-			if ($interestsSTMT->execute()) {
-				if ($interests = $interestsSTMT->fetchAll(PDO::FETCH_ASSOC)) {
-					processCollation($interests, 'controlled_vocab_entry_settings', $collations);
-					$user['interests'] = $interests;
-				}
-			}
-			else {
-				$errorOccurred = true;
-				$error['interestsError'] = $interestsSTMT->errorInfo();
-			}
-			
-			if ($errorOccurred) {
-				$error['user'] = $user;
-			}
+			$userInterests = array(); //from the newFunctions.php
+			$fetched = fetchUserInterests($userInterests, $stmts, $queries, $collations, $user['user_id'], $errors);
+			if ($fetched && !empty($userInterests)) $user['interests'] = $userInterests;
 		
 		}//end of the if user was fetched
 		
 	}// end of the if userSTMT executed
-	else {
-		$errorOccurred = true;
-		$error['userError'] = $userSTMT->errorInfo();
-	}
-	
-	return array('user' => $user, 'error' => $error, 'errorOccurred' => $errorOccurred);
+
+	return array('user' => $user, 'error' => $msg);
 	
 }
 
