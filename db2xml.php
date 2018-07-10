@@ -88,17 +88,17 @@ function fetchUser($conn, $userId, &$queries, &$stmts, $journal = null, $args = 
 			processCollation($user, 'users', $collations);
 			
 			//fetching the user settings
-			$userSettings = array(); //from the newFunctions.php
+			$userSettings = array(); //from the userFunctions.php
 			$fetched = fetchUserSettings($userSettings, $stmts, $queries, $collations, $user['user_id'], $errors);
 			if ($fetched && !empty($userSettings)) $user['settings'] = $userSettings;
 			
 			//fetching the user roles for this journal
-			$userRoles = array(); //from the newFunctions.php
+			$userRoles = array(); //from the userFunctions.php
 			$fetched = fetchUserRoles($userRoles, $stmts, $queries, $collations, $user['user_id'], $errors);
 			if ($fetched && !empty($userRoles)) $user['roles'] = $userRoles;
 
 			//fetching the user interests
-			$userInterests = array(); //from the newFunctions.php
+			$userInterests = array(); //from the userFunctions.php
 			$fetched = fetchUserInterests($userInterests, $stmts, $queries, $collations, $user['user_id'], $errors);
 			if ($fetched && !empty($userInterests)) $user['interests'] = $userInterests;
 		

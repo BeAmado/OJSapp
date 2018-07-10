@@ -1000,9 +1000,9 @@ $queries['selectLastTenUsers'] = array(
 );
 
 $queries['selectUserById'] = array(
-	'query' => 'SELECT * FROM users WHERE user_id = :selectUserById_userId'
+	'query' => 'SELECT * FROM users WHERE user_id = :selectUserById_userId',
 	'params' => array(
-		'user_id' => 'name' => ':selectUserById_userId', 'type' => PDO::PARAM_INT)
+		'user_id' => array('name' => ':selectUserById_userId', 'type' => PDO::PARAM_INT)
 	)
 );
 
@@ -1041,7 +1041,7 @@ $queries['getInterestControlledVocabId'] = array(
 $queries['selectLastControlledVocabEntry'] = array(
 	'query' => 'SELECT * FROM controlled_vocab_entries ORDER BY controlled_vocab_entry_id DESC LIMIT 1',
 	'params' => null
-)
+);
 
 
 ////////// article related queries //////////////////
@@ -1251,7 +1251,7 @@ $queries['selectLastArticleSearchKeywordList'] = array(
 );
 
 $queries['selectArticleSearchObjectKeywords'] = array(
-	'query' => 'SELECT * FROM article_search_object_keywords WHERE object_id = :selectArticleSearchObjectKeywords_objectId'
+	'query' => 'SELECT * FROM article_search_object_keywords WHERE object_id = :selectArticleSearchObjectKeywords_objectId',
 	'params' => array(
 		'object_id' => array('name' => ':selectArticleSearchObjectKeywords_objectId', 'type' => PDO::PARAM_INT)
 	)
@@ -1306,7 +1306,7 @@ $queries['selectLastReviewAssignment'] = array(
 );
 
 $queries['selectReviewRounds'] = array(
-	'query' => 'SELECT * FROM review_rounds WHERE submission_id = :selectReviewRounds_submissionId'
+	'query' => 'SELECT * FROM review_rounds WHERE submission_id = :selectReviewRounds_submissionId',
 	'params' => array(
 		'submission_id' => array('name' => ':selectReviewRounds_submissionId', 'type' => PDO::PARAM_INT)
 	)
@@ -1335,7 +1335,7 @@ $queries['selectSections'] = array(
 );
 
 $queries['selectSectionSettings'] = array(
-	'query' => 'SELECT * FROM section_settings WHERE section_id = :selectSectionSettings_sectionId'
+	'query' => 'SELECT * FROM section_settings WHERE section_id = :selectSectionSettings_sectionId',
 	'params' => array(
 		'section_id' => array('name' => ':selectSectionSettings_sectionId', 'type' => PDO::PARAM_INT)
 	)
@@ -1384,7 +1384,7 @@ $queries['selectGroupSettings'] = array(
 );
 
 $queries['selectGroupMemberships'] = array(
-	'query' => 'SELECT * FROM group_memberships WHERE group_id = :selectGroupMemberships_groupId'
+	'query' => 'SELECT * FROM group_memberships WHERE group_id = :selectGroupMemberships_groupId',
 	'params' => array(
 		'group_id' => array('name' => ':selectGroupMemberships_groupId', 'type' => PDO::PARAM_INT)
 	)
@@ -1478,7 +1478,7 @@ $queries['selectPluginSettings'] = array(
 
 function createSelectEventLogsQuery(&$queriesArray, $articleIdsArray) {
 	
-	require_once('helperFunctions.php');
+	require_once(BASE_DIR . 'helperFunctions.php');
 	$ids = getArticleIdsSTR($articleIds); //from helperFunctions.php
 	
 	$queriesArray['selectEventLogs'] = array('query' => 'SELECT * FROM event_log WHERE assoc_id IN ' . $ids, 'params' => null);
@@ -1500,7 +1500,7 @@ $queries['selectEventLogSettings'] = array(
 
 function createSelectEmailLogsQuery(&$queriesArray, $articleIdsArray) {
 	
-	require_once('helperFunctions.php');
+	require_once(BASE_DIR . 'helperFunctions.php');
 	$ids = getArticleIdsSTR($articleIds); //from helperFunctions.php
 	
 	$queriesArray['selectEventLogs'] = array('query' => 'SELECT * FROM email_log WHERE assoc_id IN ' . $ids, 'params' => null);
@@ -1594,7 +1594,7 @@ $queries['insertUserRole'] = array(
 
 $queries['insertControlledVocabEntry'] = array(
 	'query' => 'INSERT INTO controlled_vocab_entries (controlled_vocab_id, seq) 
-	VALUES (:insertControlledVocabEntry_controlledVocabId, :insertControlledVocabEntry_seq)'
+	VALUES (:insertControlledVocabEntry_controlledVocabId, :insertControlledVocabEntry_seq)',
 	
 	'params' => array(
 		'controlled_vocab_id' => array('name' => ':insertControlledVocabEntry_controlledVocabId', 'type' => PDO::PARAM_INT),
@@ -1633,7 +1633,7 @@ $queries['insertArticle'] = array(
 		status, submission_progress, current_round, pages, fast_tracked, hide_author, comments_status, locale, citations) 
 		VALUES (:insertArticle_userId, :insertArticle_journalId, :insertArticle_sectionId, :insertArticle_language, :insertArticle_commentsToEd, :insertArticle_dateSubmitted, 
 		:insertArticle_lastModified, :insertArticle_dateStatusModified, :insertArticle_status, :insertArticle_submissionProgress, :insertArticle_currentRound, :insertArticle_pages, 
-		:insertArticle_fastTracked, :insertArticle_hideAuthor, :insertArticle_commentsStatus, :insertArticle_locale, :insertArticle_citations)'
+		:insertArticle_fastTracked, :insertArticle_hideAuthor, :insertArticle_commentsStatus, :insertArticle_locale, :insertArticle_citations)',
 		
 	'params' => array(
 		'user_id' => array('name' => ':insertArticle_userId', 'type' => PDO::PARAM_INT),
@@ -1754,7 +1754,7 @@ $queries['insertArticleSupplementaryFile'] = array(
 	'query' => 'INSERT INTO article_supplementary_files (file_id, article_id, type, language, date_created, show_reviewers, date_submitted, seq, remote_url) 
 		VALUES (:insertArticleSupplementaryFile_fileId, :insertArticleSupplementaryFile_articleId, :insertArticleSupplementaryFile_type, 
 		:insertArticleSupplementaryFile_language, :insertArticleSupplementaryFile_dateCreated, :insertArticleSupplementaryFile_showReviewers, 
-		:insertArticleSupplementaryFile_dateSubmitted, :insertArticleSupplementaryFile_seq, :insertArticleSupplementaryFile_remoteUrl)'
+		:insertArticleSupplementaryFile_dateSubmitted, :insertArticleSupplementaryFile_seq, :insertArticleSupplementaryFile_remoteUrl)',
 		
 	'params' => array(
 		'file_id' => array('name' => ':insertArticleSupplementaryFile_fileId', 'type' => PDO::PARAM_INT),
@@ -1771,7 +1771,7 @@ $queries['insertArticleSupplementaryFile'] = array(
 
 $queries['insertArticleSuppFileSetting'] = array(
 	'query' => 'INSERT INTO article_supp_file_settings (supp_id, locale, setting_name, setting_value, setting_type) VALUES (:insertArticleSuppFileSetting_suppId,
-		:insertArticleSuppFileSetting_locale, :insertArticleSuppFileSetting_settingName, :insertArticleSuppFileSetting_settingValue, :insertArticleSuppFileSetting_settingType)'
+		:insertArticleSuppFileSetting_locale, :insertArticleSuppFileSetting_settingName, :insertArticleSuppFileSetting_settingValue, :insertArticleSuppFileSetting_settingType)',
 		
 	'params' => array(
 		'supp_id' => array('name' => ':insertArticleSuppFileSetting_suppId', 'type' => PDO::PARAM_INT),
@@ -1827,7 +1827,7 @@ $queries['insertArticleGalley'] = array(
 		'file_id' => array('name' => ':insertArticleGalley_fileId', 'type' => PDO::PARAM_INT),
 		'label' => array('name' => ':insertArticleGalley_label', 'type' => PDO::PARAM_STR),
 		'html_galley' => array('name' => ':insertArticleGalley_htmlGalley', 'type' => PDO::PARAM_INT),
-		'style_file_id' => array('name' => ':insertArticleGalley_styleFileId', 'type' => PDO::PARAM_INT)
+		'style_file_id' => array('name' => ':insertArticleGalley_styleFileId', 'type' => PDO::PARAM_INT),
 		'seq' => array('name' => ':insertArticleGalley_seq', 'type' => PDO::PARAM_STR),
 		'remote_url' => array('name' => ':insertArticleGalley_remoteUrl', 'type' => PDO::PARAM_STR)
 	)
@@ -1848,7 +1848,7 @@ $queries['insertArticleGalleySetting'] = array(
 
 $queries['insertArticleXmlGalley'] = array(
 	'query' => 'INSERT INTO article_xml_galleys (galley_id, article_id, label, galley_type, views) VALUES (:insertArticleXmlGalley_galleyId, 
-		:insertArticleXmlGalley_articleId, :insertArticleXmlGalley_label, :insertArticleXmlGalley_galleyType, :insertArticleXmlGalley_views)'
+		:insertArticleXmlGalley_articleId, :insertArticleXmlGalley_label, :insertArticleXmlGalley_galleyType, :insertArticleXmlGalley_views)',
 		
 	'params' => array(
 		'galley_id' => array('name' => ':insertArticleXmlGalley_galleyId', 'type' => PDO::PARAM_INT),
@@ -1876,7 +1876,7 @@ $queries['insertArticleSearchKeywordList'] = array(
 
 $queries['insertArticleSearchObjectKeyword'] = array(
 	'query' => 'INSERT INTO article_search_object_keywords (object_id, keyword_id, pos) VALUES (:insertArticleSearchObjectKeyword_objectId,
-		:insertArticleSearchObjectKeyword_keywordId, :insertArticleSearchObjectKeyword_pos)'
+		:insertArticleSearchObjectKeyword_keywordId, :insertArticleSearchObjectKeyword_pos)',
 		
 	'params' => array(
 		'object_id' => array('name' => ':insertArticleSearchObjectKeyword_objectId', 'type' => PDO::PARAM_INT),
@@ -1887,7 +1887,7 @@ $queries['insertArticleSearchObjectKeyword'] = array(
 
 $queries['insertArticleSearchObject'] = array(
 	'query' => 'INSERT INTO article_search_objects (article_id, type, assoc_id) 
-		VALUES (:insertArticleSearchObject_articleId, :insertArticleSearchObject_type, :insertArticleSearchObject_assocId)'
+		VALUES (:insertArticleSearchObject_articleId, :insertArticleSearchObject_type, :insertArticleSearchObject_assocId)',
 		
 	'params' => array(
 		'article_id' => array('name' => ':insertArticleSearchObject_articleId', 'type' => PDO::PARAM_INT),
@@ -1898,7 +1898,7 @@ $queries['insertArticleSearchObject'] = array(
 
 $queries['insertEditDecision'] = array(
 	'query' => 'INSERT INTO edit_decisions (article_id, round, editor_id, decision, date_decided) VALUES (:insertEditDecision_articleId, 
-		:insertEditDecision_round, :insertEditDecision_editorId, :insertEditDecision_decision, :insertEditDecision_dateDecided)'
+		:insertEditDecision_round, :insertEditDecision_editorId, :insertEditDecision_decision, :insertEditDecision_dateDecided)',
 		
 	'params' => array(
 		'article_id' => array('name' => ':insertEditDecision_articleId', 'type' => PDO::PARAM_INT),
@@ -1954,7 +1954,7 @@ $queries['insertReviewAssignment'] = array(
 		'submission_id' => array('name' => ':insertReviewAssignment_submissionId', 'type' => PDO::PARAM_INT),
 		'reviewer_id' => array('name' => ':insertReviewAssignment_reviewerId', 'type' => PDO::PARAM_INT),
 		'competing_interests' => array('name' => ':insertReviewAssignment_competingInterests', 'type' => PDO::PARAM_STR),
-		'regret_message' => array('name' => ':insertReviewAssignment_regretMessage', 'type' => PDO::PARAM_STR)
+		'regret_message' => array('name' => ':insertReviewAssignment_regretMessage', 'type' => PDO::PARAM_STR),
 		'recommendation' => array('name' => ':insertReviewAssignment_recommendation', 'type' => PDO::PARAM_INT),
 		'date_assigned' => array('name' => ':insertReviewAssignment_dateAssigned', 'type' => PDO::PARAM_STR),
 		'date_notified' => array('name' => ':insertReviewAssignment_dateNotified', 'type' => PDO::PARAM_STR),
@@ -1970,7 +1970,7 @@ $queries['insertReviewAssignment'] = array(
 		'reviewer_file_id' => array('name' => ':insertReviewAssignment_reviewerFileId', 'type' => PDO::PARAM_INT),
 		'date_rated' => array('name' => ':insertReviewAssignment_dateRated', 'type' => PDO::PARAM_STR),
 		'date_reminded' => array('name' => ':insertReviewAssignment_dateReminded', 'type' => PDO::PARAM_STR),
-		'quality' =. array('name' => ':insertReviewAssignment_quality', 'type' => PDO::PARAM_INT),
+		'quality' => array('name' => ':insertReviewAssignment_quality', 'type' => PDO::PARAM_INT),
 		'review_round_id' => array('name' => ':insertReviewAssignment_reviewRoundId', 'type' => PDO::PARAM_INT),
 		'stage_id' => array('name' => ':insertReviewAssignment_stageId', 'type' => PDO::PARAM_INT),
 		'review_method' => array('name' => ':insertReviewAssignment_reviewMethod', 'type' => PDO::PARAM_INT),
@@ -2051,7 +2051,7 @@ $queries['updateArticle'] = array(
 		'hide_author' => array('name' => ':updateArticle_hideAuthor', 'type' => PDO::PARAM_INT), 
 		'comments_status' => array('name' => ':updateArticle_commentsStatus', 'type' => PDO::PARAM_INT), 
 		'locale' => array('name' => ':updateArticle_locale', 'type' => PDO::PARAM_STR), 
-		'citations' => array('name' => ':updateArticle_citations', 'type' => PDO::PARAM_STR)
+		'citations' => array('name' => ':updateArticle_citations', 'type' => PDO::PARAM_STR),
 		'article_id' => array('name' => ':updateArticle_articleId', 'type' => PDO::PARAM_INT)
 	)
 );
@@ -2143,7 +2143,7 @@ $queries['updateReviewRound'] = array(
 		'stage_id' => array('name' => ':updateReviewRound_stageId', 'type' => PDO::PARAM_INT), 
 		'round' => array('name' => ':updateReviewRound_round', 'type' => PDO::PARAM_INT), 
 		'review_revision' => array('name' => ':updateReviewRound_reviewRevision', 'type' => PDO::PARAM_INT), 
-		'status' => array('name' => ':updateReviewRound_status', 'type' => PDO::PARAM_INT)
+		'status' => array('name' => ':updateReviewRound_status', 'type' => PDO::PARAM_INT),
 		'review_round_id' => array('name' => ':updateReviewRound_reviewRoundId', 'type' => PDO::PARAM_INT)
 	)
 );
@@ -2216,7 +2216,7 @@ $queries['updateReviewFormElement'] = array (
 		'seq' => array('name' => ':updateReviewFormElement_seq', 'type' => PDO::PARAM_STR), 
 		'element_type' => array('name' => ':updateReviewFormElement_elementType', 'type' => PDO::PARAM_INT),
 		'required' => array('name' => ':updateReviewFormElement_required', 'type' => PDO::PARAM_INT), 
-		'included' => array('name' => ':updateReviewFormElement_included', 'type' => PDO::PARAM_INT)
+		'included' => array('name' => ':updateReviewFormElement_included', 'type' => PDO::PARAM_INT),
 		'review_form_element' => array('name' => ':updateReviewFormElement_reviewFormElementId', 'type' => PDO::PARAM_INT)
 	)
 );
@@ -2240,8 +2240,8 @@ function createStatement(&$conn, &$stmts, $statementName, &$queries = null) {
 	
 	if (!array_key_exists($statementName, $stmts)) {
 		$stmts[$statementName] = array(
-			'stmt' => $conn->prepare($queries[$statementName]['query'],
-			'boundParams' => array();
+			'stmt' => $conn->prepare($queries[$statementName]['query']),
+			'boundParams' => array()
 		);
 		foreach (array_keys($queries[$statementName]['params']) as $key) {
 			$stmts[$statementName]['boundParams'][$key] = null; //initialize the bound parameters as null
@@ -2255,7 +2255,7 @@ function createStatement(&$conn, &$stmts, $statementName, &$queries = null) {
 binds the value to the 'name' field of the prepared statement 'stmt'
 Returns true if the parameter was successfully bound, otherwise returns false
 */
-function bindStmtParam(&$stmts, &$queries, $statementName, $fieldName, $fieldValue, &$msg = null) {
+function bindStmtParam(&$stmts, &$queries, $statementName, $fieldName, $fieldValue, &$msg = '') {
 
 	if ($queries === null) {
 		echo "\nMy Warning: the queries array was passed as null. Using the global array queries.\n";
@@ -2267,7 +2267,7 @@ function bindStmtParam(&$stmts, &$queries, $statementName, $fieldName, $fieldVal
 		return false;
 	}
 
-	if (!array_key_exists($fieldName, $queries[$statementName]['params']) {
+	if (!array_key_exists($fieldName, $queries[$statementName]['params'])) {
 		$msg = 'The field "' . $fieldName . '" does not exist in the "'. $statementName . '" query parameters.';
 		return false;
 	}
@@ -2291,9 +2291,31 @@ function bindStmtParam(&$stmts, &$queries, $statementName, $fieldName, $fieldVal
 }
 
 /**
+binds all the prepared statement parameters to the values in dataToBind
+*/
+function bindAllStmtParams(&$stmts, &$queries, $statementName, &$dataToBind, &$args = array()) {
+	//do something like what follows
+/*
+	$errors = array();
+
+	foreach($dataToBind as $key => $value) {
+		$msg = '';
+
+		//OPTIONALLY MAP THE NEW ID FIELDS
+
+		bindStmtParam($stmts, $queries, $statementName, $key, $value);
+		if ($msg !== '') {
+			array_push($errors, $msg);
+		}
+	}
+/*/
+}
+
+
+/**
 executes the specified prepared statement
 */
-function executeStmt(&$stmts, $statementName, &$errors = array(), &$msg = null) {
+function executeStmt(&$stmts, $statementName, &$errors = array()) {
 	
 	if ($stmts[$statementName]['stmt']->execute()) {
 		return true;
@@ -2301,9 +2323,12 @@ function executeStmt(&$stmts, $statementName, &$errors = array(), &$msg = null) 
 	else {
 		if (!array_key_exists($statementName, $errors)) $errors[$statementName] = array();
 		$error = array(
-			'boundParameters' => $stmts[$statementName]['boundParams'];
-			'error' => $stmts[$statementName]['stmt']->errorInfo();
+			'boundParameters' => $stmts[$statementName]['boundParams'],
+			'error' => $stmts[$statementName]['stmt']->errorInfo()
 		);
+
+		//log the error in the errors for the specified statement
+		array_push($errors[$statementName], $error); 
 	}
 	return false;
 }
