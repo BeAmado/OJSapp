@@ -115,7 +115,7 @@ function addChangedUser(&$changedUsersNode, &$xmlNode, $userInfo) {
 //FIM DE addChangedUser
 
 
-function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn, &$errors) {
+function processUsers(&$user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn, &$errors) {
 	
 	$arrInfo['num_users_original']++;
 	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
@@ -238,6 +238,8 @@ function processUsers($user, &$changedUsers, &$arrInfo, &$xmlNode, &$conn, &$err
 		addChangedUser($changedUsers, $xmlNode, $userInfo);
 		$arrInfo["num_user_changes"]++;
 		//////////////////////////////////////////////////////////////////////////////////////////////////
+		
+		$user->getElementsByTagName('username')->item(0)->nodeValue = $newUsername;
 	}
 	//+++++++++++++++++ FIM DO IF changeUsername ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
