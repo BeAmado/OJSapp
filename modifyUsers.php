@@ -1,5 +1,7 @@
 <?php
 
+require_once('myFunctions.php');
+
 function fixDuplicateInterests(&$user) {
 	$username = $user->getElementsByTagName('username')->item(0)->nodeValue;
 	$duplicateInterests = 0;
@@ -10,7 +12,8 @@ function fixDuplicateInterests(&$user) {
 		array_push($interests, $interest);
 	}
 	foreach($interests as $node) {
-		if (htmlentities($node->nodeValue) === htmlentities($in)) {
+		//if (htmlentities($node->nodeValue) === htmlentities($in)) {
+		if (strtolower(normalizeSpecialChars($node->nodeValue)) == strtolower(normalizeSpecialChars($in))) {
 			$duplicateInterests++;
 			$node->parentNode->removeChild($node);
 		}
