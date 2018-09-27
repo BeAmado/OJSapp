@@ -1153,6 +1153,7 @@ function insertArticles(&$xml, $conn, &$dataMapping, $journal, $type = 'both', $
 	$journalNewPath = null;
 	$journalNewId = null;
 	$limit = 10;
+	$copyPubArticles = false;
 	
 	if (is_array($args)) {
 		if (array_key_exists('journalNewPath', $args)) {
@@ -1163,6 +1164,9 @@ function insertArticles(&$xml, $conn, &$dataMapping, $journal, $type = 'both', $
 		}
 		if (array_key_exists('rowsLimit', $args)) {
 			$limit = (int) $args['rowsLimit'];
+		}
+		if (array_key_exists('copyPublishedArticles', $args)) {
+			$copyPubArticles = true;
 		}
 	}
 	
@@ -2446,7 +2450,10 @@ inline_help) VALUES (:insertUser_username, :insertUser_password, :insertUser_sal
 								echo "Failed\n";
 							}
 							
-							$articleFile['DNU'] = true; // DNU means Do Not Update
+							
+							if (!$copyPubArticles) {
+							    $articleFile['DNU'] = true; // DNU means Do Not Update
+							}
 							
 							//////////// end of the update the published article_file ////////////
 							
