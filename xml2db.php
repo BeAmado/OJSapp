@@ -6190,3 +6190,123 @@ function updateUserRegistrationDates(&$xml, $conn, &$dataMapping) {
 	return array('errors' => $errors, 'numUpdatedRecords' => $numUpdates);
 	
 }
+
+
+/**
+ * 
+ * @param \DOMElement
+ * @param \PDO $conn
+ * @param integer $journalId
+ * @param array $dataMapping
+ * @param array $args
+ * @return array
+ */
+function insertIssueGalleys(&$xml, $conn, $journalId, &$dataMapping, $args = array()) {
+    
+    if (!array_key_exists('issue_id', $dataMapping)) {
+        $dataMapping['issue_id'] = array();
+    }
+
+    if (!array_key_exists('issue_galley_id', $dataMapping)) {
+        $dataMapping['issue_galley_id'] = array();
+    }
+    
+    if (!array_key_exists('issue_file_id', $dataMapping)) {
+        $dataMapping['issue_file_id'] = array();
+    }
+
+    $errors = array(
+        'issue_galleys' => array('insert' => array(), 'update' => array(), 'check' => array()),
+        'issue_galley_settings' => array('insert' => array(), 'update' => array(), 'check' => array()),
+        'issue_files' => array('insert' => array(), 'update' => array(), 'check' => array()),
+    );
+    
+    /* @var $InsertIssueGalleyQuery string */
+    $InsertIssueGalleyQuery = 
+        'INSERT INTO issue_galleys '
+        . '(locale, issue_id, file_id, label, seq)'
+        . 'VALUES ('
+        . ':InsertIssueGalley_locale,'
+        . ':InsertIssueGalley_issueId,'
+        . ':InsertIssueGalley_fileId,'
+        . ':InsertIssueGalley_label,'
+        . ':InsertIssueGalley_seq'
+        . ')';
+    
+    /* @var $insertIssueGalleySTMT \PDOStatement */
+    $insertIssueGalleySTMT = $conn->prepare($InsertIssueGalleyQuery);
+    
+    
+    /* @var $InsertIssueFileQuery string */
+    $InsertIssueFileQuery = 
+        'INSERT INTO issue_files '
+        . '(issue_id, file_name, file_type, file_size, content_type, '
+        . ' original_file_name, date_uploaded, date_modified) '
+        . 'VALUES ('
+        . ':InsertIssueFile_issueId,'
+        . ':InsertIssueFile_fileName,'
+        . ':InsertIssueFile_fileType,'
+        . ':InsertIssueFile_fileSize,'
+        . ':InsertIssueFile_contentType,'
+        . ':InsertIssueFile_originalFileName,'
+        . ':InsertIssueFile_dateUploaded,'
+        . ':InsertIssueFile_dateModified'
+        . ')';
+    
+    /* @var $insertIssueFileSTMT \PDOStatement */
+    $insertIssueFileSTMT = $conn->prepare($InsertIssueFileQuery);
+    
+    
+    /* @var $InsertIssueGalleySettingQuery string */
+    $InsertIssueGalleySettingQuery = 
+        'INSERT INTO issue_galley_settings '
+        . '(galley_id, locale, setting_name, setting_value, setting_type) '
+        . 'VALUES ('
+        . ':InsertIssueGalleySetting_galleyId,'
+        . ':InsertIssueGalleySetting_locale,'
+        . ':InsertIssueGalleySetting_settingName,'
+        . ':InsertIssueGalleySetting_settingValue,'
+        . ':InsertIssueGalleySetting_settingType'
+        . ')';
+    
+    /* @var $insertIssueGalleySettingSTMT \PDOStatement */
+    $insertIssueGalleySettingSTMT = $conn->prepare($InsertIssueGalleySettingQuery);
+    
+    $numInsertions = array(
+        'issue_galleys' => 0, 
+        'issue_galley_settings' => 0, 
+        'issue_files' => 0,
+    );
+    $numUpdates = array(
+        'issue_galleys' => 0, 
+        'issue_galley_settings' => 0, 
+        'issue_files' => 0,
+    );
+
+    ////////////// INSERT THE REFERRALS  /////////////////////////////////
+
+    /* @var $issue_galleys_node DOMElement */
+    $issue_galleys_node = $xml->getElementsByTagName('issue_galleys')->item(0);
+    
+    /* @var $issueGalleys array */
+    $issueGalleys = xmlToArray($issue_galleys_node, true); //from helperFunctions.php
+    
+    /* @var $issueGalley array */
+    foreach ($issueGalleys as $issueGalley) {
+        
+        //get the issue new id
+        if (array_key_exists($dataMapping['issue_id'], $issueGalley['issue_id'])) {
+            $issueGalley['issue_new_id'] = $dataMapping['issue_id'][$issueGalley['issue_id']];
+        } else {
+            //the issue_id is not mapped
+            //log the error
+            continue;
+        }
+        
+        ///////////// insert the issue_galley and get the issue_galley new id //////////
+        
+        //bind the issue_galley attributes
+        $insertIssueGalleySTMT->bindParam(':InsertIssueFile_issueId', $issueGalley['issue_new_id']);
+        
+    }
+}

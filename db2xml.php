@@ -2345,3 +2345,104 @@ function fetchUserRegistrationDates($conn, $journal = null, $args = null) {
 	
 	return array('user_registration_dates' => $registrations);
 }
+
+/**
+ * 
+ * @param \PDO $conn
+ * @param integer $journalId
+ * @param array $args
+ * 
+ * @return array
+ */
+function fetchIssueGalleys(&$conn, $journalId, $args = array()) {
+    
+    $SelectIssueGalleysQuery = 
+        'SELECT * '
+      . 'FROM issue_galleys '
+      . 'WHERE issue_id IN ('
+      .     'SELECT issue_id'
+      .     'FROM issues'
+      .     'WHERE journal_id = :journalId'
+      . ')';
+    
+    /* @var $selectIssueGalleysSTMT \PDOStatement */
+    $selectIssueGalleysSTMT = $conn->prepare($SelectIssueGalleysQuery);
+    
+    $selectIssueGalleysSTMT->bindParam(':journalId', $journalId);
+    
+    //The issue_galley_settings query
+    /* @var $issueGalleySettingQuery string */
+    $issueGalleySettingQuery = 
+        'SELECT * '
+      . 'FROM issue_galley_settings '
+      . 'WHERE galley_id = :galleyId';
+    
+    /* @var $selectIssueGalleySettingsSTMT \PDOStatement */
+    $selectIssueGalleySettingsSTMT = $conn->prepare($issueGalleySettingQuery);
+    
+    
+    //The issue_files query
+    /* @var $issueFilesQuery string */
+    $issueFilesQuery = 
+        'SELECT * '
+      . 'FROM issue_files '
+      . 'WHERE file_id = :fileId';
+    
+    /* @var $selectIssueFilesSTMT \PDOStatement */
+    $selectIssueFilesSTMT = $conn->prepare($issueFilesQuery);
+    
+    $errors = array(
+        'issue_galleys',
+        'issue_galley_settings',
+        'issue_files',
+    );
+    
+    $issueGalleys = array();
+    
+    if ($selectIssueGalleysSTMT->execute()) {
+        /* @var $issueGalley array */
+        while ($issueGalley = $selectIssueGalleysSTMT->fetch(PDO::FETCH_ASSOC)) {
+            
+            //Get the issue_files
+            $selectIssueFilesSTMT->bindParam(':fileId', $issueGalley['file_id']);
+            if ($selectIssueFilesSTMT->execute()) {
+                $issueGalley['issue_files'] = 
+                    $selectIssueFilesSTMT->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $error = array(
+                    'error' => 'Did not execute the Select statement',
+                    'issue_id' => $issueGalley['issue_id'],
+                    'galley_id' => $issueGalley['galley_id'],
+                    'file_id' => $issueGalley['file_id'],
+                );
+                $errors['issue_files'][] = $error;
+            }
+            
+            //Get the issue_galley_settings
+            $selectIssueGalleySettingsSTMT->bindParam(':galleyId', $issueGalley['galley_id']);
+            if ($selectIssueGalleySettingsSTMT->execute()) {
+                $issueGalley['issue_galley_settings'] = 
+                    $selectIssueGalleySettingsSTMT->fetchAll(PDO::FETCH_ASSOC);
+            } else {
+                $error = array(
+                    'error' => 'Did not execute the Select statement',
+                    'issue_id' => $issueGalley['issue_id'],
+                    'galley_id' => $issueGalley['galley_id'],
+                );
+                 $errors['issue_galley_settings'][] = $error;
+               
+            }
+            
+            $issueGalleys[] = $issueGalley;
+        }
+    } else {
+        //did not execute the issue galleys statement
+        $errors['issue_galleys'] = 'Did not execute the selectIssueGalleysSTMT';
+    }
+    
+    return array(
+        'issue_galleys' => $issueGalleys, 
+        'errors' => $errors,
+    );
+    
+}
